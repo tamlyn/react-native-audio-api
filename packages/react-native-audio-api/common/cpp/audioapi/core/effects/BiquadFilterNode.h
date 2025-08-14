@@ -51,11 +51,13 @@ class BiquadFilterNode : public AudioNode {
   float y2_ = 0;
 
   // coefficients
-  float b0_ = 1.0;
-  float b1_ = 0;
-  float b2_ = 0;
-  float a1_ = 1.0;
-  float a2_ = 0;
+  static const size_t kMaxBlockSize = 128;
+
+  float b0_[kMaxBlockSize];
+  float b1_[kMaxBlockSize];
+  float b2_[kMaxBlockSize];
+  float a1_[kMaxBlockSize];
+  float a2_[kMaxBlockSize];
 
   static BiquadFilterType fromString(const std::string &type) {
     std::string lowerType = type;
@@ -107,25 +109,30 @@ class BiquadFilterNode : public AudioNode {
 
   void resetCoefficients();
   void setNormalizedCoefficients(
+      size_t index,
       float b0,
       float b1,
       float b2,
       float a0,
       float a1,
       float a2);
-  void setLowpassCoefficients(float frequency, float Q);
-  void setHighpassCoefficients(float frequency, float Q);
-  void setBandpassCoefficients(float frequency, float Q);
-  void setLowshelfCoefficients(float frequency, float gain);
-  void setHighshelfCoefficients(float frequency, float gain);
-  void setPeakingCoefficients(float frequency, float Q, float gain);
-  void setNotchCoefficients(float frequency, float Q);
-  void setAllpassCoefficients(float frequency, float Q);
-  void updateCoefficientsForFrame(
-      float frequency,
-      float detune,
-      float q,
-      float gain);
+  void setLowpassCoefficients(size_t index, float frequency, float Q);
+  void setHighpassCoefficients(size_t index, float frequency, float Q);
+  void setBandpassCoefficients(size_t index, float frequency, float Q);
+  void setLowshelfCoefficients(size_t index, float frequency, float gain);
+  void setHighshelfCoefficients(size_t index, float frequency, float gain);
+  void
+  setPeakingCoefficients(size_t index, float frequency, float Q, float gain);
+  void setNotchCoefficients(size_t index, float frequency, float Q);
+  void setAllpassCoefficients(size_t index, float frequency, float Q);
+
+  void updateCoefficients(
+      size_t framesToProcess,
+      float *frequency,
+      float *detune,
+      float *Q,
+      float *gain);
+  bool hasConstantValue(const AudioArray *values) const;
 };
 
 } // namespace audioapi
