@@ -51,13 +51,20 @@ class BiquadFilterNode : public AudioNode {
   float y2_ = 0;
 
   // coefficients
-  static const size_t kMaxBlockSize = 128;
+  float b0_ = 1.0;
+  float b1_ = 0;
+  float b2_ = 0;
+  float a1_ = 1.0;
+  float a2_ = 0;
 
-  float b0_[kMaxBlockSize];
-  float b1_[kMaxBlockSize];
-  float b2_[kMaxBlockSize];
-  float a1_[kMaxBlockSize];
-  float a2_[kMaxBlockSize];
+  static constexpr float kEpsilon = 1e-6f;
+
+  struct FilterFrameParams {
+    const float *frequency;
+    const float *detune;
+    const float *q;
+    const float *gain;
+  };
 
   static BiquadFilterType fromString(const std::string &type) {
     std::string lowerType = type;
@@ -109,30 +116,45 @@ class BiquadFilterNode : public AudioNode {
 
   void resetCoefficients();
   void setNormalizedCoefficients(
-      size_t index,
       float b0,
       float b1,
       float b2,
       float a0,
       float a1,
       float a2);
-  void setLowpassCoefficients(size_t index, float frequency, float Q);
-  void setHighpassCoefficients(size_t index, float frequency, float Q);
-  void setBandpassCoefficients(size_t index, float frequency, float Q);
-  void setLowshelfCoefficients(size_t index, float frequency, float gain);
-  void setHighshelfCoefficients(size_t index, float frequency, float gain);
-  void
-  setPeakingCoefficients(size_t index, float frequency, float Q, float gain);
-  void setNotchCoefficients(size_t index, float frequency, float Q);
-  void setAllpassCoefficients(size_t index, float frequency, float Q);
-
-  void updateCoefficients(
-      size_t framesToProcess,
-      float *frequency,
-      float *detune,
-      float *Q,
-      float *gain);
-  bool hasConstantValue(const AudioArray *values) const;
+  void setLowpassCoefficients(float frequency, float Q);
+  void setHighpassCoefficients(float frequency, float Q);
+  void setBandpassCoefficients(float frequency, float Q);
+  void setLowshelfCoefficients(float frequency, float gain);
+  void setHighshelfCoefficients(float frequency, float gain);
+  void setPeakingCoefficients(float frequency, float Q, float gain);
+  void setNotchCoefficients(float frequency, float Q);
+  void setAllpassCoefficients(float frequency, float Q);
+  inline bool needsUpdate(
+      float freq,
+      float detune,
+      float q,
+      float gain,
+      float prevFreq,
+      float prevDetune,
+      float prevQ,
+      float prevGain) {
+    auto nearlyEqual = [](float a, float b) {
+      return std::fabs(a - b) < kEpsilon;
+    };
+    return !nearlyEqual(freq, prevFreq) || !nearlyEqual(detune, prevDetune) ||
+        !nearlyEqual(q, prevQ) || !nearlyEqual(gain, prevGain);
+  }
+  void updateCoefficientsForFrame(
+      float frequency,
+      float detune,
+      float q,
+      float gain);
+  void processChannel(
+      float *channelData,
+      int framesToProcess,
+      const FilterFrameParams &params);
+  FilterFrameParams getFrameParams(int framesToProcess) const;
 };
 
 } // namespace audioapi
