@@ -54,7 +54,7 @@ class BiquadFilterNode : public AudioNode {
   float b0_ = 1.0;
   float b1_ = 0;
   float b2_ = 0;
-  float a1_ = 1.0;
+  float a1_ = 0;
   float a2_ = 0;
 
   static constexpr float kEpsilon = 1e-6f;
@@ -114,7 +114,6 @@ class BiquadFilterNode : public AudioNode {
     }
   }
 
-  void resetCoefficients();
   void setNormalizedCoefficients(
       float b0,
       float b1,
@@ -153,7 +152,8 @@ class BiquadFilterNode : public AudioNode {
   void processChannel(
       float *channelData,
       int framesToProcess,
-      const FilterFrameParams &params);
+      const FilterFrameParams &params,
+      bool last);
   FilterFrameParams getFrameParams(int framesToProcess) const;
 };
 
