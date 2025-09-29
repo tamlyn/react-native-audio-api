@@ -27,7 +27,7 @@ function App() {
     });
 
     const audioContext = new AudioContext({ sampleRate: 16000 });
-    const worklet = (audioData: Array<Float32Array>, inputChannelCount: number) => {
+    const worklet = (audioData: Array<ArrayBuffer>, inputChannelCount: number) => {
         'worklet';
         // here you have access to the number of input channels and the audio data
         // audio data is a two dimensional array where first index is the channel number and second is buffer of exactly bufferLength size
