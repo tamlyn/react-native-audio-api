@@ -1,8 +1,8 @@
-import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import { AudioEventEmitter, AudioEventSubscription } from '../../events';
 import type {
   IAudioScheduledSourceNode,
   IBaseAudioContext,
-} from '../types/internal';
+} from '../../types/internal';
 import type { OnEndedEventCallback } from './AudioScheduledSourceNode.web';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
 

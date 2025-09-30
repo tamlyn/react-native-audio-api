@@ -1,6 +1,9 @@
-import type { IBaseAudioContext, IStereoPannerNode } from '../types/internal';
-import AudioNode from './AudioNode';
-import AudioParam from './AudioParam';
+import type {
+  IBaseAudioContext,
+  IStereoPannerNode,
+} from '../../types/internal';
+import AudioNode from '../AudioNode';
+import AudioParam from '../AudioParam';
 
 export default class StereoPannerNode<
   TContext extends IBaseAudioContext,

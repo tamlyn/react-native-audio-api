@@ -1,8 +1,8 @@
 import type {
   IAudioDestinationNode,
   IBaseAudioContext,
-} from '../types/internal';
-import AudioNode from './AudioNode';
+} from '../../types/internal';
+import AudioNode from '../AudioNode';
 
 export default class AudioDestinationNode<
     TContext extends IBaseAudioContext,

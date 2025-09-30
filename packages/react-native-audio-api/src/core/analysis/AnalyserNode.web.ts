@@ -1,8 +1,8 @@
-import { IndexSizeError } from '../errors';
-import type { WindowType } from '../types';
-import type { IAnalyserNode, IBaseAudioContext } from '../types/internal';
-import { availabilityWarn } from '../utils';
-import AudioNode from './AudioNode';
+import { IndexSizeError } from '../../errors';
+import type { WindowType } from '../../types';
+import type { IAnalyserNode, IBaseAudioContext } from '../../types/internal';
+import { availabilityWarn } from '../../utils';
+import AudioNode from '../AudioNode';
 
 const allowedFFTSize = [
   32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,

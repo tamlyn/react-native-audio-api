@@ -1,5 +1,5 @@
-import type { WindowType } from '../types';
-import type { IAnalyserNode, IBaseAudioContext } from '../types/internal';
+import type { WindowType } from '../../types';
+import type { IAnalyserNode, IBaseAudioContext } from '../../types/internal';
 import AnalyserNode from './AnalyserNode.web';
 
 export default class AnalyserNodeNative<

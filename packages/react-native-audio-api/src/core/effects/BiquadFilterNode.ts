@@ -1,8 +1,11 @@
-import { InvalidAccessError } from '../errors';
-import { BiquadFilterType } from '../types';
-import type { IBaseAudioContext, IBiquadFilterNode } from '../types/internal';
-import AudioNode from './AudioNode';
-import AudioParam from './AudioParam';
+import { InvalidAccessError } from '../../errors';
+import { BiquadFilterType } from '../../types';
+import type {
+  IBaseAudioContext,
+  IBiquadFilterNode,
+} from '../../types/internal';
+import AudioNode from '../AudioNode';
+import AudioParam from '../AudioParam';
 
 export default class BiquadFilterNode<
     TContext extends IBaseAudioContext,

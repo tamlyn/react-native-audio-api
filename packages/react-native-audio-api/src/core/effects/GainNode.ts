@@ -1,6 +1,6 @@
-import type { IBaseAudioContext, IGainNode } from '../types/internal';
-import AudioNode from './AudioNode';
-import AudioParam from './AudioParam';
+import type { IBaseAudioContext, IGainNode } from '../../types/internal';
+import AudioNode from '../AudioNode';
+import AudioParam from '../AudioParam';
 
 export default class GainNode<
     TContext extends IBaseAudioContext,

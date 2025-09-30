@@ -1,10 +1,10 @@
-import { InvalidStateError, RangeError } from '../errors';
-import type { OnEndedEventType } from '../events/types';
+import { InvalidStateError, RangeError } from '../../errors';
+import type { OnEndedEventType } from '../../events/types';
 import type {
   IAudioScheduledSourceNode,
   IBaseAudioContext,
-} from '../types/internal';
-import AudioNode from './AudioNode';
+} from '../../types/internal';
+import AudioNode from '../AudioNode';
 
 export type OnEndedEventCallback = (event: OnEndedEventType) => void;
 
