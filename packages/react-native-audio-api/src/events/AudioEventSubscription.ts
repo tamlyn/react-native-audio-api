@@ -1,5 +1,5 @@
-import { AudioEventName } from './types';
-import { AudioEventEmitter } from './';
+import type AudioEventEmitter from './AudioEventEmitter';
+import type { AudioEventName } from './types';
 
 export default class AudioEventSubscription {
   private readonly audioEventEmitter: AudioEventEmitter;

@@ -1,51 +1,59 @@
-import { IAudioParam } from '../interfaces';
-import { RangeError, InvalidStateError } from '../errors';
-import BaseAudioContext from './BaseAudioContext';
+import { InvalidStateError } from '../errors';
+import { IAudioParam, IBaseAudioContext } from '../types/internal';
 
-export default class AudioParam {
+export default class AudioParam<
+  TContext extends IBaseAudioContext,
+  NContext extends IBaseAudioContext,
+> implements IAudioParam
+{
   readonly defaultValue: number;
   readonly minValue: number;
   readonly maxValue: number;
-  readonly audioParam: IAudioParam;
-  readonly context: BaseAudioContext;
+  readonly param: IAudioParam; // IAudioParam<NContext>
+  readonly context: TContext;
 
-  constructor(audioParam: IAudioParam, context: BaseAudioContext) {
-    this.audioParam = audioParam;
-    this.value = audioParam.value;
-    this.defaultValue = audioParam.defaultValue;
-    this.minValue = audioParam.minValue;
-    this.maxValue = audioParam.maxValue;
+  constructor(param: IAudioParam, context: TContext) {
+    this.param = param;
     this.context = context;
+    this.defaultValue = param.defaultValue;
+    this.minValue = param.minValue;
+    this.maxValue = param.maxValue;
   }
 
   public get value(): number {
-    return this.audioParam.value;
+    return this.param.value;
   }
 
   public set value(value: number) {
-    this.audioParam.value = value;
+    this.param.value = value;
   }
 
-  public setValueAtTime(value: number, startTime: number): AudioParam {
+  public setValueAtTime(
+    value: number,
+    startTime: number
+  ): AudioParam<TContext, NContext> {
     if (startTime < 0) {
       throw new RangeError(
         `startTime must be a finite non-negative number: ${startTime}`
       );
     }
 
-    this.audioParam.setValueAtTime(value, startTime);
+    this.param.setValueAtTime(value, startTime);
 
     return this;
   }
 
-  public linearRampToValueAtTime(value: number, endTime: number): AudioParam {
+  public linearRampToValueAtTime(
+    value: number,
+    endTime: number
+  ): AudioParam<TContext, NContext> {
     if (endTime < 0) {
       throw new RangeError(
         `endTime must be a finite non-negative number: ${endTime}`
       );
     }
 
-    this.audioParam.linearRampToValueAtTime(value, endTime);
+    this.param.linearRampToValueAtTime(value, endTime);
 
     return this;
   }
@@ -53,14 +61,14 @@ export default class AudioParam {
   public exponentialRampToValueAtTime(
     value: number,
     endTime: number
-  ): AudioParam {
+  ): AudioParam<TContext, NContext> {
     if (endTime < 0) {
       throw new RangeError(
         `endTime must be a finite non-negative number: ${endTime}`
       );
     }
 
-    this.audioParam.exponentialRampToValueAtTime(value, endTime);
+    this.param.exponentialRampToValueAtTime(value, endTime);
 
     return this;
   }
@@ -69,7 +77,7 @@ export default class AudioParam {
     target: number,
     startTime: number,
     timeConstant: number
-  ): AudioParam {
+  ): AudioParam<TContext, NContext> {
     if (startTime < 0) {
       throw new RangeError(
         `startTime must be a finite non-negative number: ${startTime}`
@@ -82,7 +90,7 @@ export default class AudioParam {
       );
     }
 
-    this.audioParam.setTargetAtTime(target, startTime, timeConstant);
+    this.param.setTargetAtTime(target, startTime, timeConstant);
 
     return this;
   }
@@ -91,7 +99,7 @@ export default class AudioParam {
     values: Float32Array,
     startTime: number,
     duration: number
-  ): AudioParam {
+  ): AudioParam<TContext, NContext> {
     if (startTime < 0) {
       throw new RangeError(
         `startTime must be a finite non-negative number: ${startTime}`
@@ -108,31 +116,35 @@ export default class AudioParam {
       throw new InvalidStateError(`values must contain at least two values`);
     }
 
-    this.audioParam.setValueCurveAtTime(values, startTime, duration);
+    this.param.setValueCurveAtTime(values, startTime, duration);
 
     return this;
   }
 
-  public cancelScheduledValues(cancelTime: number): AudioParam {
+  public cancelScheduledValues(
+    cancelTime: number
+  ): AudioParam<TContext, NContext> {
     if (cancelTime < 0) {
       throw new RangeError(
         `cancelTime must be a finite non-negative number: ${cancelTime}`
       );
     }
 
-    this.audioParam.cancelScheduledValues(cancelTime);
+    this.param.cancelScheduledValues(cancelTime);
 
     return this;
   }
 
-  public cancelAndHoldAtTime(cancelTime: number): AudioParam {
+  public cancelAndHoldAtTime(
+    cancelTime: number
+  ): AudioParam<TContext, NContext> {
     if (cancelTime < 0) {
       throw new RangeError(
         `cancelTime must be a finite non-negative number: ${cancelTime}`
       );
     }
 
-    this.audioParam.cancelAndHoldAtTime(cancelTime);
+    this.param.cancelAndHoldAtTime(cancelTime);
 
     return this;
   }

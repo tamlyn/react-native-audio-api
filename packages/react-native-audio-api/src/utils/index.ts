@@ -1,21 +1,22 @@
-import type { ShareableWorkletCallback } from '../interfaces';
+export const constants = {
+  baseUrl: 'https://docs.swmansion.com/react-native-audio-api',
+} as const;
 
-interface SimplifiedWorkletModule {
-  makeShareableCloneRecursive: (
-    workletCallback: ShareableWorkletCallback
-  ) => ShareableWorkletCallback;
+export function makeDocLink(path: string) {
+  return `${constants.baseUrl}${path}`;
 }
 
-export function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max);
-}
+export function availabilityWarn(
+  feature: string,
+  platform: 'web' | 'native' = 'web',
+  docPath?: string
+) {
+  const baseMsg = `The ${feature} is not available on ${platform} platform.`;
 
-export let isWorkletsAvailable = false;
-export let workletsModule: SimplifiedWorkletModule;
+  if (!docPath) {
+    console.warn(baseMsg);
+    return;
+  }
 
-try {
-  workletsModule = require('react-native-worklets');
-  isWorkletsAvailable = true;
-} catch (error) {
-  isWorkletsAvailable = false;
+  console.warn(`${baseMsg} See ${makeDocLink(docPath)} for more information.`);
 }

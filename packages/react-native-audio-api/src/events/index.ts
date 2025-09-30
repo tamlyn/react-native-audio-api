@@ -1,4 +1,2 @@
-import AudioEventEmitter from './AudioEventEmitter';
-import AudioEventSubscription from './AudioEventSubscription';
-
-export { AudioEventEmitter, AudioEventSubscription };
+export { default as AudioEventEmitter } from './AudioEventEmitter';
+export { default as AudioEventSubscription } from './AudioEventSubscription';

@@ -1,13 +1,15 @@
-import { IStereoPannerNode } from '../interfaces';
+import type { IBaseAudioContext, IStereoPannerNode } from '../types/internal';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
 
-export default class StereoPannerNode extends AudioNode {
-  readonly pan: AudioParam;
+export default class StereoPannerNode<
+  TContext extends IBaseAudioContext,
+  NContext extends IBaseAudioContext,
+> extends AudioNode<TContext, NContext> {
+  readonly pan: AudioParam<TContext, NContext>;
 
-  constructor(context: BaseAudioContext, pan: IStereoPannerNode) {
+  constructor(context: TContext, pan: IStereoPannerNode<NContext>) {
     super(context, pan);
-    this.pan = new AudioParam(pan.pan, context);
+    this.pan = new AudioParam<TContext, NContext>(pan.pan, context);
   }
 }

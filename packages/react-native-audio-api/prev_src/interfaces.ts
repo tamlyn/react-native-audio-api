@@ -1,12 +1,4 @@
-import { AudioEventCallback, AudioEventName } from './events/types';
-import {
-  BiquadFilterType,
-  ChannelCountMode,
-  ChannelInterpretation,
-  ContextState,
-  OscillatorType,
-  WindowType,
-} from './types';
+import { ContextState, OscillatorType } from './types';
 
 export type ShareableWorkletCallback = (
   audioBuffers: Array<ArrayBuffer>,
@@ -65,42 +57,6 @@ export interface IOfflineAudioContext extends IBaseAudioContext {
   startRendering(): Promise<IAudioBuffer>;
 }
 
-export interface IAudioNode {
-  readonly context: BaseAudioContext;
-  readonly numberOfInputs: number;
-  readonly numberOfOutputs: number;
-  readonly channelCount: number;
-  readonly channelCountMode: ChannelCountMode;
-  readonly channelInterpretation: ChannelInterpretation;
-
-  connect: (destination: IAudioNode | IAudioParam) => void;
-  disconnect: (destination?: IAudioNode | IAudioParam) => void;
-}
-
-export interface IGainNode extends IAudioNode {
-  readonly gain: IAudioParam;
-}
-
-export interface IStereoPannerNode extends IAudioNode {
-  readonly pan: IAudioParam;
-}
-
-export interface IBiquadFilterNode extends IAudioNode {
-  readonly frequency: AudioParam;
-  readonly detune: AudioParam;
-  readonly Q: AudioParam;
-  readonly gain: AudioParam;
-  type: BiquadFilterType;
-
-  getFrequencyResponse(
-    frequencyArray: Float32Array,
-    magResponseOutput: Float32Array,
-    phaseResponseOutput: Float32Array
-  ): void;
-}
-
-export interface IAudioDestinationNode extends IAudioNode {}
-
 export interface IAudioScheduledSourceNode extends IAudioNode {
   start(when: number): void;
   stop: (when: number) => void;
@@ -152,63 +108,7 @@ export interface IAudioBufferQueueSourceNode
   pause: () => void;
 }
 
-export interface IAudioBuffer {
-  readonly length: number;
-  readonly duration: number;
-  readonly sampleRate: number;
-  readonly numberOfChannels: number;
-
-  getChannelData(channel: number): Float32Array;
-  copyFromChannel(
-    destination: Float32Array,
-    channelNumber: number,
-    startInChannel: number
-  ): void;
-  copyToChannel(
-    source: Float32Array,
-    channelNumber: number,
-    startInChannel: number
-  ): void;
-}
-
-export interface IAudioParam {
-  value: number;
-  defaultValue: number;
-  minValue: number;
-  maxValue: number;
-
-  setValueAtTime: (value: number, startTime: number) => void;
-  linearRampToValueAtTime: (value: number, endTime: number) => void;
-  exponentialRampToValueAtTime: (value: number, endTime: number) => void;
-  setTargetAtTime: (
-    target: number,
-    startTime: number,
-    timeConstant: number
-  ) => void;
-  setValueCurveAtTime: (
-    values: Float32Array,
-    startTime: number,
-    duration: number
-  ) => void;
-  cancelScheduledValues: (cancelTime: number) => void;
-  cancelAndHoldAtTime: (cancelTime: number) => void;
-}
-
 export interface IPeriodicWave {}
-
-export interface IAnalyserNode extends IAudioNode {
-  fftSize: number;
-  readonly frequencyBinCount: number;
-  minDecibels: number;
-  maxDecibels: number;
-  smoothingTimeConstant: number;
-  window: WindowType;
-
-  getFloatFrequencyData: (array: Float32Array) => void;
-  getByteFrequencyData: (array: Uint8Array) => void;
-  getFloatTimeDomainData: (array: Float32Array) => void;
-  getByteTimeDomainData: (array: Uint8Array) => void;
-}
 
 export interface IRecorderAdapterNode extends IAudioNode {}
 
@@ -222,15 +122,4 @@ export interface IAudioRecorder {
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onAudioReady: string;
-}
-
-export interface IAudioEventEmitter {
-  addAudioEventListener<Name extends AudioEventName>(
-    name: Name,
-    callback: AudioEventCallback<Name>
-  ): string;
-  removeAudioEventListener<Name extends AudioEventName>(
-    name: Name,
-    subscriptionId: string
-  ): void;
 }

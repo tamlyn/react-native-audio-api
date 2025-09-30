@@ -1,6 +1,21 @@
-import { AudioEventName, AudioEventCallback } from './types';
 import AudioEventSubscription from './AudioEventSubscription';
-import { IAudioEventEmitter } from '../interfaces';
+import { AudioEventCallback, AudioEventName } from './types';
+
+interface IAudioEventEmitter {
+  addAudioEventListener<Name extends AudioEventName>(
+    name: Name,
+    callback: AudioEventCallback<Name>
+  ): string;
+  removeAudioEventListener<Name extends AudioEventName>(
+    name: Name,
+    subscriptionId: string
+  ): void;
+}
+
+/* eslint-disable no-var */
+declare global {
+  var AudioEventEmitter: IAudioEventEmitter;
+}
 
 export default class AudioEventEmitter {
   private readonly audioEventEmitter: IAudioEventEmitter;

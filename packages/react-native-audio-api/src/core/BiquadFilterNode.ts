@@ -1,30 +1,42 @@
 import { InvalidAccessError } from '../errors';
-import { IBiquadFilterNode } from '../interfaces';
+import { BiquadFilterType } from '../types';
+import type { IBaseAudioContext, IBiquadFilterNode } from '../types/internal';
 import AudioNode from './AudioNode';
 import AudioParam from './AudioParam';
-import BaseAudioContext from './BaseAudioContext';
-import { BiquadFilterType } from '../types';
 
-export default class BiquadFilterNode extends AudioNode {
-  readonly frequency: AudioParam;
-  readonly detune: AudioParam;
-  readonly Q: AudioParam;
-  readonly gain: AudioParam;
+export default class BiquadFilterNode<
+    TContext extends IBaseAudioContext,
+    NContext extends IBaseAudioContext,
+  >
+  extends AudioNode<TContext, NContext>
+  implements IBiquadFilterNode<TContext>
+{
+  readonly frequency: AudioParam<TContext, NContext>;
+  readonly detune: AudioParam<TContext, NContext>;
+  readonly Q: AudioParam<TContext, NContext>;
+  readonly gain: AudioParam<TContext, NContext>;
 
-  constructor(context: BaseAudioContext, biquadFilter: IBiquadFilterNode) {
+  constructor(context: TContext, biquadFilter: IBiquadFilterNode<NContext>) {
     super(context, biquadFilter);
-    this.frequency = new AudioParam(biquadFilter.frequency, context);
-    this.detune = new AudioParam(biquadFilter.detune, context);
-    this.Q = new AudioParam(biquadFilter.Q, context);
-    this.gain = new AudioParam(biquadFilter.gain, context);
+
+    this.Q = new AudioParam<TContext, NContext>(biquadFilter.Q, context);
+    this.gain = new AudioParam<TContext, NContext>(biquadFilter.gain, context);
+    this.frequency = new AudioParam<TContext, NContext>(
+      biquadFilter.frequency,
+      context
+    );
+    this.detune = new AudioParam<TContext, NContext>(
+      biquadFilter.detune,
+      context
+    );
   }
 
   public get type(): BiquadFilterType {
-    return (this.node as IBiquadFilterNode).type;
+    return (this.node as IBiquadFilterNode<NContext>).type;
   }
 
   public set type(value: BiquadFilterType) {
-    (this.node as IBiquadFilterNode).type = value;
+    (this.node as IBiquadFilterNode<NContext>).type = value;
   }
 
   public getFrequencyResponse(
@@ -40,7 +52,8 @@ export default class BiquadFilterNode extends AudioNode {
         `The lengths of the arrays are not the same frequencyArray: ${frequencyArray.length}, magResponseOutput: ${magResponseOutput.length}, phaseResponseOutput: ${phaseResponseOutput.length}`
       );
     }
-    (this.node as IBiquadFilterNode).getFrequencyResponse(
+
+    (this.node as IBiquadFilterNode<NContext>).getFrequencyResponse(
       frequencyArray,
       magResponseOutput,
       phaseResponseOutput

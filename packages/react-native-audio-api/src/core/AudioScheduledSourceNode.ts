@@ -1,69 +1,47 @@
-import { IAudioScheduledSourceNode } from '../interfaces';
-import AudioNode from './AudioNode';
-import { InvalidStateError, RangeError } from '../errors';
-import { OnEndedEventType } from '../events/types';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
+import type {
+  IAudioScheduledSourceNode,
+  IBaseAudioContext,
+} from '../types/internal';
+import type { OnEndedEventCallback } from './AudioScheduledSourceNode.web';
+import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
 
-export default class AudioScheduledSourceNode extends AudioNode {
-  protected hasBeenStarted: boolean = false;
+interface INativeAudioScheduledSourceNode<TContext extends IBaseAudioContext>
+  extends IAudioScheduledSourceNode<TContext> {
+  onEnded: string; // subscriptionId or '0' for none
+}
+
+export default class AudioScheduledSourceNodeNative<
+  TContext extends IBaseAudioContext,
+  NContext extends IBaseAudioContext,
+> extends AudioScheduledSourceNode<TContext, NContext> {
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
 
   private onEndedSubscription?: AudioEventSubscription;
-  private onEndedCallback?: (event: OnEndedEventType) => void;
+  private onEndedCallbackNative: OnEndedEventCallback | null = null;
 
-  public start(when: number = 0): void {
-    if (when < 0) {
-      throw new RangeError(
-        `when must be a finite non-negative number: ${when}`
-      );
-    }
-
-    if (this.hasBeenStarted) {
-      throw new InvalidStateError('Cannot call start more than once');
-    }
-
-    this.hasBeenStarted = true;
-    (this.node as IAudioScheduledSourceNode).start(when);
+  public get onEnded(): OnEndedEventCallback | undefined {
+    return this.onEndedCallbackNative ?? undefined;
   }
 
-  public stop(when: number = 0): void {
-    if (when < 0) {
-      throw new RangeError(
-        `when must be a finite non-negative number: ${when}`
-      );
-    }
-
-    if (!this.hasBeenStarted) {
-      throw new InvalidStateError(
-        'Cannot call stop without calling start first'
-      );
-    }
-
-    (this.node as IAudioScheduledSourceNode).stop(when);
-  }
-
-  public get onEnded(): ((event: OnEndedEventType) => void) | undefined {
-    return this.onEndedCallback;
-  }
-
-  public set onEnded(callback: ((event: OnEndedEventType) => void) | null) {
+  public set onEnded(callback: OnEndedEventCallback | null) {
     if (!callback) {
-      (this.node as IAudioScheduledSourceNode).onEnded = '0';
+      (this.node as INativeAudioScheduledSourceNode<NContext>).onEnded = '0';
       this.onEndedSubscription?.remove();
       this.onEndedSubscription = undefined;
-      this.onEndedCallback = undefined;
+      this.onEndedCallbackNative = null;
       return;
     }
 
-    this.onEndedCallback = callback;
+    this.onEndedCallbackNative = callback;
     this.onEndedSubscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback
     );
 
-    (this.node as IAudioScheduledSourceNode).onEnded =
+    (this.node as INativeAudioScheduledSourceNode<NContext>).onEnded =
       this.onEndedSubscription.subscriptionId;
   }
 }
