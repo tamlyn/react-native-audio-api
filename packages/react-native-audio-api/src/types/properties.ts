@@ -12,3 +12,10 @@ export type BiquadFilterType =
   | 'allpass';
 
 export type WindowType = 'blackman' | 'hann';
+
+export type OscillatorType =
+  | 'sine'
+  | 'square'
+  | 'sawtooth'
+  | 'triangle'
+  | 'custom';

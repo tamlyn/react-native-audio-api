@@ -1,4 +1,4 @@
-import { IPeriodicWave } from '../interfaces';
+import type { IPeriodicWave } from '../types/internal';
 
 export default class PeriodicWave {
   /** @internal */

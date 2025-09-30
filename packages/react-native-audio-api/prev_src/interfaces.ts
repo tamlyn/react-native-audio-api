@@ -1,4 +1,4 @@
-import { ContextState, OscillatorType } from './types';
+import { ContextState } from './types';
 
 export type ShareableWorkletCallback = (
   audioBuffers: Array<ArrayBuffer>,
@@ -57,14 +57,6 @@ export interface IOfflineAudioContext extends IBaseAudioContext {
   startRendering(): Promise<IAudioBuffer>;
 }
 
-export interface IAudioScheduledSourceNode extends IAudioNode {
-  start(when: number): void;
-  stop: (when: number) => void;
-
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onEnded: string;
-}
-
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
@@ -73,14 +65,6 @@ export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   onPositionChanged: string;
   // set how often the onPositionChanged event is called
   onPositionChangedInterval: number;
-}
-
-export interface IOscillatorNode extends IAudioScheduledSourceNode {
-  readonly frequency: IAudioParam;
-  readonly detune: IAudioParam;
-  type: OscillatorType;
-
-  setPeriodicWave(periodicWave: IPeriodicWave): void;
 }
 
 export interface IStreamerNode extends IAudioNode {
@@ -107,8 +91,6 @@ export interface IAudioBufferQueueSourceNode
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
   pause: () => void;
 }
-
-export interface IPeriodicWave {}
 
 export interface IRecorderAdapterNode extends IAudioNode {}
 

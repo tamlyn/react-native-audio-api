@@ -7,4 +7,6 @@ export { default as IAudioScheduledSourceNode } from './IAudioScheduledSourceNod
 export { default as IBaseAudioContext } from './IBaseAudioContext';
 export { default as IBiquadFilterNode } from './IBiquadFilterNode';
 export { default as IGainNode } from './IGainNode';
+export { default as IOscillatorNode } from './IOscillatorNode';
+export { default as IPeriodicWave } from './IPeriodicWave';
 export { default as IStereoPannerNode } from './IStereoPannerNode';
