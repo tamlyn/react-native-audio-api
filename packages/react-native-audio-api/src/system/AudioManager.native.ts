@@ -1,16 +1,19 @@
-import {
-  SessionOptions,
+import { AudioEventEmitter } from '../events';
+import { NativeAudioAPIModule } from '../specs';
+
+import type {
+  AudioEventSubscription,
+  RemoteCommandEventName,
+  SystemEventCallback,
+  SystemEventName,
+} from '../events';
+import IAudioManager from './interface';
+import type {
+  AudioDevicesInfo,
   LockScreenInfo,
   PermissionStatus,
-  AudioDevicesInfo,
+  SessionOptions,
 } from './types';
-import {
-  SystemEventName,
-  SystemEventCallback,
-  RemoteCommandEventName,
-} from '../events/types';
-import { NativeAudioAPIModule } from '../specs';
-import { AudioEventEmitter, AudioEventSubscription } from '../events';
 
 if (global.AudioEventEmitter == null) {
   if (!NativeAudioAPIModule) {
@@ -22,8 +25,9 @@ if (global.AudioEventEmitter == null) {
   NativeAudioAPIModule.install();
 }
 
-class AudioManager {
+class AudioManager implements IAudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
+
   constructor() {
     this.audioEventEmitter = new AudioEventEmitter(global.AudioEventEmitter);
   }
