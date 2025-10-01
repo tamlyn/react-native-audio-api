@@ -73,7 +73,18 @@ s.user_target_xcconfig = {
     -force_load #{lib_dir}/libvorbis.a
     -force_load #{lib_dir}/libvorbisenc.a
     -force_load #{lib_dir}/libvorbisfile.a
-  ].join(" ")
+    -force_load #{lib_dir}/libssl.a
+    -force_load #{lib_dir}/libcrypto.a
+  ].join(" "),
+  'HEADER_SEARCH_PATHS' => %W[
+    $(inherited)
+    $(PODS_ROOT)/Headers/Public/RNAudioAPI
+    $(PODS_TARGET_SRCROOT)/common/cpp
+    #{external_dir}/include
+    #{external_dir}/include/opus
+    #{external_dir}/include/vorbis
+    #{external_dir}/ffmpeg_include
+  ].join(' ')
 }
   # Use install_modules_dependencies helper to install the dependencies if React Native version >=0.71.0.
   # See https://github.com/facebook/react-native/blob/febf6b7f33fdb4904669f99d795eba4c0f95d7bf/scripts/cocoapods/new_architecture.rb#L79.
