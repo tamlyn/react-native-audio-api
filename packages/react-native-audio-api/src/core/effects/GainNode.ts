@@ -1,17 +1,20 @@
-import type { IBaseAudioContext, IGainNode } from '../../types/internal';
+import type {
+  IGenericBaseAudioContext,
+  IGenericGainNode,
+} from '../../types/generics';
 import AudioNode from '../AudioNode';
 import AudioParam from '../AudioParam';
 
 export default class GainNode<
-    TContext extends IBaseAudioContext,
-    NContext extends IBaseAudioContext,
+    TContext extends IGenericBaseAudioContext,
+    NContext extends IGenericBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext, IGainNode<NContext>>
-  implements IGainNode<TContext>
+  extends AudioNode<TContext, NContext, IGenericGainNode<NContext>>
+  implements IGenericGainNode<TContext>
 {
   readonly gain: AudioParam<TContext, NContext>;
 
-  constructor(context: TContext, gain: IGainNode<NContext>) {
+  constructor(context: TContext, gain: IGenericGainNode<NContext>) {
     super(context, gain);
     this.gain = new AudioParam<TContext, NContext>(gain.gain, context);
   }

@@ -1,11 +1,20 @@
 import type { WindowType } from '../../types';
-import type { IBaseAudioContext } from '../../types/internal';
-import AnalyserNode from './AnalyserNode.web';
+import type { IGenericBaseAudioContext } from '../../types/generics';
+import BaseAnalyserNode, {
+  IAbstractNativeAnalyserNode,
+} from './BaseAnalyserNode';
+
+// TODO: fixme - temporary any to avoid work
+interface NativeAudioContext {}
+
+interface MobileAnalyserNode
+  extends IAbstractNativeAnalyserNode<NativeAudioContext> {
+  window: WindowType;
+}
 
 export default class AnalyserNodeNative<
-  TContext extends IBaseAudioContext,
-  NContext extends IBaseAudioContext,
-> extends AnalyserNode<TContext, NContext> {
+  TContext extends IGenericBaseAudioContext,
+> extends BaseAnalyserNode<TContext, NativeAudioContext, MobileAnalyserNode> {
   public get window(): WindowType {
     return this.node.window;
   }

@@ -1,18 +1,21 @@
 import { InvalidStateError } from '../errors';
-import { IAudioParam, IBaseAudioContext } from '../types/internal';
+import {
+  IGenericAudioParam,
+  IGenericBaseAudioContext,
+} from '../types/generics';
 
 export default class AudioParam<
-  TContext extends IBaseAudioContext,
-  NContext extends IBaseAudioContext,
-> implements IAudioParam
+  TContext extends IGenericBaseAudioContext,
+  NContext extends IGenericBaseAudioContext,
+> implements IGenericAudioParam<TContext>
 {
   readonly defaultValue: number;
   readonly minValue: number;
   readonly maxValue: number;
-  readonly param: IAudioParam; // IAudioParam<NContext>
+  readonly param: IGenericAudioParam<NContext>;
   readonly context: TContext;
 
-  constructor(param: IAudioParam, context: TContext) {
+  constructor(param: IGenericAudioParam<NContext>, context: TContext) {
     this.param = param;
     this.context = context;
     this.defaultValue = param.defaultValue;

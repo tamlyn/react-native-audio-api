@@ -1,12 +1,15 @@
 import { ChannelCountMode, ChannelInterpretation } from '../types';
-import type { IAudioNode, IBaseAudioContext } from '../types/internal';
+import type {
+  IGenericAudioNode,
+  IGenericBaseAudioContext,
+} from '../types/generics';
 import AudioParam from './AudioParam';
 
 export default class AudioNode<
-  TContext extends IBaseAudioContext,
-  NContext extends IBaseAudioContext,
-  TNode extends IAudioNode<NContext> = IAudioNode<NContext>,
-> implements IAudioNode<TContext>
+  TContext extends IGenericBaseAudioContext,
+  NContext extends IGenericBaseAudioContext,
+  TNode extends IGenericAudioNode<NContext> = IGenericAudioNode<NContext>,
+> implements IGenericAudioNode<TContext>
 {
   readonly context: TContext;
   readonly numberOfInputs: number;
@@ -27,14 +30,15 @@ export default class AudioNode<
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(
-    destination: AudioNode<TContext, NContext>
-  ): AudioNode<TContext, NContext>;
+  public connect<ONode extends AudioNode<TContext, NContext>>(
+    destination: ONode
+  ): ONode;
 
   public connect(destination: AudioParam<TContext, NContext>): void;
-  public connect(
-    destination: AudioNode<TContext, NContext> | AudioParam<TContext, NContext>
-  ): AudioNode<TContext, NContext> | void {
+
+  public connect<ONode extends AudioNode<TContext, NContext>>(
+    destination: ONode | AudioParam<TContext, NContext>
+  ): ONode | void {
     if (this.context !== destination.context) {
       throw new Error(
         'Source and destination are from different BaseAudioContexts'
@@ -51,8 +55,13 @@ export default class AudioNode<
   }
 
   public disconnect(): void;
-  public disconnect(destination: AudioNode<TContext, NContext>): void;
+
+  public disconnect<ONode extends AudioNode<TContext, NContext>>(
+    destination: ONode
+  ): void;
+
   public disconnect(destination: AudioParam<TContext, NContext>): void;
+
   public disconnect(
     destination?: AudioNode<TContext, NContext> | AudioParam<TContext, NContext>
   ): void {

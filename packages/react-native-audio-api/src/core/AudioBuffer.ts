@@ -1,15 +1,15 @@
 import { IndexSizeError } from '../errors';
-import type { IAudioBuffer } from '../types/internal';
+import type { IGenericAudioBuffer } from '../types/generics';
 
-export default class AudioBuffer implements IAudioBuffer {
+export default class AudioBuffer implements IGenericAudioBuffer {
   readonly length: number;
   readonly duration: number;
   readonly sampleRate: number;
   readonly numberOfChannels: number;
   /** @internal */
-  public readonly buffer: IAudioBuffer;
+  public readonly buffer: IGenericAudioBuffer;
 
-  constructor(buffer: IAudioBuffer) {
+  constructor(buffer: IGenericAudioBuffer) {
     this.buffer = buffer;
     this.length = buffer.length;
     this.duration = buffer.duration;

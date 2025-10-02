@@ -1,25 +1,28 @@
 import { InvalidAccessError } from '../../errors';
 import { BiquadFilterType } from '../../types';
 import type {
-  IBaseAudioContext,
-  IBiquadFilterNode,
-} from '../../types/internal';
+  IGenericBaseAudioContext,
+  IGenericBiquadFilterNode,
+} from '../../types/generics';
 import AudioNode from '../AudioNode';
 import AudioParam from '../AudioParam';
 
 export default class BiquadFilterNode<
-    TContext extends IBaseAudioContext,
-    NContext extends IBaseAudioContext,
+    TContext extends IGenericBaseAudioContext,
+    NContext extends IGenericBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext, IBiquadFilterNode<NContext>>
-  implements IBiquadFilterNode<TContext>
+  extends AudioNode<TContext, NContext, IGenericBiquadFilterNode<NContext>>
+  implements IGenericBiquadFilterNode<TContext>
 {
   readonly frequency: AudioParam<TContext, NContext>;
   readonly detune: AudioParam<TContext, NContext>;
   readonly Q: AudioParam<TContext, NContext>;
   readonly gain: AudioParam<TContext, NContext>;
 
-  constructor(context: TContext, biquadFilter: IBiquadFilterNode<NContext>) {
+  constructor(
+    context: TContext,
+    biquadFilter: IGenericBiquadFilterNode<NContext>
+  ) {
     super(context, biquadFilter);
 
     this.Q = new AudioParam<TContext, NContext>(biquadFilter.Q, context);

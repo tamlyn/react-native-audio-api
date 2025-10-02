@@ -5,3 +5,4 @@
  *
  * This means that underlying native and web implementations have differences.
  */
+export type { default as IAnalyserNode } from './IAnalyserNode';

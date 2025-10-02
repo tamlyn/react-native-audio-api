@@ -1,9 +1,9 @@
+import type { IGenericAudioNode, IGenericBaseAudioContext } from '../generics';
 import type { WindowType } from '../properties';
-import type IAudioNode from './IAudioNode';
-import type IBaseAudioContext from './IBaseAudioContext';
 
-export default interface IAnalyserNode<TContext extends IBaseAudioContext>
-  extends IAudioNode<TContext> {
+export default interface IAnalyserNode<
+  TContext extends IGenericBaseAudioContext,
+> extends IGenericAudioNode<TContext> {
   fftSize: number;
   readonly frequencyBinCount: number;
   minDecibels: number;
