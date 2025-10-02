@@ -11,7 +11,7 @@ export default class BiquadFilterNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext>
+  extends AudioNode<TContext, NContext, IBiquadFilterNode<NContext>>
   implements IBiquadFilterNode<TContext>
 {
   readonly frequency: AudioParam<TContext, NContext>;
@@ -35,11 +35,11 @@ export default class BiquadFilterNode<
   }
 
   public get type(): BiquadFilterType {
-    return (this.node as IBiquadFilterNode<NContext>).type;
+    return this.node.type;
   }
 
   public set type(value: BiquadFilterType) {
-    (this.node as IBiquadFilterNode<NContext>).type = value;
+    this.node.type = value;
   }
 
   public getFrequencyResponse(
@@ -56,7 +56,7 @@ export default class BiquadFilterNode<
       );
     }
 
-    (this.node as IBiquadFilterNode<NContext>).getFrequencyResponse(
+    this.node.getFrequencyResponse(
       frequencyArray,
       magResponseOutput,
       phaseResponseOutput

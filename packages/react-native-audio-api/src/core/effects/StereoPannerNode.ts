@@ -8,7 +8,7 @@ import AudioParam from '../AudioParam';
 export default class StereoPannerNode<
   TContext extends IBaseAudioContext,
   NContext extends IBaseAudioContext,
-> extends AudioNode<TContext, NContext> {
+> extends AudioNode<TContext, NContext, IStereoPannerNode<NContext>> {
   readonly pan: AudioParam<TContext, NContext>;
 
   constructor(context: TContext, pan: IStereoPannerNode<NContext>) {

@@ -14,7 +14,9 @@ interface INativeAudioScheduledSourceNode<TContext extends IBaseAudioContext>
 export default class AudioScheduledSourceNodeNative<
   TContext extends IBaseAudioContext,
   NContext extends IBaseAudioContext,
-> extends AudioScheduledSourceNode<TContext, NContext> {
+  TNode extends
+    INativeAudioScheduledSourceNode<NContext> = INativeAudioScheduledSourceNode<NContext>,
+> extends AudioScheduledSourceNode<TContext, NContext, TNode> {
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
@@ -28,7 +30,7 @@ export default class AudioScheduledSourceNodeNative<
 
   public set onEnded(callback: OnEndedEventCallback | null) {
     if (!callback) {
-      (this.node as INativeAudioScheduledSourceNode<NContext>).onEnded = '0';
+      this.node.onEnded = '0';
       this.onEndedSubscription?.remove();
       this.onEndedSubscription = undefined;
       this.onEndedCallbackNative = null;
@@ -41,7 +43,6 @@ export default class AudioScheduledSourceNodeNative<
       callback
     );
 
-    (this.node as INativeAudioScheduledSourceNode<NContext>).onEnded =
-      this.onEndedSubscription.subscriptionId;
+    this.node.onEnded = this.onEndedSubscription.subscriptionId;
   }
 }

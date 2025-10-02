@@ -11,8 +11,10 @@ export type OnEndedEventCallback = (event: OnEndedEventType) => void;
 export default class AudioScheduledSourceNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
+    TNode extends
+      IAudioScheduledSourceNode<NContext> = IAudioScheduledSourceNode<NContext>,
   >
-  extends AudioNode<TContext, NContext>
+  extends AudioNode<TContext, NContext, TNode>
   implements IAudioScheduledSourceNode<TContext>
 {
   protected hasBeenStarted: boolean = false;
@@ -30,7 +32,7 @@ export default class AudioScheduledSourceNode<
     }
 
     this.hasBeenStarted = true;
-    (this.node as IAudioScheduledSourceNode<NContext>).start(when);
+    this.node.start(when);
   }
 
   public stop(when: number = 0): void {
@@ -46,7 +48,7 @@ export default class AudioScheduledSourceNode<
       );
     }
 
-    (this.node as IAudioScheduledSourceNode<NContext>).stop(when);
+    this.node.stop(when);
   }
 
   public get onEnded(): OnEndedEventCallback | undefined {

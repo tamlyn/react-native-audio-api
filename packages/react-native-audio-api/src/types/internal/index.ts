@@ -1,5 +1,6 @@
 export { default as IAnalyserNode } from './IAnalyserNode';
 export { default as IAudioBuffer } from './IAudioBuffer';
+export { default as IAudioBufferBaseSourceNode } from './IAudioBufferBaseSourceNode';
 export { default as IAudioDestinationNode } from './IAudioDestinationNode';
 export { default as IAudioNode } from './IAudioNode';
 export { default as IAudioParam } from './IAudioParam';

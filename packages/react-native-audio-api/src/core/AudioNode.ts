@@ -5,6 +5,7 @@ import AudioParam from './AudioParam';
 export default class AudioNode<
   TContext extends IBaseAudioContext,
   NContext extends IBaseAudioContext,
+  TNode extends IAudioNode<NContext> = IAudioNode<NContext>,
 > implements IAudioNode<TContext>
 {
   readonly context: TContext;
@@ -14,9 +15,9 @@ export default class AudioNode<
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  protected readonly node: IAudioNode<NContext>;
+  protected readonly node: TNode;
 
-  constructor(context: TContext, node: IAudioNode<NContext>) {
+  constructor(context: TContext, node: TNode) {
     this.context = context;
     this.node = node;
     this.numberOfInputs = this.node.numberOfInputs;

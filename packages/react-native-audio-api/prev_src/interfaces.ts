@@ -58,9 +58,6 @@ export interface IOfflineAudioContext extends IBaseAudioContext {
 }
 
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
-  detune: IAudioParam;
-  playbackRate: IAudioParam;
-
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
   // set how often the onPositionChanged event is called
@@ -72,13 +69,6 @@ export interface IStreamerNode extends IAudioNode {
 }
 
 export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
-  buffer: IAudioBuffer | null;
-  loop: boolean;
-  loopSkip: boolean;
-  loopStart: number;
-  loopEnd: number;
-
-  start: (when?: number, offset?: number, duration?: number) => void;
   setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 

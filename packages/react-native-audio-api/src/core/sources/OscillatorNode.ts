@@ -10,7 +10,11 @@ export default class OscillatorNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
   >
-  extends AudioScheduledSourceNode<TContext, NContext>
+  extends AudioScheduledSourceNode<
+    TContext,
+    NContext,
+    IOscillatorNode<NContext>
+  >
   implements IOscillatorNode<TContext>
 {
   readonly frequency: AudioParam<TContext, NContext>;
@@ -28,7 +32,7 @@ export default class OscillatorNode<
   }
 
   public get type(): OscillatorType {
-    return (this.node as IOscillatorNode<NContext>).type;
+    return this.node.type;
   }
 
   public set type(value: OscillatorType) {
@@ -38,10 +42,10 @@ export default class OscillatorNode<
       );
     }
 
-    (this.node as IOscillatorNode<NContext>).type = value;
+    this.node.type = value;
   }
 
   public setPeriodicWave(wave: PeriodicWave): void {
-    (this.node as IOscillatorNode<NContext>).setPeriodicWave(wave.periodicWave);
+    this.node.setPeriodicWave(wave.periodicWave);
   }
 }

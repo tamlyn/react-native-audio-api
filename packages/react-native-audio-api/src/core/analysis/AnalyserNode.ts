@@ -1,5 +1,5 @@
 import type { WindowType } from '../../types';
-import type { IAnalyserNode, IBaseAudioContext } from '../../types/internal';
+import type { IBaseAudioContext } from '../../types/internal';
 import AnalyserNode from './AnalyserNode.web';
 
 export default class AnalyserNodeNative<
@@ -7,10 +7,10 @@ export default class AnalyserNodeNative<
   NContext extends IBaseAudioContext,
 > extends AnalyserNode<TContext, NContext> {
   public get window(): WindowType {
-    return (this.node as IAnalyserNode<NContext>).window;
+    return this.node.window;
   }
 
   public set window(value: WindowType) {
-    (this.node as IAnalyserNode<NContext>).window = value;
+    this.node.window = value;
   }
 }

@@ -8,7 +8,7 @@ export default class AudioDestinationNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext>
+  extends AudioNode<TContext, NContext, IAudioDestinationNode<NContext>>
   implements IAudioDestinationNode<TContext> {
   // TODO: implement on native side
   // readonly maxChannelCount: number;

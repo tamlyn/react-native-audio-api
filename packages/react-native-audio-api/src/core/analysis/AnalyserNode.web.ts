@@ -12,11 +12,11 @@ export default class AnalyserNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext>
+  extends AudioNode<TContext, NContext, IAnalyserNode<NContext>>
   implements IAnalyserNode<TContext>
 {
   public get fftSize(): number {
-    return (this.node as IAnalyserNode<NContext>).fftSize;
+    return this.node.fftSize;
   }
 
   public set fftSize(value: number) {
@@ -26,25 +26,25 @@ export default class AnalyserNode<
       );
     }
 
-    (this.node as IAnalyserNode<NContext>).fftSize = value;
+    this.node.fftSize = value;
   }
 
   public get minDecibels(): number {
-    return (this.node as IAnalyserNode<NContext>).minDecibels;
+    return this.node.minDecibels;
   }
 
   public set minDecibels(value: number) {
-    if (value >= (this.node as IAnalyserNode<NContext>).maxDecibels) {
+    if (value >= this.node.maxDecibels) {
       throw new IndexSizeError(
         `The minDecibels value (${value}) must be less than maxDecibels`
       );
     }
 
-    (this.node as IAnalyserNode<NContext>).minDecibels = value;
+    this.node.minDecibels = value;
   }
 
   public get smoothingTimeConstant(): number {
-    return (this.node as IAnalyserNode<NContext>).smoothingTimeConstant;
+    return this.node.smoothingTimeConstant;
   }
 
   public set smoothingTimeConstant(value: number) {
@@ -54,21 +54,21 @@ export default class AnalyserNode<
       );
     }
 
-    (this.node as IAnalyserNode<NContext>).smoothingTimeConstant = value;
+    this.node.smoothingTimeConstant = value;
   }
 
   public get maxDecibels(): number {
-    return (this.node as IAnalyserNode<NContext>).maxDecibels;
+    return this.node.maxDecibels;
   }
 
   public set maxDecibels(value: number) {
-    if (value <= (this.node as IAnalyserNode<NContext>).minDecibels) {
+    if (value <= this.node.minDecibels) {
       throw new IndexSizeError(
         `The maxDecibels value (${value}) must be greater than minDecibels`
       );
     }
 
-    (this.node as IAnalyserNode<NContext>).maxDecibels = value;
+    this.node.maxDecibels = value;
   }
 
   public get window(): WindowType {
@@ -80,22 +80,22 @@ export default class AnalyserNode<
   }
 
   public get frequencyBinCount(): number {
-    return (this.node as IAnalyserNode<NContext>).frequencyBinCount;
+    return this.node.frequencyBinCount;
   }
 
   public getFloatFrequencyData(array: Float32Array): void {
-    (this.node as IAnalyserNode<NContext>).getFloatFrequencyData(array);
+    this.node.getFloatFrequencyData(array);
   }
 
   public getByteFrequencyData(array: Uint8Array): void {
-    (this.node as IAnalyserNode<NContext>).getByteFrequencyData(array);
+    this.node.getByteFrequencyData(array);
   }
 
   public getFloatTimeDomainData(array: Float32Array): void {
-    (this.node as IAnalyserNode<NContext>).getFloatTimeDomainData(array);
+    this.node.getFloatTimeDomainData(array);
   }
 
   public getByteTimeDomainData(array: Uint8Array): void {
-    (this.node as IAnalyserNode<NContext>).getByteTimeDomainData(array);
+    this.node.getByteTimeDomainData(array);
   }
 }

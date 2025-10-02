@@ -6,7 +6,7 @@ export default class GainNode<
     TContext extends IBaseAudioContext,
     NContext extends IBaseAudioContext,
   >
-  extends AudioNode<TContext, NContext>
+  extends AudioNode<TContext, NContext, IGainNode<NContext>>
   implements IGainNode<TContext>
 {
   readonly gain: AudioParam<TContext, NContext>;
