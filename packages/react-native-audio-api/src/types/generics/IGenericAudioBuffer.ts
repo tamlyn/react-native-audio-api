@@ -1,4 +1,4 @@
-export default interface IAudioBuffer {
+export default interface IGenericAudioBuffer {
   readonly length: number;
   readonly duration: number;
   readonly sampleRate: number;
