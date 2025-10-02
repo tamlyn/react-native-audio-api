@@ -1,31 +1,34 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
-import type {
-  IAudioScheduledSourceNode,
-  IBaseAudioContext,
-} from '../../types/internal';
-import type { OnEndedEventCallback } from './AudioScheduledSourceNode.web';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode.web';
+import type { IGenericBaseAudioContext } from '../../types/generics';
+import { OnEndedEventCallback } from '../../types/interfaces';
+import BaseAudioScheduledSourceNode, {
+  IAbstractNativeAudioScheduledSourceNode,
+} from './BaseAudioScheduledSourceNode';
 
-interface INativeAudioScheduledSourceNode<TContext extends IBaseAudioContext>
-  extends IAudioScheduledSourceNode<TContext> {
+// TODO: fixme - temporary any to avoid work
+interface NativeAudioContext {}
+
+interface MobileAudioScheduledSourceNode
+  extends IAbstractNativeAudioScheduledSourceNode<NativeAudioContext> {
   onEnded: string; // subscriptionId or '0' for none
 }
 
 export default class AudioScheduledSourceNodeNative<
-  TContext extends IBaseAudioContext,
-  NContext extends IBaseAudioContext,
-  TNode extends
-    INativeAudioScheduledSourceNode<NContext> = INativeAudioScheduledSourceNode<NContext>,
-> extends AudioScheduledSourceNode<TContext, NContext, TNode> {
+  TContext extends IGenericBaseAudioContext,
+> extends BaseAudioScheduledSourceNode<
+  TContext,
+  NativeAudioContext,
+  MobileAudioScheduledSourceNode
+> {
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
 
   private onEndedSubscription?: AudioEventSubscription;
-  private onEndedCallbackNative: OnEndedEventCallback | null = null;
+  private onEndedCallback: OnEndedEventCallback | null = null;
 
   public get onEnded(): OnEndedEventCallback | undefined {
-    return this.onEndedCallbackNative ?? undefined;
+    return this.onEndedCallback ?? undefined;
   }
 
   public set onEnded(callback: OnEndedEventCallback | null) {
@@ -33,11 +36,11 @@ export default class AudioScheduledSourceNodeNative<
       this.node.onEnded = '0';
       this.onEndedSubscription?.remove();
       this.onEndedSubscription = undefined;
-      this.onEndedCallbackNative = null;
+      this.onEndedCallback = null;
       return;
     }
 
-    this.onEndedCallbackNative = callback;
+    this.onEndedCallback = callback;
     this.onEndedSubscription = this.audioEventEmitter.addAudioEventListener(
       'ended',
       callback

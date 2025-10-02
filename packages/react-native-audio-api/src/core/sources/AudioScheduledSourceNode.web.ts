@@ -1,73 +1,33 @@
-import { InvalidStateError, RangeError } from '../../errors';
-import type { OnEndedEventType } from '../../events/types';
-import type {
-  IAudioScheduledSourceNode,
-  IBaseAudioContext,
-} from '../../types/internal';
-import AudioNode from '../AudioNode';
+import type { IGenericBaseAudioContext } from '../../types/generics';
+import { OnEndedEventCallback } from '../../types/interfaces';
+import BaseAudioScheduledSourceNode from './BaseAudioScheduledSourceNode';
 
-export type OnEndedEventCallback = (event: OnEndedEventType) => void;
+type NativeAudioContext = globalThis.BaseAudioContext;
+type NativeAudioScheduledSourceNode = globalThis.AudioScheduledSourceNode;
 
 export default class AudioScheduledSourceNode<
-    TContext extends IBaseAudioContext,
-    NContext extends IBaseAudioContext,
-    TNode extends
-      IAudioScheduledSourceNode<NContext> = IAudioScheduledSourceNode<NContext>,
-  >
-  extends AudioNode<TContext, NContext, TNode>
-  implements IAudioScheduledSourceNode<TContext>
-{
-  protected hasBeenStarted: boolean = false;
-  private onEndedCallback: OnEndedEventCallback | null = null;
-
-  public start(when: number = 0): void {
-    if (when < 0) {
-      throw new RangeError(
-        `when must be a finite non-negative number: ${when}`
-      );
-    }
-
-    if (this.hasBeenStarted) {
-      throw new InvalidStateError('Cannot call start more than once');
-    }
-
-    this.hasBeenStarted = true;
-    this.node.start(when);
-  }
-
-  public stop(when: number = 0): void {
-    if (when < 0) {
-      throw new RangeError(
-        `when must be a finite non-negative number: ${when}`
-      );
-    }
-
-    if (!this.hasBeenStarted) {
-      throw new InvalidStateError(
-        'Cannot call stop without calling start first'
-      );
-    }
-
-    this.node.stop(when);
-  }
+  TContext extends IGenericBaseAudioContext,
+> extends BaseAudioScheduledSourceNode<
+  TContext,
+  NativeAudioContext,
+  NativeAudioScheduledSourceNode
+> {
+  private onEndedCallback: OnEndedEventCallback | undefined = undefined;
 
   public get onEnded(): OnEndedEventCallback | undefined {
-    return this.onEndedCallback ?? undefined;
+    return this.onEndedCallback;
   }
 
-  public set onEnded(callback: OnEndedEventCallback | null) {
-    if (!callback) {
-      this.onEndedCallback = null;
-      (this.node as unknown as globalThis.AudioScheduledSourceNode).onended =
-        null;
+  public set onEnded(callback: OnEndedEventCallback | undefined) {
+    this.onEndedCallback = callback;
 
+    if (!callback) {
+      this.node.onended = null;
       return;
     }
 
-    this.onEndedCallback = callback;
-    (this.node as unknown as globalThis.AudioScheduledSourceNode).onended =
-      () => {
-        this.onEndedCallback?.({ bufferId: undefined });
-      };
+    this.node.onended = () => {
+      this.onEndedCallback?.({ bufferId: undefined });
+    };
   }
 }
