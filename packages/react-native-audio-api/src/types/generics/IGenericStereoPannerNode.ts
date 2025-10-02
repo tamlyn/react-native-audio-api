@@ -5,5 +5,5 @@ import type IGenericBaseAudioContext from './IGenericBaseAudioContext';
 export default interface IGenericStereoPannerNode<
   TContext extends IGenericBaseAudioContext,
 > extends IGenericAudioNode<TContext> {
-  readonly pan: IGenericAudioParam;
+  readonly pan: IGenericAudioParam<TContext>;
 }

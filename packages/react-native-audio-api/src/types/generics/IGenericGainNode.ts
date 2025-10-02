@@ -5,5 +5,5 @@ import type IGenericBaseAudioContext from './IGenericBaseAudioContext';
 export default interface IGenericGainNode<
   TContext extends IGenericBaseAudioContext,
 > extends IGenericAudioNode<TContext> {
-  readonly gain: IGenericAudioParam;
+  readonly gain: IGenericAudioParam<TContext>;
 }

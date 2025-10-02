@@ -6,10 +6,10 @@ import type IGenericBaseAudioContext from './IGenericBaseAudioContext';
 export default interface IGenericBiquadFilterNode<
   TContext extends IGenericBaseAudioContext,
 > extends IGenericAudioNode<TContext> {
-  readonly frequency: IGenericAudioParam;
-  readonly detune: IGenericAudioParam;
-  readonly Q: IGenericAudioParam;
-  readonly gain: IGenericAudioParam;
+  readonly frequency: IGenericAudioParam<TContext>;
+  readonly detune: IGenericAudioParam<TContext>;
+  readonly Q: IGenericAudioParam<TContext>;
+  readonly gain: IGenericAudioParam<TContext>;
   type: BiquadFilterType;
 
   getFrequencyResponse(

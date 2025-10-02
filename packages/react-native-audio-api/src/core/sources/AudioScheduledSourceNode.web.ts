@@ -7,11 +7,8 @@ type NativeAudioScheduledSourceNode = globalThis.AudioScheduledSourceNode;
 
 export default class AudioScheduledSourceNode<
   TContext extends IGenericBaseAudioContext,
-> extends BaseAudioScheduledSourceNode<
-  TContext,
-  NativeAudioContext,
-  NativeAudioScheduledSourceNode
-> {
+  NNode extends NativeAudioScheduledSourceNode = NativeAudioScheduledSourceNode,
+> extends BaseAudioScheduledSourceNode<TContext, NativeAudioContext, NNode> {
   private onEndedCallback: OnEndedEventCallback | undefined = undefined;
 
   public get onEnded(): OnEndedEventCallback | undefined {

@@ -15,11 +15,8 @@ interface MobileAudioScheduledSourceNode
 
 export default class AudioScheduledSourceNodeNative<
   TContext extends IGenericBaseAudioContext,
-> extends BaseAudioScheduledSourceNode<
-  TContext,
-  NativeAudioContext,
-  MobileAudioScheduledSourceNode
-> {
+  NNode extends MobileAudioScheduledSourceNode = MobileAudioScheduledSourceNode,
+> extends BaseAudioScheduledSourceNode<TContext, NativeAudioContext, NNode> {
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );

@@ -19,5 +19,6 @@ export type { default as IGenericAudioParam } from './IGenericAudioParam';
 export type { default as IGenericBaseAudioContext } from './IGenericBaseAudioContext';
 export type { default as IGenericBiquadFilterNode } from './IGenericBiquadFilterNode';
 export type { default as IGenericGainNode } from './IGenericGainNode';
+export type { default as IGenericOscillatorNode } from './IGenericOscillatorNode';
 export type { default as IGenericPeriodicWave } from './IGenericPeriodicWave';
 export type { default as IGenericStereoPannerNode } from './IGenericStereoPannerNode';

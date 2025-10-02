@@ -1,27 +1,31 @@
 import { InvalidStateError } from '../../errors';
 import type { OscillatorType } from '../../types';
-import type { IBaseAudioContext, IOscillatorNode } from '../../types/internal';
+import type {
+  IGenericBaseAudioContext,
+  IGenericOscillatorNode,
+} from '../../types/generics';
 import AudioParam from '../AudioParam';
 import PeriodicWave from '../PeriodicWave';
 
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
 
 export default class OscillatorNode<
-    TContext extends IBaseAudioContext,
-    NContext extends IBaseAudioContext,
+    TContext extends IGenericBaseAudioContext,
+    NContext extends IGenericBaseAudioContext,
   >
-  extends AudioScheduledSourceNode<
-    TContext,
-    NContext,
-    IOscillatorNode<NContext>
-  >
-  implements IOscillatorNode<TContext>
+  // Baka! check explanation in IGenericOscillatorNode
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  extends AudioScheduledSourceNode<TContext, any>
+  implements IGenericOscillatorNode<TContext>
 {
   readonly frequency: AudioParam<TContext, NContext>;
   readonly detune: AudioParam<TContext, NContext>;
+  // redefinition due to typescript limitation with generics and inheritance
+  protected readonly node: IGenericOscillatorNode<NContext>;
 
-  constructor(context: TContext, node: IOscillatorNode<NContext>) {
+  constructor(context: TContext, node: IGenericOscillatorNode<NContext>) {
     super(context, node);
+    this.node = node;
 
     this.frequency = new AudioParam<TContext, NContext>(
       node.frequency,
@@ -45,7 +49,7 @@ export default class OscillatorNode<
     this.node.type = value;
   }
 
-  public setPeriodicWave(wave: PeriodicWave): void {
+  public setPeriodicWave(wave: PeriodicWave<TContext, NContext>): void {
     this.node.setPeriodicWave(wave.periodicWave);
   }
 }
