@@ -7,6 +7,11 @@
  */
 export type { default as IAnalyserNode } from './IAnalyserNode';
 export type {
+  default as IAudioBufferBaseSourceNode,
+  OnPositionChangedEventCallback,
+} from './IAudioBufferBaseSourceNode';
+export type { default as IAudioBufferSourceNode } from './IAudioBufferSourceNode';
+export type {
   default as IAudioScheduledSourceNode,
   OnEndedEventCallback,
 } from './IAudioScheduledSourceNode';

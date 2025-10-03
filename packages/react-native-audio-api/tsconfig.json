@@ -1,9 +1,10 @@
 {
   "extends": "../../tsconfig.json",
   "compilerOptions": {
+    "moduleSuffixes": [".web", ".native", ""],
     "paths": {
       "react-native-audio-api": ["./src"]
-    },
+    }
   },
   "include": ["src"]
 }

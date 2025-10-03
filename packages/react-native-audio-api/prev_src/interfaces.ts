@@ -57,19 +57,8 @@ export interface IOfflineAudioContext extends IBaseAudioContext {
   startRendering(): Promise<IAudioBuffer>;
 }
 
-export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onPositionChanged: string;
-  // set how often the onPositionChanged event is called
-  onPositionChangedInterval: number;
-}
-
 export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
-}
-
-export interface IAudioBufferSourceNode extends IAudioBufferBaseSourceNode {
-  setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 
 export interface IAudioBufferQueueSourceNode

@@ -8,7 +8,7 @@ import BaseAudioScheduledSourceNode, {
 // TODO: fixme - temporary any to avoid work
 interface NativeAudioContext {}
 
-interface MobileAudioScheduledSourceNode
+export interface MobileAudioScheduledSourceNode
   extends IAbstractNativeAudioScheduledSourceNode<NativeAudioContext> {
   onEnded: string; // subscriptionId or '0' for none
 }

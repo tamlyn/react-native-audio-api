@@ -1,9 +1,9 @@
 import { InvalidStateError, RangeError } from '../errors';
 
-import AudioParam from './AudioParam';
 import AudioBuffer from './AudioBuffer';
-import BaseAudioContext from './BaseAudioContext';
+import AudioParam from './AudioParam';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import BaseAudioContext from './BaseAudioContext';
 
 import { clamp } from '../utils';
 import { globalTag } from './custom/LoadCustomWasm';
