@@ -11,8 +11,10 @@ import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
+import Test from './Test/Test';
 
 type NavigationParamList = {
+  Test: undefined;
   Oscillator: undefined;
   Metronome: undefined;
   DrumMachine: undefined;
@@ -38,6 +40,12 @@ export interface Example {
 }
 
 export const Examples: Example[] = [
+  {
+    key: 'Test',
+    title: 'Audio API Bug Test',
+    subtitle: 'Test the audio API for bugs',
+    screen: Test,
+  },
   {
     key: 'DrumMachine',
     title: 'Drum Machine',
