@@ -16,15 +16,6 @@ AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
   numberOfInputs_ = 0;
 }
 
-AudioScheduledSourceNode::~AudioScheduledSourceNode() {
-  if (onEndedCallbackId_ != 0 &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
-    context_->audioEventHandlerRegistry_->unregisterHandler(
-        "ended", onEndedCallbackId_);
-    onEndedCallbackId_ = 0;
-  }
-}
-
 void AudioScheduledSourceNode::start(double when) {
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
