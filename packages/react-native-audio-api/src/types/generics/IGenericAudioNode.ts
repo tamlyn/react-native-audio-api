@@ -1,3 +1,4 @@
+import type { ChannelCountMode, ChannelInterpretation } from '../../types';
 import type IGenericAudioParam from './IGenericAudioParam';
 import type IGenericBaseAudioContext from './IGenericBaseAudioContext';
 
@@ -14,7 +15,7 @@ export default interface IGenericAudioNode<
   connect<C extends IGenericBaseAudioContext, D extends IGenericAudioNode<C>>(
     destination: D
   ): D;
-  connect(destination: IGenericAudioParam): void;
+  connect(destination: IGenericAudioParam<TContext>): void;
 
   disconnect<
     C extends IGenericBaseAudioContext,
@@ -22,5 +23,5 @@ export default interface IGenericAudioNode<
   >(
     destination?: D
   ): void;
-  disconnect(destination?: IGenericAudioParam): void;
+  disconnect(destination?: IGenericAudioParam<TContext>): void;
 }

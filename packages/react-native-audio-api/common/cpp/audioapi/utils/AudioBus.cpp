@@ -19,6 +19,10 @@ AudioBus::AudioBus(size_t size, int numberOfChannels, float sampleRate)
     : numberOfChannels_(numberOfChannels),
       sampleRate_(sampleRate),
       size_(size) {
+  assert(numberOfChannels > 0);
+  assert(size > 0);
+  assert(sampleRate > 0.0f);
+  assert(numberOfChannels < 128);
   createChannels();
 }
 
