@@ -4,14 +4,18 @@ import {
   AudioBufferBaseSourceNodeOptions,
   ContextState,
   PeriodicWaveConstraints,
+  AudioWorkletRuntime,
 } from '../types';
 import { isWorkletsAvailable, workletsModule } from '../utils';
+import WorkletSourceNode from './WorkletSourceNode';
+import WorkletProcessingNode from './WorkletProcessingNode';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferQueueSourceNode from './AudioBufferQueueSourceNode';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import ConstantSourceNode from './ConstantSourceNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -19,6 +23,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
   readonly destination: AudioDestinationNode;
@@ -39,10 +44,35 @@ export default class BaseAudioContext {
     return this.context.state;
   }
 
+  public async decodeAudioData(
+    input: string | ArrayBuffer,
+    sampleRate?: number
+  ): Promise<AudioBuffer> {
+    if (!(typeof input === 'string' || input instanceof ArrayBuffer)) {
+      throw new TypeError('Input must be a string or ArrayBuffer');
+    }
+    return await decodeAudioData(input, sampleRate ?? this.sampleRate);
+  }
+
+  public async decodePCMInBase64(
+    base64String: string,
+    inputSampleRate: number,
+    inputChannelCount: number,
+    isInterleaved: boolean = true
+  ): Promise<AudioBuffer> {
+    return await decodePCMInBase64(
+      base64String,
+      inputSampleRate,
+      inputChannelCount,
+      isInterleaved
+    );
+  }
+
   createWorkletNode(
     callback: (audioData: Array<Float32Array>, channelCount: number) => void,
     bufferLength: number,
-    inputChannelCount: number
+    inputChannelCount: number,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletNode {
     if (inputChannelCount < 1 || inputChannelCount > 32) {
       throw new NotSupportedError(
@@ -69,6 +99,7 @@ export default class BaseAudioContext {
         this,
         this.context.createWorkletNode(
           shareableWorklet,
+          workletRuntime === 'UIRuntime',
           bufferLength,
           inputChannelCount
         )
@@ -77,6 +108,85 @@ export default class BaseAudioContext {
     /// User does not have worklets as a dependency so he cannot use the worklet API.
     throw new Error(
       '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
+  }
+
+  createWorkletProcessingNode(
+    callback: (
+      inputData: Array<Float32Array>,
+      outputData: Array<Float32Array>,
+      framesToProcess: number,
+      currentTime: number
+    ) => void,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
+  ): WorkletProcessingNode {
+    if (isWorkletsAvailable) {
+      const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+        (
+          inputBuffers: Array<ArrayBuffer>,
+          outputBuffers: Array<ArrayBuffer>,
+          framesToProcess: number,
+          currentTime: number
+        ) => {
+          'worklet';
+          const inputData: Array<Float32Array> = inputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          const outputData: Array<Float32Array> = outputBuffers.map(
+            (buffer) => new Float32Array(buffer, 0, framesToProcess)
+          );
+          callback(inputData, outputData, framesToProcess, currentTime);
+        }
+      );
+      return new WorkletProcessingNode(
+        this,
+        this.context.createWorkletProcessingNode(
+          shareableWorklet,
+          workletRuntime === 'UIRuntime'
+        )
+      );
+    }
+    /// User does not have worklets as a dependency so he cannot use the worklet API.
+    throw new Error(
+      '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+    );
+  }
+
+  createWorkletSourceNode(
+    callback: (
+      audioData: Array<Float32Array>,
+      framesToProcess: number,
+      currentTime: number,
+      startOffset: number
+    ) => void,
+    workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
+  ): WorkletSourceNode {
+    if (!isWorkletsAvailable) {
+      /// User does not have worklets as a dependency so he cannot use the worklet API.
+      throw new Error(
+        '[RnAudioApi] Worklets are not available, please install react-native-worklets as a dependency. Refer to documentation for more details.'
+      );
+    }
+    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
+      (
+        audioBuffers: Array<ArrayBuffer>,
+        framesToProcess: number,
+        currentTime: number,
+        startOffset: number
+      ) => {
+        'worklet';
+        const floatAudioData: Array<Float32Array> = audioBuffers.map(
+          (buffer) => new Float32Array(buffer)
+        );
+        callback(floatAudioData, framesToProcess, currentTime, startOffset);
+      }
+    );
+    return new WorkletSourceNode(
+      this,
+      this.context.createWorkletSourceNode(
+        shareableWorklet,
+        workletRuntime === 'UIRuntime'
+      )
     );
   }
 
@@ -90,6 +200,10 @@ export default class BaseAudioContext {
 
   createStreamer(): StreamerNode {
     return new StreamerNode(this, this.context.createStreamer());
+  }
+
+  createConstantSource(): ConstantSourceNode {
+    return new ConstantSourceNode(this, this.context.createConstantSource());
   }
 
   createGain(): GainNode {
@@ -174,33 +288,5 @@ export default class BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
-  }
-
-  /** Decodes audio data from a local file path. */
-  async decodeAudioDataSource(sourcePath: string): Promise<AudioBuffer> {
-    // Remove the file:// prefix if it exists
-    if (sourcePath.startsWith('file://')) {
-      sourcePath = sourcePath.replace('file://', '');
-    }
-
-    return new AudioBuffer(
-      await this.context.decodeAudioDataSource(sourcePath)
-    );
-  }
-
-  /** Decodes audio data from an ArrayBuffer. */
-  async decodeAudioData(data: ArrayBuffer): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodeAudioData(new Uint8Array(data))
-    );
-  }
-
-  async decodePCMInBase64Data(
-    base64: string,
-    playbackRate: number = 1.0
-  ): Promise<AudioBuffer> {
-    return new AudioBuffer(
-      await this.context.decodePCMAudioDataInBase64(base64, playbackRate)
-    );
   }
 }

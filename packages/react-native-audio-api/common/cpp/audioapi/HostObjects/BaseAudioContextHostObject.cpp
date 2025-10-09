@@ -1,6 +1,7 @@
 #include <audioapi/HostObjects/BaseAudioContextHostObject.h>
 
 #include <audioapi/HostObjects/WorkletNodeHostObject.h>
+#include <audioapi/HostObjects/WorkletProcessingNodeHostObject.h>
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
@@ -10,11 +11,12 @@
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
+#include <audioapi/HostObjects/sources/ConstantSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/OscillatorNodeHostObject.h>
 #include <audioapi/HostObjects/sources/RecorderAdapterNodeHostObject.h>
 #include <audioapi/HostObjects/sources/StreamerNodeHostObject.h>
+#include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
-#include <audioapi/core/utils/worklets/UiWorkletsRunner.h>
 
 namespace audioapi {
 
@@ -32,10 +34,14 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_PROPERTY_GETTER(BaseAudioContextHostObject, currentTime));
 
   addFunctions(
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletSourceNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWorkletNode),
+      JSI_EXPORT_FUNCTION(
+          BaseAudioContextHostObject, createWorkletProcessingNode),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createRecorderAdapter),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createOscillator),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStreamer),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConstantSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
@@ -43,11 +49,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioData),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, decodeAudioDataSource),
-      JSI_EXPORT_FUNCTION(
-          BaseAudioContextHostObject, decodePCMAudioDataInBase64));
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {
@@ -68,19 +70,76 @@ JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, currentTime) {
   return {context_->getCurrentTime()};
 }
 
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletSourceNode) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  auto shareableWorklet =
+      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
+          runtime, args[0]);
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+
+  auto workletSourceNode =
+      context_->createWorkletSourceNode(shareableWorklet, workletRuntime);
+  auto workletSourceNodeHostObject =
+      std::make_shared<WorkletSourceNodeHostObject>(workletSourceNode);
+  return jsi::Object::createFromHostObject(
+      runtime, workletSourceNodeHostObject);
+#endif
+  return jsi::Value::undefined();
+}
+
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
 #if RN_AUDIO_API_ENABLE_WORKLETS
   auto shareableWorklet =
       worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
           runtime, args[0]);
-  auto bufferLength = static_cast<size_t>(args[1].getNumber());
-  auto inputChannelCount = static_cast<size_t>(args[2].getNumber());
+
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+  auto bufferLength = static_cast<size_t>(args[2].getNumber());
+  auto inputChannelCount = static_cast<size_t>(args[3].getNumber());
 
   auto workletNode = context_->createWorkletNode(
-      shareableWorklet, bufferLength, inputChannelCount);
+      shareableWorklet, workletRuntime, bufferLength, inputChannelCount);
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
   return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+#endif
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(
+    BaseAudioContextHostObject,
+    createWorkletProcessingNode) {
+#if RN_AUDIO_API_ENABLE_WORKLETS
+  auto shareableWorklet =
+      worklets::extractSerializableOrThrow<worklets::SerializableWorklet>(
+          runtime, args[0]);
+
+  std::weak_ptr<worklets::WorkletRuntime> workletRuntime;
+  auto shouldUseUiRuntime = args[1].getBool();
+  if (shouldUseUiRuntime) {
+    workletRuntime = context_->runtimeRegistry_.uiRuntime;
+  } else {
+    workletRuntime = context_->runtimeRegistry_.audioRuntime;
+  }
+
+  auto workletProcessingNode =
+      context_->createWorkletProcessingNode(shareableWorklet, workletRuntime);
+  auto workletProcessingNodeHostObject =
+      std::make_shared<WorkletProcessingNodeHostObject>(workletProcessingNode);
+  return jsi::Object::createFromHostObject(
+      runtime, workletProcessingNodeHostObject);
 #endif
   return jsi::Value::undefined();
 }
@@ -106,6 +165,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
   object.setExternalMemoryPressure(
       runtime, StreamerNodeHostObject::getSizeInBytes());
   return object;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
+  auto constantSource = context_->createConstantSource();
+  auto constantSourceHostObject =
+      std::make_shared<ConstantSourceNodeHostObject>(constantSource);
+  return jsi::Object::createFromHostObject(runtime, constantSourceHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
@@ -195,101 +261,5 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
   auto analyser = context_->createAnalyser();
   auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodeAudioDataSource) {
-  auto sourcePath = args[0].getString(runtime).utf8(runtime);
-
-  auto promise = promiseVendor_->createPromise(
-      [this, sourcePath](std::shared_ptr<Promise> promise) {
-        std::thread([this, sourcePath, promise = std::move(promise)]() {
-          auto results = context_->decodeAudioDataSource(sourcePath);
-
-          if (!results) {
-            promise->reject("Failed to decode audio data source.");
-            return;
-          }
-
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(results);
-
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
-      });
-
-  return promise;
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodeAudioData) {
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
-  auto data = arrayBuffer.data(runtime);
-  auto size = static_cast<int>(arrayBuffer.size(runtime));
-
-  auto promise = promiseVendor_->createPromise(
-      [this, data, size](std::shared_ptr<Promise> promise) {
-        std::thread([this, data, size, promise = std::move(promise)]() {
-          auto results = context_->decodeAudioData(data, size);
-
-          if (!results) {
-            promise->reject("Failed to decode audio data source.");
-            return;
-          }
-
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(results);
-
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
-      });
-
-  return promise;
-}
-
-JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, decodePCMAudioDataInBase64) {
-  auto b64 = args[0].getString(runtime).utf8(runtime);
-  auto playbackSpeed = static_cast<float>(args[1].getNumber());
-
-  auto promise = promiseVendor_->createPromise(
-      [this, b64, playbackSpeed](std::shared_ptr<Promise> promise) {
-        std::thread([this, b64, playbackSpeed, promise = std::move(promise)]() {
-          auto results = context_->decodeWithPCMInBase64(b64, playbackSpeed);
-
-          if (!results) {
-            promise->reject("Failed to decode audio data source.");
-            return;
-          }
-
-          auto audioBufferHostObject =
-              std::make_shared<AudioBufferHostObject>(results);
-
-          promise->resolve([audioBufferHostObject = std::move(
-                                audioBufferHostObject)](jsi::Runtime &runtime) {
-            auto jsiObject = jsi::Object::createFromHostObject(
-                runtime, audioBufferHostObject);
-            jsiObject.setExternalMemoryPressure(
-                runtime, audioBufferHostObject->getSizeInBytes());
-            return jsiObject;
-          });
-        }).detach();
-      });
-
-  return promise;
 }
 } // namespace audioapi

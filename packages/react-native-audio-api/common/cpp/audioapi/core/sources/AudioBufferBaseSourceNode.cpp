@@ -27,15 +27,6 @@ AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
       std::make_shared<signalsmith::stretch::SignalsmithStretch<float>>();
 }
 
-AudioBufferBaseSourceNode::~AudioBufferBaseSourceNode() {
-  if (onPositionChangedCallbackId_ != 0 &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
-    context_->audioEventHandlerRegistry_->unregisterHandler(
-        "positionChanged", onPositionChangedCallbackId_);
-    onPositionChangedCallbackId_ = 0;
-  }
-}
-
 std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getDetuneParam() const {
   return detuneParam_;
 }
