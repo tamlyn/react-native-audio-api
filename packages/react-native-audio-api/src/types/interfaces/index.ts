@@ -10,6 +10,7 @@ export type {
   default as IAudioBufferBaseSourceNode,
   OnPositionChangedEventCallback,
 } from './IAudioBufferBaseSourceNode';
+export type { default as IAudioBufferQueueSourceNode } from './IAudioBufferQueueSourceNode';
 export type { default as IAudioBufferSourceNode } from './IAudioBufferSourceNode';
 export type {
   default as IAudioScheduledSourceNode,

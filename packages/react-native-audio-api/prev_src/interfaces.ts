@@ -61,16 +61,6 @@ export interface IStreamerNode extends IAudioNode {
   initialize(streamPath: string): boolean;
 }
 
-export interface IAudioBufferQueueSourceNode
-  extends IAudioBufferBaseSourceNode {
-  dequeueBuffer: (bufferId: number) => void;
-  clearBuffers: () => void;
-
-  // returns bufferId
-  enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
-  pause: () => void;
-}
-
 export interface IRecorderAdapterNode extends IAudioNode {}
 
 export interface IWorkletNode extends IAudioNode {}
