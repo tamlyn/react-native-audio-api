@@ -87,12 +87,16 @@ AudioNodeManager::~AudioNodeManager() {
 void AudioNodeManager::addPendingNodeConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioNode> &to,
+    unsigned int outputIndex,
+    unsigned int inputIndex,
     ConnectionType type) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::NODES;
   event->payload.nodes.from = from;
   event->payload.nodes.to = to;
+  event->payload.nodes.outputIndex = outputIndex;
+  event->payload.nodes.inputIndex = inputIndex;
 
   sender_.send(std::move(event));
 }
@@ -100,12 +104,14 @@ void AudioNodeManager::addPendingNodeConnection(
 void AudioNodeManager::addPendingParamConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioParam> &to,
+    unsigned int outputIndex,
     ConnectionType type) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::PARAMS;
   event->payload.params.from = from;
   event->payload.params.to = to;
+  event->payload.params.outputIndex = outputIndex;
 
   sender_.send(std::move(event));
 }
@@ -168,9 +174,13 @@ void AudioNodeManager::settlePendingConnections() {
 
 void AudioNodeManager::handleConnectEvent(std::unique_ptr<Event> event) {
   if (event->payloadType == EventPayloadType::NODES) {
-    event->payload.nodes.from->connectNode(event->payload.nodes.to);
+    event->payload.nodes.from->connectNode(
+        event->payload.nodes.to,
+        event->payload.nodes.outputIndex,
+        event->payload.nodes.inputIndex);
   } else if (event->payloadType == EventPayloadType::PARAMS) {
-    event->payload.params.from->connectParam(event->payload.params.to);
+    event->payload.params.from->connectParam(
+        event->payload.params.to, event->payload.params.outputIndex);
   } else {
     assert(false && "Invalid payload type for connect event");
   }
@@ -178,14 +188,21 @@ void AudioNodeManager::handleConnectEvent(std::unique_ptr<Event> event) {
 
 void AudioNodeManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
   if (event->payloadType == EventPayloadType::NODES) {
-    event->payload.nodes.from->disconnectNode(event->payload.nodes.to);
+    event->payload.nodes.from->disconnectNode(
+        event->payload.nodes.to,
+        event->payload.nodes.outputIndex,
+        event->payload.nodes.inputIndex);
   } else if (event->payloadType == EventPayloadType::PARAMS) {
-    event->payload.params.from->disconnectParam(event->payload.params.to);
+    event->payload.params.from->disconnectParam(
+        event->payload.params.to, event->payload.params.outputIndex);
   } else {
     assert(false && "Invalid payload type for disconnect event");
   }
 }
 
+// wont be needed, NodeDestination::disconnectAll() does the job by dispatching
+// multiple disconnect events
+/*
 void AudioNodeManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
   assert(event->payloadType == EventPayloadType::NODES);
   for (auto it = event->payload.nodes.from->outputNodes_.begin();
@@ -195,6 +212,7 @@ void AudioNodeManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
     it = next;
   }
 }
+*/
 
 void AudioNodeManager::handleAddToDeconstructionEvent(
     std::unique_ptr<Event> event) {

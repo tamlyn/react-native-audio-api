@@ -29,10 +29,13 @@ class AudioNodeManager {
     struct {
       std::shared_ptr<AudioNode> from;
       std::shared_ptr<AudioNode> to;
+      unsigned int outputIndex;
+      unsigned int inputIndex;
     } nodes;
     struct {
       std::shared_ptr<AudioNode> from;
       std::shared_ptr<AudioParam> to;
+      unsigned int outputIndex;
     } params;
     std::shared_ptr<AudioScheduledSourceNode> sourceNode;
     std::shared_ptr<AudioParam> audioParam;
@@ -68,6 +71,8 @@ class AudioNodeManager {
   void addPendingNodeConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioNode> &to,
+      unsigned int outputIndex = 0,
+      unsigned int inputIndex = 0,
       ConnectionType type);
 
   /// @brief Adds a pending connection between an audio node and an audio parameter.
@@ -78,7 +83,8 @@ class AudioNodeManager {
   void addPendingParamConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioParam> &to,
-    ConnectionType type);
+      unsigned int outputIndex = 0,
+      ConnectionType type);
 
   /// @brief Adds a processing node to the manager.
   /// @param node The processing node to add.

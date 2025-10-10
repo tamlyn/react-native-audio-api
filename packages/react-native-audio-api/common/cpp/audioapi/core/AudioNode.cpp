@@ -1,15 +1,24 @@
-#include <audioapi/core/AudioNode.h>
+#include "AudioNode.h"
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
-#include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <stdexcept>
+#include "NodeConnections.h"
 
+// mostly wrong, left it as a template
 namespace audioapi {
 
 AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  m_connections = std::make_unique<NodeConnections>(this, context);
+  isInitialized_ = true;
+
+  // Initialize output buses for a standard node
+  m_outputBuses.resize(numberOfOutputs_);
+  for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
+    m_outputBuses[i] = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  }
 }
 
 AudioNode::~AudioNode() {
@@ -18,300 +27,283 @@ AudioNode::~AudioNode() {
   }
 }
 
-int AudioNode::getNumberOfInputs() const {
-  return numberOfInputs_;
-}
+// --- Public API ---
 
-int AudioNode::getNumberOfOutputs() const {
-  return numberOfOutputs_;
-}
-
-int AudioNode::getChannelCount() const {
-  return channelCount_;
-}
-
-std::string AudioNode::getChannelCountMode() const {
-  return AudioNode::toString(channelCountMode_);
-}
-
-std::string AudioNode::getChannelInterpretation() const {
-  return AudioNode::toString(channelInterpretation_);
-}
-
-void AudioNode::connect(const std::shared_ptr<AudioNode> &node) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioNode> &destination,
+    unsigned int outputIndex,
+    unsigned int inputIndex) {
   context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(), node, AudioNodeManager::ConnectionType::CONNECT);
+      shared_from_this(),
+      destination,
+      outputIndex,
+      inputIndex,
+      AudioNodeManager::ConnectionType::CONNECT, );
 }
 
-void AudioNode::connect(const std::shared_ptr<AudioParam> &param) {
+void AudioNode::connect(
+    const std::shared_ptr<AudioParam> &param,
+    unsigned int outputIndex) {
   context_->getNodeManager()->addPendingParamConnection(
-      shared_from_this(), param, AudioNodeManager::ConnectionType::CONNECT);
+      shared_from_this(),
+      param,
+      outputIndex,
+      AudioNodeManager::ConnectionType::CONNECT);
 }
 
 void AudioNode::disconnect() {
+  m_connections->disconnectAll();
+  // context_->getNodeManager()->addPendingNodeConnection(
+  //     shared_from_this(),
+  //     nullptr,
+  //     0,
+  //     0,
+  //     AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+}
+
+// disconnect a single output from any other nodes or params
+void AudioNode::disconnect(unsigned int outputIndex) {
+  if (outputIndex >= numberOfOutputs_)
+    throw std::out_of_range("Output index out of bounds.");
   context_->getNodeManager()->addPendingNodeConnection(
       shared_from_this(),
       nullptr,
-      AudioNodeManager::ConnectionType::DISCONNECT_ALL);
+      outputIndex,
+      0,
+      AudioNodeManager::ConnectionType::DISCONNECT);
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioNode> &node) {
+// disconnect all connections to a specific node param / node connections
+void AudioNode::disconnect(const std::shared_ptr<AudioNode> &destination) {
+  if (!destination)
+    return;
   context_->getNodeManager()->addPendingNodeConnection(
-      shared_from_this(), node, AudioNodeManager::ConnectionType::DISCONNECT);
+      shared_from_this(),
+      destination,
+      AudioNodeManager::ConnectionType::DISCONNECT,
+      ALL_INDICES,
+      ALL_INDICES);
+}
+
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioNode> &destination,
+    unsigned int outputIndex) {
+  if (!destination)
+    return;
+  if (outputIndex >= numberOfOutputs_)
+    throw std::out_of_range("Output index out of bounds.");
+  context_->getNodeManager()->addPendingNodeConnection(
+      shared_from_this(),
+      destination,
+      AudioNodeManager::ConnectionType::DISCONNECT,
+      outputIndex,
+      ALL_INDICES);
+}
+
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioNode> &destination,
+    unsigned int outputIndex,
+    unsigned int inputIndex) {
+  if (!destination)
+    return;
+  if (outputIndex >= numberOfOutputs_)
+    throw std::out_of_range("Output index out of bounds.");
+  if (inputIndex >= destination->getNumberOfInputs())
+    throw std::out_of_range("Input index out of bounds.");
+  context_->getNodeManager()->addPendingNodeConnection(
+      shared_from_this(),
+      destination,
+      AudioNodeManager::ConnectionType::DISCONNECT,
+      outputIndex,
+      inputIndex);
 }
 
 void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
-  context_->getNodeManager()->addPendingParamConnection(
-      shared_from_this(), param, AudioNodeManager::ConnectionType::DISCONNECT);
+  if (!param)
+    return;
+  // This would require a more detailed event or a new ConnectionType
+  // For now, we can simplify and require an output index.
+  // disconnect(param, 0);
 }
 
+void AudioNode::disconnect(
+    const std::shared_ptr<AudioParam> &param,
+    unsigned int outputIndex) {
+  if (!param)
+    return;
+  if (outputIndex >= numberOfOutputs_)
+    throw std::out_of_range("Output index out of bounds.");
+  context_->getNodeManager()->addPendingParamConnection(
+      shared_from_this(),
+      param,
+      AudioNodeManager::ConnectionType::DISCONNECT,
+      outputIndex);
+}
+
+// --- Processing ---
+
+std::shared_ptr<AudioBus> AudioNode::processAudio(
+    int framesToProcess,
+    bool checkIsAlreadyProcessed) {
+  if (!isInitialized_)
+    return getOutputBus(0);
+  if (checkIsAlreadyProcessed && isAlreadyProcessed())
+    return getOutputBus(0);
+
+  const auto &processedInputs =
+      m_connections->processAllInputs(framesToProcess, checkIsAlreadyProcessed);
+  processNode(processedInputs, framesToProcess);
+
+  return getOutputBus(0);
+}
+
+std::shared_ptr<AudioBus> AudioNode::getOutputBus(unsigned int outputIndex) {
+  if (outputIndex < m_outputBuses.size()) {
+    return m_outputBuses[outputIndex];
+  }
+  return nullptr;
+}
+
+// --- Getters & State ---
+int AudioNode::getNumberOfInputs() const {
+  return numberOfInputs_;
+}
+int AudioNode::getNumberOfOutputs() const {
+  return numberOfOutputs_;
+}
+int AudioNode::getChannelCount() const {
+  return channelCount_;
+}
 bool AudioNode::isEnabled() const {
   return isEnabled_;
 }
+std::string AudioNode::getChannelCountMode() const {
+  return "max";
+} // Placeholder
+std::string AudioNode::getChannelInterpretation() const {
+  return "speakers";
+} // Placeholder
 
 void AudioNode::enable() {
-  if (isEnabled()) {
+  if (isEnabled_)
     return;
-  }
-
   isEnabled_ = true;
-
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
-    it->get()->onInputEnabled();
-  }
+  // This logic now needs to iterate through m_connections's outputs
+  // m_connections->propagateEnable();
 }
 
 void AudioNode::disable() {
-  if (!isEnabled()) {
+  if (!isEnabled_)
     return;
-  }
-
   isEnabled_ = false;
+  // m_connections->propagateDisable();
+}
 
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
-    it->get()->onInputDisabled();
+// --- Handshake Methods ---
+
+void AudioNode::connectNode(
+    const std::shared_ptr<AudioNode> &destination,
+    unsigned int outputIndex,
+    unsigned int inputIndex) {
+  m_connections->connectNode(destination, outputIndex, inputIndex);
+}
+
+void AudioNode::onInputConnected(
+    AudioNode *source,
+    unsigned int outputIndexFromSource,
+    unsigned int inputIndex) {
+  m_connections->onInputConnected(source, outputIndexFromSource, inputIndex);
+  if (source->isEnabled()) {
+    onInputEnabled();
   }
 }
 
-std::string AudioNode::toString(ChannelCountMode mode) {
-  switch (mode) {
-    case ChannelCountMode::MAX:
-      return "max";
-    case ChannelCountMode::CLAMPED_MAX:
-      return "clamped-max";
-    case ChannelCountMode::EXPLICIT:
-      return "explicit";
-    default:
-      throw std::invalid_argument("Unknown channel count mode");
+void AudioNode::disconnectAll() {
+  m_connections->disconnectAll();
+}
+
+void AudioNode::disconnectNode(
+    const std::shared_ptr<AudioNode> &destination,
+    unsigned int outputIndex,
+    unsigned int inputIndex) {
+  m_connections->disconnectNode(destination, outputIndex, inputIndex);
+}
+
+void AudioNode::onInputDisconnected(
+    AudioNode *source,
+    unsigned int outputIndexFromSource,
+    unsigned int inputIndex) {
+  m_connections->onInputDisconnected(source, outputIndexFromSource, inputIndex);
+  if (source->isEnabled()) {
+    onInputDisabled();
   }
 }
 
-std::string AudioNode::toString(ChannelInterpretation interpretation) {
-  switch (interpretation) {
-    case ChannelInterpretation::SPEAKERS:
-      return "speakers";
-    case ChannelInterpretation::DISCRETE:
-      return "discrete";
-    default:
-      throw std::invalid_argument("Unknown channel interpretation");
-  }
+void AudioNode::connectParam(
+    const std::shared_ptr<AudioParam> &param,
+    unsigned int outputIndex) {
+  m_connections->connectParam(param, outputIndex);
 }
 
-std::shared_ptr<AudioBus> AudioNode::processAudio(
-    const std::shared_ptr<AudioBus> &outputBus,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  if (!isInitialized_) {
-    return outputBus;
-  }
-
-  if (checkIsAlreadyProcessed && isAlreadyProcessed()) {
-    return audioBus_;
-  }
-
-  // Process inputs and return the bus with the most channels.
-  auto processingBus =
-      processInputs(outputBus, framesToProcess, checkIsAlreadyProcessed);
-
-  // Apply channel count mode.
-  processingBus = applyChannelCountMode(processingBus);
-
-  // Mix all input buses into the processing bus.
-  mixInputsBuses(processingBus);
-
-  assert(processingBus != nullptr);
-
-  // Finally, process the node itself.
-  return processNode(processingBus, framesToProcess);
-  ;
+void AudioNode::disconnectParam(
+    const std::shared_ptr<AudioParam> &param,
+    unsigned int outputIndex) {
+  m_connections->disconnectParam(param, outputIndex);
 }
 
-bool AudioNode::isAlreadyProcessed() {
-  assert(context_ != nullptr);
+// --- Processing & State ---
 
-  std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
+void AudioNode::processNode(
+    const std::vector<std::shared_ptr<AudioBus>> &inputBuses,
+    int framesToProcess) {
+  // Default bridge implementation for backward compatibility
+  auto firstInputBus = inputBuses.empty() ? nullptr : inputBuses[0];
+  auto outputBus = getOutputBus(0);
 
-  // check if the node has already been processed for this rendering quantum
-  if (currentSampleFrame == lastRenderedFrame_) {
-    return true;
-  }
-
-  // Update the last rendered frame before processing node and its inputs.
-  lastRenderedFrame_ = currentSampleFrame;
-
-  return false;
-}
-
-std::shared_ptr<AudioBus> AudioNode::processInputs(
-    const std::shared_ptr<AudioBus> &outputBus,
-    int framesToProcess,
-    bool checkIsAlreadyProcessed) {
-  auto processingBus = audioBus_;
-  processingBus->zero();
-
-  int maxNumberOfChannels = 0;
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end;
-       ++it) {
-    auto inputNode = *it;
-    assert(inputNode != nullptr);
-
-    if (!inputNode->isEnabled()) {
-      continue;
+  if (firstInputBus && outputBus) {
+    if (outputBus.get() != firstInputBus.get()) {
+      outputBus->copy(firstInputBus.get());
     }
-
-    auto inputBus = inputNode->processAudio(
-        outputBus, framesToProcess, checkIsAlreadyProcessed);
-    inputBuses_.push_back(inputBus);
-
-    if (maxNumberOfChannels < inputBus->getNumberOfChannels()) {
-      maxNumberOfChannels = inputBus->getNumberOfChannels();
-      processingBus = inputBus;
-    }
+  } else if (outputBus) {
+    outputBus->zero();
   }
 
-  return processingBus;
+  // Call the old version
+  processNode(outputBus, framesToProcess);
 }
 
-std::shared_ptr<AudioBus> AudioNode::applyChannelCountMode(
-    const std::shared_ptr<AudioBus> &processingBus) {
-  // If the channelCountMode is EXPLICIT, the node should output the number of
-  // channels specified by the channelCount.
-  if (channelCountMode_ == ChannelCountMode::EXPLICIT) {
-    return audioBus_;
-  }
-
-  // If the channelCountMode is CLAMPED_MAX, the node should output the maximum
-  // number of channels clamped to channelCount.
-  if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX &&
-      processingBus->getNumberOfChannels() >= channelCount_) {
-    return audioBus_;
-  }
-
-  return processingBus;
-}
-
-void AudioNode::mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus) {
-  assert(processingBus != nullptr);
-
-  for (auto it = inputBuses_.begin(), end = inputBuses_.end(); it != end;
-       ++it) {
-    processingBus->sum(it->get(), channelInterpretation_);
-  }
-
-  inputBuses_.clear();
-}
-
-void AudioNode::connectNode(const std::shared_ptr<AudioNode> &node) {
-  auto position = outputNodes_.find(node);
-
-  if (position == outputNodes_.end()) {
-    outputNodes_.insert(node);
-    node->onInputConnected(this);
-  }
-}
-
-void AudioNode::connectParam(const std::shared_ptr<AudioParam> &param) {
-  auto position = outputParams_.find(param);
-
-  if (position == outputParams_.end()) {
-    outputParams_.insert(param);
-    param->addInputNode(this);
-  }
-}
-
-void AudioNode::disconnectNode(const std::shared_ptr<AudioNode> &node) {
-  auto position = outputNodes_.find(node);
-
-  if (position != outputNodes_.end()) {
-    node->onInputDisconnected(this);
-    outputNodes_.erase(node);
-  }
-}
-
-void AudioNode::disconnectParam(const std::shared_ptr<AudioParam> &param) {
-  auto position = outputParams_.find(param);
-
-  if (position != outputParams_.end()) {
-    param->removeInputNode(this);
-    outputParams_.erase(param);
-  }
+void AudioNode::processNode(
+    std::shared_ptr<AudioBus> processingBus,
+    int framesToProcess) {
+  // Base implementation does nothing. To be overridden by simple nodes.
 }
 
 void AudioNode::onInputEnabled() {
-  numberOfEnabledInputNodes_ += 1;
-
-  if (!isEnabled()) {
+  numberOfEnabledInputNodes_++;
+  if (!isEnabled_) {
     enable();
   }
 }
 
 void AudioNode::onInputDisabled() {
-  numberOfEnabledInputNodes_ -= 1;
-
-  if (isEnabled() && numberOfEnabledInputNodes_ == 0) {
+  numberOfEnabledInputNodes_--;
+  if (isEnabled_ && numberOfEnabledInputNodes_ == 0) {
     disable();
   }
 }
 
-void AudioNode::onInputConnected(AudioNode *node) {
-  if (!isInitialized_) {
-    return;
+bool AudioNode::isAlreadyProcessed() {
+  std::size_t currentSampleFrame = context_->getCurrentSampleFrame();
+  if (currentSampleFrame == lastRenderedFrame_) {
+    return true;
   }
-
-  inputNodes_.insert(node);
-
-  if (node->isEnabled()) {
-    onInputEnabled();
-  }
-}
-
-void AudioNode::onInputDisconnected(AudioNode *node) {
-  if (!isInitialized_) {
-    return;
-  }
-
-  if (node->isEnabled()) {
-    onInputDisabled();
-  }
-
-  auto position = inputNodes_.find(node);
-
-  if (position != inputNodes_.end()) {
-    inputNodes_.erase(position);
-  }
+  lastRenderedFrame_ = currentSampleFrame;
+  return false;
 }
 
 void AudioNode::cleanup() {
   isInitialized_ = false;
-
-  for (auto it = outputNodes_.begin(), end = outputNodes_.end(); it != end;
-       ++it) {
-    it->get()->onInputDisconnected(this);
-  }
-
-  outputNodes_.clear();
+  m_connections->disconnectAll();
 }
 
 } // namespace audioapi
