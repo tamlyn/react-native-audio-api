@@ -11,6 +11,7 @@ import Record from './Record/Record';
 import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
+import MediTest from './Midi/Midi';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -25,6 +26,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
+  MediTest: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -38,6 +40,12 @@ export interface Example {
 }
 
 export const Examples: Example[] = [
+  {
+    key: 'MediTest',
+    title: 'Medi Test',
+    subtitle: 'Test react-native-medi turbo module',
+    screen: MediTest,
+  },
   {
     key: 'DrumMachine',
     title: 'Drum Machine',
