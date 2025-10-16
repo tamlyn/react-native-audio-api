@@ -10,7 +10,9 @@
 namespace audioapi {
 
 NodeConnections::NodeConnections(AudioNode *owner, BaseAudioContext *context)
-    : m_owner(owner), m_context(context) {}
+    : m_owner(owner), m_context(context) {
+  m_processingInputBuses.resize(m_owner->getNumberOfInputs());
+}
 
 void NodeConnections::disconnect() {
   // Disconnect from all nodes
@@ -31,7 +33,6 @@ void NodeConnections::disconnect() {
           conn_it->inputIndexAtDestination);
     }
   }
-
   // Disconnect from all params
   for (std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>>::
            iterator it = m_indexedOutputParams.begin();
@@ -256,7 +257,7 @@ void NodeConnections::connectParam(
     const std::shared_ptr<AudioParam> &param,
     unsigned int outputIndex) {
   m_indexedOutputParams[outputIndex].push_back(param);
-  param->addInputNode(m_owner);
+  param->addInputNode(m_owner, outputIndex);
 }
 
 void NodeConnections::disconnectParam(
@@ -267,7 +268,7 @@ void NodeConnections::disconnectParam(
   auto &params = m_indexedOutputParams.at(outputIndex);
   auto it = std::remove(params.begin(), params.end(), param);
   if (it != params.end()) {
-    param->removeInputNode(m_owner);
+    param->removeInputNode(m_owner, outputIndex);
     params.erase(it, params.end());
   }
 }
@@ -305,7 +306,7 @@ void NodeConnections::cleanup() {
          ++param_it) {
       const std::shared_ptr<AudioParam> &destinationParam = *param_it;
       if (destinationParam) {
-        destinationParam->removeInputNode(m_owner);
+        destinationParam->removeInputNode(m_owner, outputIndex);
       }
     }
   }
@@ -380,8 +381,6 @@ const std::vector<std::shared_ptr<AudioBus>> &NodeConnections::processAllInputs(
     bool checkIsAlreadyProcessed) {
   int numInputs = m_owner->getNumberOfInputs();
 
-  m_processingInputBuses.resize(static_cast<size_t>(numInputs));
-
   for (int i = 0; i < numInputs; ++i) {
     m_processingInputBuses[i] = processInputAtIndex(
         static_cast<unsigned int>(i), framesToProcess, checkIsAlreadyProcessed);
@@ -451,10 +450,6 @@ std::shared_ptr<AudioBus> NodeConnections::getProcessingBusForIndex(
     unsigned int inputIndex,
     unsigned int numChannels,
     int framesToProcess) {
-  if (m_processingInputBuses.size() <= inputIndex) {
-    m_processingInputBuses.resize(inputIndex + 1);
-  }
-
   auto &bus = m_processingInputBuses[inputIndex];
   if (!bus || bus->getSize() != static_cast<size_t>(framesToProcess) ||
       bus->getNumberOfChannels() != numChannels ||

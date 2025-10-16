@@ -6,7 +6,6 @@
 
 namespace audioapi {
 
-
 AudioParam::AudioParam(
     float defaultValue,
     float minValue,
@@ -255,13 +254,19 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   });
 }
 
-void AudioParam::addInputNode(AudioNode *node, unsigned int outputIndexFromSource) {
-  inputConnections_.emplace_back(ParamInputConnection{node, outputIndexFromSource});
+void AudioParam::addInputNode(
+    AudioNode *node,
+    unsigned int outputIndexFromSource) {
+  inputConnections_.emplace_back(
+      ParamInputConnection{node, outputIndexFromSource});
 }
 
-void AudioParam::removeInputNode(AudioNode *node, unsigned int outputIndexFromSource) {
+void AudioParam::removeInputNode(
+    AudioNode *node,
+    unsigned int outputIndexFromSource) {
   for (int i = 0; i < inputConnections_.size(); i++) {
-    if (inputConnections_[i].sourceNode == node && inputConnections_[i].outputIndexFromSource == outputIndexFromSource) {
+    if (inputConnections_[i].sourceNode == node &&
+        inputConnections_[i].outputIndexFromSource == outputIndexFromSource) {
       std::swap(inputConnections_[i], inputConnections_.back());
       inputConnections_.resize(inputConnections_.size() - 1);
       break;
@@ -314,7 +319,8 @@ void AudioParam::processInputs(
     const std::shared_ptr<AudioBus> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputConnections_.begin(), end = inputConnections_.end(); it != end;
+  for (auto it = inputConnections_.begin(), end = inputConnections_.end();
+       it != end;
        ++it) {
     auto inputNode = it->sourceNode;
     auto outputIndex = it->outputIndexFromSource;
@@ -323,7 +329,6 @@ void AudioParam::processInputs(
     if (!inputNode->isEnabled()) {
       continue;
     }
-
 
     inputNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
 

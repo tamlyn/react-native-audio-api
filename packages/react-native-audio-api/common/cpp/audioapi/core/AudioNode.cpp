@@ -298,7 +298,7 @@ void AudioNode::cleanup() {
 
 std::shared_ptr<AudioBus> AudioNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
-    int /*framesToProcess*/) {
+    int framesToProcess) {
   if (!processingBus) {
     return nullptr;
   }
