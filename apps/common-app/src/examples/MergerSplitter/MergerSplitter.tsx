@@ -12,7 +12,7 @@ import { Container, Slider, Spacer, Button } from '../../components';
 
 // test url pointing to my public repo, to be changed / deleted
 const AUDIO_URL =
-  'https://github.com/miloszwielgus/test-files/raw/refs/heads/main/example-music-01.ogg';
+  'https://github.com/miloszwielgus/test-files/raw/refs/heads/main/example-music-5-1.ogg';
 
 const INITIAL_GAIN = 0.5;
 const labelWidth = 100;
@@ -25,6 +25,8 @@ const SplitterMerger: FC = () => {
   const [gain2, setGain2] = useState(INITIAL_GAIN);
   const [gain3, setGain3] = useState(INITIAL_GAIN);
   const [gain4, setGain4] = useState(INITIAL_GAIN);
+  const [gain5, setGain5] = useState(INITIAL_GAIN);
+  const [gain6, setGain6] = useState(INITIAL_GAIN);
 
   const audioContextRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
@@ -36,6 +38,8 @@ const SplitterMerger: FC = () => {
   const gainNode2Ref = useRef<GainNode | null>(null);
   const gainNode3Ref = useRef<GainNode | null>(null);
   const gainNode4Ref = useRef<GainNode | null>(null);
+  const gainNode5Ref = useRef<GainNode | null>(null);
+  const gainNode6Ref = useRef<GainNode | null>(null);
 
   const setupAndPlay = async () => {
     const context = audioContextRef.current;
@@ -64,8 +68,8 @@ const SplitterMerger: FC = () => {
     sourceNodeRef.current.buffer = audioBufferRef.current;
     sourceNodeRef.current.loop = true;
 
-    splitterRef.current = context.createChannelSplitter(4);
-    mergerRef.current = context.createChannelMerger(4);
+    splitterRef.current = context.createChannelSplitter(6);
+    mergerRef.current = context.createChannelMerger(6);
 
     gainNode1Ref.current = context.createGain();
     gainNode1Ref.current.gain.value = gain1;
@@ -87,6 +91,15 @@ const SplitterMerger: FC = () => {
     splitterRef.current.connect(gainNode4Ref.current, 3, 0);
     gainNode4Ref.current.connect(mergerRef.current, 0, 3);
 
+    gainNode5Ref.current = context.createGain();
+    gainNode5Ref.current.gain.value = gain5;
+    splitterRef.current.connect(gainNode5Ref.current, 4, 0);
+    gainNode5Ref.current.connect(mergerRef.current, 0, 4);
+
+    gainNode6Ref.current = context.createGain();
+    gainNode6Ref.current.gain.value = gain6;
+    splitterRef.current.connect(gainNode6Ref.current, 5, 0);
+    gainNode6Ref.current.connect(mergerRef.current, 0, 5);
 
     sourceNodeRef.current.connect(splitterRef.current);
     mergerRef.current.connect(context.destination);
@@ -126,6 +139,14 @@ const SplitterMerger: FC = () => {
   const handleGain4Change = (value: number) => {
     setGain4(value);
     if (gainNode4Ref.current) gainNode4Ref.current.gain.value = value;
+  };
+  const handleGain5Change = (value: number) => {
+    setGain5(value);
+    if (gainNode5Ref.current) gainNode5Ref.current.gain.value = value;
+  };
+  const handleGain6Change = (value: number) => {
+    setGain6(value);
+    if (gainNode6Ref.current) gainNode6Ref.current.gain.value = value;
   };
 
   useEffect(() => {
@@ -187,6 +208,27 @@ const SplitterMerger: FC = () => {
         step={0.01}
         minLabelWidth={labelWidth}
       />
+      <Spacer.Vertical size={15} />
+      <Slider
+        label="Gain Path 5"
+        value={gain5}
+        onValueChange={handleGain5Change}
+        min={0.0}
+        max={1.5}
+        step={0.01}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={15} />
+      <Slider
+        label="Gain Path 6"
+        value={gain6}
+        onValueChange={handleGain6Change}
+        min={0.0}
+        max={1.5}
+        step={0.01}
+        minLabelWidth={labelWidth}
+      />
+      <Spacer.Vertical size={30} />
     </Container>
   );
 };

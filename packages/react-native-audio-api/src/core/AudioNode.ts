@@ -66,6 +66,9 @@ export default class AudioNode {
     output?: number,
     input?: number
   ): void {
+
+    const numberOfOutputs = this.node.numberOfOutputs;
+    const numberOfInputs = this.node.numberOfInputs;
     // probably needs a switch statement
     // Case 1: disconnect()
     if (destinationOrOutput === undefined) {
@@ -75,7 +78,11 @@ export default class AudioNode {
 
     // Case 2: disconnect(outputIndex: number)
     if (typeof destinationOrOutput === 'number') {
-      this.node.disconnect(destinationOrOutput);
+      const outputIndex = destinationOrOutput;
+      if (outputIndex >= numberOfOutputs) {
+        throw new IndexSizeError('Output index is out of range.');
+      }
+      this.node.disconnect(outputIndex);
       return;
     }
 
@@ -88,6 +95,9 @@ export default class AudioNode {
         this.node.disconnect(destination.audioParam);
       } else {
         // disconnect(destination: AudioParam, output: number)
+        if (output >= numberOfOutputs) {
+          throw new IndexSizeError('Output index is out of range.');
+        }
         this.node.disconnect(destination.audioParam, output);
       }
     } else {
@@ -97,9 +107,18 @@ export default class AudioNode {
         this.node.disconnect(destination.node);
       } else if (input === undefined) {
         // disconnect(destination: AudioNode, output: number)
+        if (output >= numberOfOutputs) {
+          throw new IndexSizeError('Output index is out of range.');
+        }
         this.node.disconnect(destination.node, output);
       } else {
         // disconnect(destination: AudioNode, output: number, input: number)
+        if (output >= numberOfOutputs) {
+          throw new IndexSizeError('Output index is out of range.');
+        }
+        if (input >= numberOfInputs) {
+          throw new IndexSizeError('Input index is out of range.');
+        }
         this.node.disconnect(destination.node, output, input);
       }
     }
