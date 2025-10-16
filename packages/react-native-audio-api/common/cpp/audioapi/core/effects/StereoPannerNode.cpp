@@ -25,19 +25,15 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
   double time = context_->getCurrentTime();
   double deltaTime = 1.0 / context_->getSampleRate();
 
- // needs to be tested and probably fixed
+  // needs to be tested and probably fixed
   auto panValuesArray = panParam_->processARateParam(framesToProcess, time);
   const float *panParamValues = panValuesArray->getChannel(0)->getData();
 
-  
   std::shared_ptr<AudioBus> outBus = nullptr;
   std::shared_ptr<AudioBus> tempBus = nullptr;
   bool usedTemp = false;
 
-.
-  try {
-    outBus = getOutputBus(0);
-  } catch (...) {
+  try { outBus = getOutputBus(0); } catch (...) {
     outBus = nullptr;
   }
 
@@ -48,14 +44,12 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     outBus = tempBus;
     usedTemp = true;
   } else {
-    outBus->zero(); 
+    outBus->zero();
   }
 
-  
   auto *outputLeft = outBus->getChannelByType(AudioBus::ChannelLeft);
   auto *outputRight = outBus->getChannelByType(AudioBus::ChannelRight);
 
-  
   auto numInChannels = processingBus ? processingBus->getNumberOfChannels() : 0;
   auto *inputLeft = processingBus
       ? processingBus->getChannelByType(AudioBus::ChannelLeft)
@@ -64,11 +58,8 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
       ? processingBus->getChannelByType(AudioBus::ChannelRight)
       : nullptr;
 
-  
   if (!inputLeft) {
-    
     if (usedTemp) {
-      
       if (!m_outputBuses.empty() && m_outputBuses[0]) {
         m_outputBuses[0]->copy(outBus.get());
         return m_outputBuses[0];
@@ -77,9 +68,7 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     return outBus;
   }
 
-  
   if (numInChannels <= 1 || inputRight == nullptr) {
-    
     const float *inL = inputLeft->getData();
     float *outL = outputLeft->getData();
     float *outR = outputRight->getData();
@@ -97,7 +86,6 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
       time += deltaTime;
     }
   } else {
-    
     const float *inL = inputLeft->getData();
     const float *inR = inputRight->getData();
     float *outL = outputLeft->getData();
@@ -124,7 +112,6 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     }
   }
 
-  
   if (usedTemp) {
     if (!m_outputBuses.empty() && m_outputBuses[0]) {
       m_outputBuses[0]->copy(outBus.get());
@@ -132,7 +119,6 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     }
   }
 
-  
   return outBus;
 }
 

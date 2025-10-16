@@ -30,7 +30,6 @@ void AudioDestinationNode::processNode(
     return;
   }
 
-
   getOutputBus(0)->copy(inputBuses[0].get());
 }
 
@@ -41,12 +40,9 @@ void AudioDestinationNode::renderAudio(
     return;
   }
 
-  
   context_->getNodeManager()->preProcessGraph();
 
-
   destinationBus->zero();
-
 
   const auto &inputBuses = m_connections->processAllInputs(numFrames, true);
 
