@@ -60,6 +60,8 @@ export interface IBaseAudioContext {
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
+  createChannelSplitter: (numberOfOutputs?: number) => IChannelSplitterNode;
+  createChannelMerger: (numberOfInputs?: number) => IChannelMergerNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (
     pitchCorrection: boolean
@@ -98,8 +100,17 @@ export interface IAudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  connect: (destination: IAudioNode | IAudioParam) => void;
-  disconnect: (destination?: IAudioNode | IAudioParam) => void;
+  connect(
+    destination: IAudioNode | IAudioParam,
+    output?: number,
+    input?: number
+  ): void;
+
+  disconnect(): void;
+  disconnect(output: number): void;
+  disconnect(destination: IAudioNode | IAudioParam): void;
+  disconnect(destination: IAudioNode | IAudioParam, output: number): void;
+  disconnect(destination: IAudioNode, output: number, input: number): void;
 }
 
 export interface IGainNode extends IAudioNode {
@@ -122,6 +133,14 @@ export interface IBiquadFilterNode extends IAudioNode {
     magResponseOutput: Float32Array,
     phaseResponseOutput: Float32Array
   ): void;
+}
+
+export interface IChannelSplitterNode extends IAudioNode {
+  readonly numberOfOutputs: number;
+}
+
+export interface IChannelMergerNode extends IAudioNode {
+  readonly numberOfInputs: number;
 }
 
 export interface IAudioDestinationNode extends IAudioNode {}

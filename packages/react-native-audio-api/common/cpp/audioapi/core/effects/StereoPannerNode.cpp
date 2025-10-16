@@ -33,7 +33,9 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
   std::shared_ptr<AudioBus> tempBus = nullptr;
   bool usedTemp = false;
 
-  try { outBus = getOutputBus(0); } catch (...) {
+  try {
+    outBus = getOutputBus(0);
+  } catch (...) {
     outBus = nullptr;
   }
 

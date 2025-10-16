@@ -23,6 +23,8 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import ChannelSplitterNode from './ChannelSplitterNode';
+import ChannelMergerNode from './ChannelMergerNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
@@ -216,6 +218,20 @@ export default class BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createChannelSplitter(numberOfOutputs: number = 6): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      this.context.createChannelSplitter(numberOfOutputs)
+    );
+  }
+
+  createChannelMerger(numberOfInputs: number = 6): ChannelSplitterNode {
+    return new ChannelMergerNode(
+      this,
+      this.context.createChannelMerger(numberOfInputs)
+    );
   }
 
   createBufferSource(
