@@ -66,7 +66,6 @@ export default class AudioNode {
     output?: number,
     input?: number
   ): void {
-
     const numberOfOutputs = this.node.numberOfOutputs;
     const numberOfInputs = this.node.numberOfInputs;
     // probably needs a switch statement
