@@ -35,7 +35,6 @@
     "!**/.*"
   ],
   "scripts": {
-    "example": "yarn workspace react-native-medi-example",
     "test": "jest",
     "typecheck": "tsc",
     "lint": "eslint \"**/*.{js,ts,tsx}\"",
