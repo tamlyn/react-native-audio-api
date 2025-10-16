@@ -322,9 +322,12 @@ void AudioParam::processInputs(
       continue;
     }
 
-    // Process this input node and store its output bus
-    auto inputBus = inputNode->processAudio(
-        outputBus, framesToProcess, checkIsAlreadyProcessed);
+    // probably wrong and needs to be adjusted to the indexed connect
+
+    inputNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
+
+    auto inputBus = inputNode->getOutputBus(0);
+
     inputBuses_.emplace_back(inputBus);
   }
 }

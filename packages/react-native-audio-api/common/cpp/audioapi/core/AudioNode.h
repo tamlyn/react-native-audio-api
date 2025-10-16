@@ -4,8 +4,8 @@
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
 #include <audioapi/core/utils/Constants.h>
-#include <limits>
 
+#include <limits>
 #include <cstddef>
 #include <map>
 #include <memory>
@@ -25,14 +25,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   explicit AudioNode(BaseAudioContext *context);
   virtual ~AudioNode();
 
-  // --- Public Connection API ---
   // just delegates it to the NodeManager
   void
   connect(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex = 0, unsigned int inputIndex = 0);
   // just delegates it to the NodeManager
   void connect(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex = 0);
 
-  // Overloaded Disconnect Methode - these just call equivalent methods in      //NodeConnection
+  // Overloaded Disconnect Methode - these just call equivalent methods in NodeConnection
   void disconnect();
   void disconnect(unsigned int outputIndex);
   void disconnect(const std::shared_ptr<AudioNode> &destination);
@@ -46,7 +45,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   std::shared_ptr<AudioBus> getOutputBus(unsigned int outputIndex);
 
-  // --- Getters & State ---
   int getNumberOfInputs() const;
   int getNumberOfOutputs() const;
   int getChannelCount() const;
@@ -82,9 +80,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connectParam(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
   void disconnectParam(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
 
-  // inputBuses is a vector with size == numberOfInputs_ and contains a
-  // mixed AudioBus for each input index (may be a silent bus). Implementors
-  // must write into this node's output buses (accessible via getOutputBus()).
+  // created for backwards compatibility
+  virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess);
   virtual void processNode(const std::vector<std::shared_ptr<AudioBus>> &inputBuses, int framesToProcess);
 
   // Called by an upstream node when it becomes enabled. Increments the active input counter.

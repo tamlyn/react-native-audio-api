@@ -87,9 +87,9 @@ AudioNodeManager::~AudioNodeManager() {
 void AudioNodeManager::addPendingNodeConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioNode> &to,
-    unsigned int outputIndex,
-    unsigned int inputIndex,
-    ConnectionType type) {
+    ConnectionType type,
+     unsigned int outputIndex,
+    unsigned int inputIndex) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::NODES;
@@ -104,8 +104,8 @@ void AudioNodeManager::addPendingNodeConnection(
 void AudioNodeManager::addPendingParamConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioParam> &to,
-    unsigned int outputIndex,
-    ConnectionType type) {
+    ConnectionType type,
+     unsigned int outputIndex) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::PARAMS;
@@ -162,9 +162,9 @@ void AudioNodeManager::settlePendingConnections() {
       case ConnectionType::DISCONNECT:
         handleDisconnectEvent(std::move(value));
         break;
-      case ConnectionType::DISCONNECT_ALL:
-        handleDisconnectAllEvent(std::move(value));
-        break;
+      // case ConnectionType::DISCONNECT_ALL:
+      //   handleDisconnectAllEvent(std::move(value));
+      //   break;
       case ConnectionType::ADD:
         handleAddToDeconstructionEvent(std::move(value));
         break;

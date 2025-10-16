@@ -71,9 +71,9 @@ class AudioNodeManager {
   void addPendingNodeConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioNode> &to,
+      ConnectionType type,
       unsigned int outputIndex = 0,
-      unsigned int inputIndex = 0,
-      ConnectionType type);
+      unsigned int inputIndex = 0);
 
   /// @brief Adds a pending connection between an audio node and an audio parameter.
   /// @param from The source audio node.
@@ -83,8 +83,8 @@ class AudioNodeManager {
   void addPendingParamConnection(
       const std::shared_ptr<AudioNode> &from,
       const std::shared_ptr<AudioParam> &to,
-      unsigned int outputIndex = 0,
-      ConnectionType type);
+      ConnectionType type,
+       unsigned int outputIndex = 0 );
 
   /// @brief Adds a processing node to the manager.
   /// @param node The processing node to add.
@@ -127,7 +127,6 @@ class AudioNodeManager {
   void settlePendingConnections();
   void handleConnectEvent(std::unique_ptr<Event> event);
   void handleDisconnectEvent(std::unique_ptr<Event> event);
-  void handleDisconnectAllEvent(std::unique_ptr<Event> event);
   void handleAddToDeconstructionEvent(std::unique_ptr<Event> event);
 
   template <typename U>

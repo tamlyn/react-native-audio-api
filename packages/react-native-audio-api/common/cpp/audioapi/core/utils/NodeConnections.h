@@ -95,8 +95,11 @@ Disconnects a specific output of the node from a specific input of some destin
 
   // --- Internal Helpers ---
   std::shared_ptr<AudioBus> processInputAtIndex(unsigned int index, int framesToProcess, bool checkIsAlreadyProcessed);
-  std::shared_ptr<AudioBus> applyChannelCountMode(const std::shared_ptr<AudioBus> &processingBus);
-  void mixSourceBuses(const std::shared_ptr<AudioBus> &processingBus);
+  unsigned int computeNumberOfChannelsForInput(unsigned int index) const;
+
+  std::shared_ptr<AudioBus> getProcessingBusForIndex(unsigned int inputIndex,
+    unsigned int numChannels,
+    int framesToProcess);
 };
 
 } // namespace audioapi
