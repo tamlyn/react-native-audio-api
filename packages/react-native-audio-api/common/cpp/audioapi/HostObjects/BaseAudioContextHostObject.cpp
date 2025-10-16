@@ -5,6 +5,8 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ChannelMergerNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ChannelSplitterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
@@ -45,6 +47,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createGain),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createStereoPanner),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBiquadFilter),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createChannelSplitter),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createChannelMerger),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
@@ -192,6 +196,34 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
   auto biquadFilterHostObject =
       std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelSplitter) {
+  unsigned numberOfOutputs = 6;
+  if (count > 0 && args[0].isNumber()) {
+    numberOfOutputs = static_cast<unsigned>(args[0].asNumber());
+  }
+
+  auto channelSplitter = context_->createChannelSplitter(numberOfOutputs);
+
+  auto channelSplitterHostObject =
+      std::make_shared<ChannelSplitterNodeHostObject>(channelSplitter);
+
+  return jsi::Object::createFromHostObject(runtime, channelSplitterHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelMerger) {
+  unsigned numberOfInputs = 6;
+  if (count > 0 && args[0].isNumber()) {
+    numberOfInputs = static_cast<unsigned>(args[0].asNumber());
+  }
+
+  auto channelMerger = context_->createChannelMerger(numberOfInputs);
+
+  auto channelMergerHostObject =
+      std::make_shared<ChannelMergerNodeHostObject>(channelMerger);
+
+  return jsi::Object::createFromHostObject(runtime, channelMergerHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
