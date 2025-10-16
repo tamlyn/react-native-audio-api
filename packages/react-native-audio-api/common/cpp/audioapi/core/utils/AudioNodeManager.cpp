@@ -200,20 +200,6 @@ void AudioNodeManager::handleDisconnectEvent(std::unique_ptr<Event> event) {
   }
 }
 
-// wont be needed, NodeDestination::disconnectAll() does the job by dispatching
-// multiple disconnect events
-/*
-void AudioNodeManager::handleDisconnectAllEvent(std::unique_ptr<Event> event) {
-  assert(event->payloadType == EventPayloadType::NODES);
-  for (auto it = event->payload.nodes.from->outputNodes_.begin();
-       it != event->payload.nodes.from->outputNodes_.end();) {
-    auto next = std::next(it);
-    event->payload.nodes.from->disconnectNode(*it);
-    it = next;
-  }
-}
-*/
-
 void AudioNodeManager::handleAddToDeconstructionEvent(
     std::unique_ptr<Event> event) {
   switch (event->payloadType) {

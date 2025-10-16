@@ -6,6 +6,7 @@
 
 namespace audioapi {
 
+
 AudioParam::AudioParam(
     float defaultValue,
     float minValue,
@@ -24,7 +25,7 @@ AudioParam::AudioParam(
               1,
               context->getSampleRate())) {
   inputBuses_.reserve(4);
-  inputNodes_.reserve(4);
+  inputConnections_.reserve(4);
   startTime_ = 0;
   endTime_ = 0;
   startValue_ = value_;
@@ -254,15 +255,15 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
   });
 }
 
-void AudioParam::addInputNode(AudioNode *node) {
-  inputNodes_.emplace_back(node);
+void AudioParam::addInputNode(AudioNode *node, unsigned int outputIndexFromSource) {
+  inputConnections_.emplace_back(ParamInputConnection{node, outputIndexFromSource});
 }
 
-void AudioParam::removeInputNode(AudioNode *node) {
-  for (int i = 0; i < inputNodes_.size(); i++) {
-    if (inputNodes_[i] == node) {
-      std::swap(inputNodes_[i], inputNodes_.back());
-      inputNodes_.resize(inputNodes_.size() - 1);
+void AudioParam::removeInputNode(AudioNode *node, unsigned int outputIndexFromSource) {
+  for (int i = 0; i < inputConnections_.size(); i++) {
+    if (inputConnections_[i].sourceNode == node && inputConnections_[i].outputIndexFromSource == outputIndexFromSource) {
+      std::swap(inputConnections_[i], inputConnections_.back());
+      inputConnections_.resize(inputConnections_.size() - 1);
       break;
     }
   }
@@ -272,7 +273,7 @@ std::shared_ptr<AudioBus> AudioParam::calculateInputs(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
   processingBus->zero();
-  if (inputNodes_.empty()) {
+  if (inputConnections_.empty()) {
     return processingBus;
   }
   processInputs(processingBus, framesToProcess, true);
@@ -313,20 +314,20 @@ void AudioParam::processInputs(
     const std::shared_ptr<AudioBus> &outputBus,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
-  for (auto it = inputNodes_.begin(), end = inputNodes_.end(); it != end;
+  for (auto it = inputConnections_.begin(), end = inputConnections_.end(); it != end;
        ++it) {
-    auto inputNode = *it;
+    auto inputNode = it->sourceNode;
+    auto outputIndex = it->outputIndexFromSource;
     assert(inputNode != nullptr);
 
     if (!inputNode->isEnabled()) {
       continue;
     }
 
-    // probably wrong and needs to be adjusted to the indexed connect
 
     inputNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
 
-    auto inputBus = inputNode->getOutputBus(0);
+    auto inputBus = inputNode->getOutputBus(outputIndex);
 
     inputBuses_.emplace_back(inputBus);
   }

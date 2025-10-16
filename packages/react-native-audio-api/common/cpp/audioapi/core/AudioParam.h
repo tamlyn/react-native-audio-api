@@ -15,6 +15,11 @@
 
 namespace audioapi {
 
+struct ParamInputConnection {
+  AudioNode *sourceNode;
+  unsigned int outputIndexFromSource;
+};
+
 class AudioParam {
  public:
   explicit AudioParam(float defaultValue, float minValue, float maxValue, BaseAudioContext *context);
@@ -77,10 +82,10 @@ class AudioParam {
   /// These methods are called only from the Audio rendering thread.
 
   // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
-  void addInputNode(AudioNode* node);
+  void addInputNode(AudioNode* node, unsigned int outputIndexFromSource);
 
   // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
-  void removeInputNode(AudioNode* node);
+  void removeInputNode(AudioNode* node, unsigned int outputIndexFromSource);
 
   // Audio-Thread only
   std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
@@ -107,7 +112,7 @@ class AudioParam {
   std::function<float(double, double, float, float, double)> calculateValue_;
 
   // Input modulation system
-  std::vector<AudioNode *> inputNodes_;
+  std::vector<ParamInputConnection> inputConnections_;
   std::shared_ptr<AudioBus> audioBus_;
   std::vector<std::shared_ptr<AudioBus>> inputBuses_;
 
