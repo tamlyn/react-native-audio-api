@@ -66,8 +66,6 @@ bool StreamerNode::initialize(const std::string &input_url) {
       maxBufferSize_, codecpar_->ch_layout.nb_channels, codecCtx_->sample_rate);
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
   streamFlag.store(true);

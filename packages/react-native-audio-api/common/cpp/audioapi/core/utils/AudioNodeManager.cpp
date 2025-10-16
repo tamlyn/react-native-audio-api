@@ -88,7 +88,7 @@ void AudioNodeManager::addPendingNodeConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioNode> &to,
     ConnectionType type,
-     unsigned int outputIndex,
+    unsigned int outputIndex,
     unsigned int inputIndex) {
   auto event = std::make_unique<Event>();
   event->type = type;
@@ -105,7 +105,7 @@ void AudioNodeManager::addPendingParamConnection(
     const std::shared_ptr<AudioNode> &from,
     const std::shared_ptr<AudioParam> &to,
     ConnectionType type,
-     unsigned int outputIndex) {
+    unsigned int outputIndex) {
   auto event = std::make_unique<Event>();
   event->type = type;
   event->payloadType = EventPayloadType::PARAMS;

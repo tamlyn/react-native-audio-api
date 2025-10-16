@@ -2,6 +2,8 @@
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
+#include <audioapi/core/effects/ChannelMergerNode.h>
+#include <audioapi/core/effects/ChannelSplitterNode.h>
 #include <audioapi/core/effects/GainNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
@@ -137,6 +139,22 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
   nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
+}
+
+std::shared_ptr<ChannelSplitterNode> BaseAudioContext::createChannelSplitter(
+    unsigned numberOfOutputs) {
+  auto channelSplitter =
+      std::make_shared<ChannelSplitterNode>(this, numberOfOutputs);
+  nodeManager_->addProcessingNode(channelSplitter);
+  return channelSplitter;
+}
+
+std::shared_ptr<ChannelMergerNode> BaseAudioContext::createChannelMerger(
+    unsigned numberOfInputs) {
+  auto channelMerger =
+      std::make_shared<ChannelMergerNode>(this, numberOfInputs);
+  nodeManager_->addProcessingNode(channelMerger);
+  return channelMerger;
 }
 
 std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
