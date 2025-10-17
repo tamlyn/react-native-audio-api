@@ -22,28 +22,58 @@ export default class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-  public connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
-    if (this.context !== destination.context) {
-      throw new Error(
-        'Source and destination are from different BaseAudioContexts'
-      );
-    }
 
+  public connect(
+    destination: AudioNode | AudioParam,
+    output = 0,
+    input = 0
+  ): AudioNode | void {
     if (destination instanceof AudioParam) {
-      this.node.connect(destination.param);
-    } else {
-      this.node.connect(destination.node);
+      this.node.connect(destination.param, output);
+      return;
     }
 
-    return destination;
+    if (destination instanceof AudioNode) {
+      this.node.connect(destination.node, output, input);
+      return destination;
+    }
   }
 
-  public disconnect(destination?: AudioNode): void {
-    if (destination === undefined) {
+  public disconnect(
+    destinationOrOutput?: AudioNode | AudioParam | number,
+    output?: number,
+    input?: number
+  ): void {
+    if (destinationOrOutput === undefined) {
       this.node.disconnect();
       return;
     }
 
-    this.node.disconnect(destination.node);
+    if (typeof destinationOrOutput === 'number') {
+      const outputIndex = destinationOrOutput;
+      this.node.disconnect(outputIndex);
+      return;
+    }
+
+    const destination = destinationOrOutput;
+
+    if (destination instanceof AudioParam) {
+      if (output !== undefined) {
+        this.node.disconnect(destination.param, output);
+      } else {
+        this.node.disconnect(destination.param);
+      }
+      return;
+    }
+
+    if (destination instanceof AudioNode) {
+      if (output !== undefined && input !== undefined) {
+        this.node.disconnect(destination.node, output, input);
+      } else if (output !== undefined) {
+        this.node.disconnect(destination.node, output);
+      } else {
+        this.node.disconnect(destination.node);
+      }
+    }
   }
 }

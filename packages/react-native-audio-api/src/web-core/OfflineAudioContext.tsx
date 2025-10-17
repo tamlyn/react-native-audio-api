@@ -16,6 +16,8 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import ChannelMergerNode from './ChannelMergerNode';
+import ChannelSplitterNode from './ChannelSplitterNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 
@@ -74,6 +76,20 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createChannelSplitter(numberOfOutputs: number = 6): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      this.context.createChannelSplitter(numberOfOutputs)
+    );
+  }
+
+  createChannelMerger(numberOfInputs: number = 6): ChannelSplitterNode {
+    return new ChannelMergerNode(
+      this,
+      this.context.createChannelMerger(numberOfInputs)
+    );
   }
 
   async createBufferSource(

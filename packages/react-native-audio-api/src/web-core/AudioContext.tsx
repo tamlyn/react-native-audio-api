@@ -15,6 +15,8 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import ChannelMergerNode from './ChannelMergerNode';
+import ChannelSplitterNode from './ChannelSplitterNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConstantSourceNode from './ConstantSourceNode';
@@ -68,6 +70,20 @@ export default class AudioContext implements BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createChannelSplitter(numberOfOutputs: number = 6): ChannelSplitterNode {
+    return new ChannelSplitterNode(
+      this,
+      this.context.createChannelSplitter(numberOfOutputs)
+    );
+  }
+
+  createChannelMerger(numberOfInputs: number = 6): ChannelSplitterNode {
+    return new ChannelMergerNode(
+      this,
+      this.context.createChannelMerger(numberOfInputs)
+    );
   }
 
   async createBufferSource(

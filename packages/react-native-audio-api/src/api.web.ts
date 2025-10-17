@@ -10,6 +10,8 @@ export { default as AudioScheduledSourceNode } from './web-core/AudioScheduledSo
 export { default as BaseAudioContext } from './web-core/BaseAudioContext';
 export { default as BiquadFilterNode } from './web-core/BiquadFilterNode';
 export { default as GainNode } from './web-core/GainNode';
+export { default as ChannelSplitterNode } from './web-core/ChannelSplitterNode';
+export { default as ChannelMergerNode } from './web-core/ChannelMergerNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
