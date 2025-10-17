@@ -7,6 +7,52 @@ const Medi: React.FC = () => {
   const [deviceInfo, setDeviceInfo] = useState<string>('');
   const [messages, setMessages] = useState<string[]>([]);
   const [currentPortId, setCurrentPortId] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState<boolean>(false);
+
+  // Initialize MIDI on mount
+  useEffect(() => {
+    const initMIDI = async () => {
+      try {
+        await NativeMedi.requestMIDIAccess(false);
+        setIsInitialized(true);
+        setStatus('MIDI initialized - waiting for device...');
+      } catch (error) {
+        console.error('Failed to initialize MIDI:', error);
+        setStatus('Failed to initialize MIDI');
+      }
+    };
+
+    initMIDI();
+  }, []);
+
+  // Listen for device changes
+  useEffect(() => {
+    const handleStateChange = async (event: any) => {
+      console.log('Device state changed:', event);
+
+      if (event.state === 'connected') {
+        setStatus(`Device connected: ${event.portId}`);
+        // Optionally auto-connect to the new device
+        if (!currentPortId) {
+          // Auto-connect logic could go here
+        }
+      } else if (event.state === 'disconnected') {
+        setStatus(`Device disconnected: ${event.portId}`);
+        if (currentPortId === event.portId) {
+          // Current device was disconnected
+          setCurrentPortId(null);
+          setDeviceInfo('');
+          setMessages([]);
+        }
+      }
+    };
+
+    midiEventManager.addStateChangeListener(handleStateChange);
+
+    return () => {
+      midiEventManager.removeStateChangeListener(handleStateChange);
+    };
+  }, [currentPortId]);
 
 
   useEffect(() => {
@@ -23,13 +69,22 @@ const Medi: React.FC = () => {
       setStatus('Connecting...');
       setMessages([]);
 
-      // Initialize MIDI
-      await NativeMedi.requestMIDIAccess(false);
+      if (!isInitialized) {
+        await NativeMedi.requestMIDIAccess(false);
+        setIsInitialized(true);
+      }
 
       // Get input ports
       const inputPorts = await NativeMedi.getInputPorts();
 
       console.log('Input Ports:', inputPorts);
+
+      if (inputPorts.length === 0) {
+        setStatus('No MIDI devices found - waiting for device...');
+        setDeviceInfo('Please connect a MIDI device');
+        return;
+      }
+
       // Find first active input
       const activePort = inputPorts.find(port => port.state === 'connected');
 

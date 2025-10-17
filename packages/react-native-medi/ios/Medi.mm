@@ -11,12 +11,7 @@ typedef struct {
 
 // MIDI notification callback for device changes
 static void MediNotificationCallback(const MIDINotification *message, void *refCon) {
-    if (message->messageID == kMIDIMsgObjectAdded ||
-        message->messageID == kMIDIMsgObjectRemoved) {
-        // Device topology changed - JS layer can re-enumerate if needed
-        // In Web MIDI, this doesn't automatically trigger events unless
-        // the ports are opened, so we keep it simple here
-    }
+    NSLog(@"🎹 MediNotificationCallback fired! messageID=%d", message->messageID);
 }
 
 // MIDI read callback for receiving messages (Web MIDI 'midimessage' event)

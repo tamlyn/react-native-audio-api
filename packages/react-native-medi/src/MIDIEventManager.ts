@@ -31,12 +31,16 @@ export interface MIDIMessageEvent {
 
 type Subscription = { remove: () => void };
 
+export type StateChangeCallback = (event: NativeStateChangeEvent) => void;
+
 /** Event manager for MIDI events following Web MIDI API specifications */
 export class MIDIEventManager {
   private messageListeners: Map<
     string,
     Set<(event: MIDIMessageEvent) => void>
   > = new Map();
+
+  private stateChangeListeners: Set<StateChangeCallback> = new Set();
 
   private messageSubscription: Subscription | null = null;
   private stateSubscription: Subscription | null = null;
@@ -76,9 +80,20 @@ export class MIDIEventManager {
       STATE_CHANGE_EVENT,
       (nativeEvent) => {
         const evt = nativeEvent as NativeStateChangeEvent;
-        console.log('State change:', evt);
+        // Notify all state change listeners
+        this.stateChangeListeners.forEach((listener) => listener(evt));
       }
     );
+  }
+
+  /** Add listener for device state changes (device connected/disconnected) */
+  addStateChangeListener(listener: StateChangeCallback): void {
+    this.stateChangeListeners.add(listener);
+  }
+
+  /** Remove listener for device state changes */
+  removeStateChangeListener(listener: StateChangeCallback): void {
+    this.stateChangeListeners.delete(listener);
   }
 
   /** Add listener for MIDI messages on a specific port (Web MIDI 'midimessage') */
@@ -118,6 +133,7 @@ export class MIDIEventManager {
     });
 
     this.messageListeners.clear();
+    this.stateChangeListeners.clear();
 
     if (this.messageSubscription) {
       this.messageSubscription.remove();

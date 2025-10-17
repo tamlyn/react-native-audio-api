@@ -25,7 +25,7 @@ RCT_EXPORT_MODULE();
 
 - (void)startObservingPortId:(NSString *)portId {
     if (!portId) return;
-    
+
     NSNumber *currentCount = self.listenedPortIds[portId];
     NSInteger count = currentCount ? [currentCount integerValue] : 0;
     self.listenedPortIds[portId] = @(count + 1);
@@ -33,10 +33,10 @@ RCT_EXPORT_MODULE();
 
 - (void)stopObservingPortId:(NSString *)portId {
     if (!portId) return;
-    
+
     NSNumber *currentCount = self.listenedPortIds[portId];
     if (!currentCount) return;
-    
+
     NSInteger count = [currentCount integerValue];
     if (count <= 1) {
         [self.listenedPortIds removeObjectForKey:portId];
@@ -47,7 +47,7 @@ RCT_EXPORT_MODULE();
 
 - (BOOL)hasListenersForPortId:(NSString *)portId {
     if (!portId) return NO;
-    
+
     NSNumber *count = self.listenedPortIds[portId];
     return count && [count integerValue] > 0;
 }
@@ -61,7 +61,7 @@ RCT_EXPORT_MODULE();
     if (![self hasListenersForPortId:portId]) {
         return;
     }
-    
+
     [self sendEventWithName:MediEventMIDIMessage body:@{
         @"portId": portId,
         @"data": data,
@@ -72,11 +72,8 @@ RCT_EXPORT_MODULE();
 - (void)sendStateChangeEvent:(NSString *)portId
                         state:(NSString *)state
                    connection:(NSString *)connection {
-    // Only send event if there are active listeners for this port
-    if (![self hasListenersForPortId:portId]) {
-        return;
-    }
-    
+    // State change events should always be sent (device add/remove notifications)
+    // These are not port-specific message events, so we broadcast them
     [self sendEventWithName:MediEventStateChange body:@{
         @"portId": portId,
         @"state": state,

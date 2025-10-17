@@ -8,4 +8,5 @@ export type {
   NativeMIDIMessageEvent,
   NativeStateChangeEvent,
   MIDIMessageEvent,
+  StateChangeCallback,
 } from './MIDIEventManager';
