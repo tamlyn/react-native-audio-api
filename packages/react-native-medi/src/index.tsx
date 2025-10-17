@@ -1,31 +1,11 @@
-import Medi from './NativeMedi';
+// Export native module interface
+export { default as NativeMedi } from './NativeMedi';
+export type { MIDIPortInfo } from './NativeMedi';
 
-// Keep multiply method for now so app will build correctly
-export function multiply(a: number, b: number): number {
-  return Medi.multiply(a, b);
-}
-
-// Export MIDI types and interfaces
+// Export event manager for MIDI message listening
+export { midiEventManager, MIDIEventManager } from './MIDIEventManager';
 export type {
-  MIDIAccess,
-  MIDIInput,
-  MIDIOutput,
-  MIDIInputMap,
-  MIDIOutputMap,
-  MIDIPort,
-  MIDIPortType,
-  MIDIPortDeviceState,
-  MIDIPortConnectionState,
-  MIDIOptions,
+  NativeMIDIMessageEvent,
+  NativeStateChangeEvent,
   MIDIMessageEvent,
-  MIDIConnectionEvent,
-  MIDIMessageEventInit,
-  MIDIConnectionEventInit,
-  Event,
-  EventInit,
-  EventTarget,
-} from './types/MIDITypes';
-
-// Export MIDI implementation
-export { requestMIDIAccess, MIDIAccessImpl } from './MIDIAccess';
-export { MIDIPortImpl, MIDIInputImpl, MIDIOutputImpl } from './MIDIPort';
+} from './MIDIEventManager';
