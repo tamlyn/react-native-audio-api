@@ -18,9 +18,14 @@ We usually represent the channels with the standard abbreviations detailed in th
 | Quad | 4 | 0: L - left <br /> 1: R - right <br /> 2: SL - surround left <br /> 3: SR - surround right |
 | Stereo | 6 | 0: L - left <br /> 1: R - right <br /> 2: C - center <br /> 3: LFE - subwoofer <br /> 4: SL - surround left <br /> 5: SR - surround right |
 
+#### Number of inputs and outputs
+
+Each node has a specified `numberOfInputs` and `numberOfOutputs`. These represent multiple logical processing paths in the node, and currently are used only by the [`ChannelMergerNode`](/docs/effects/channel-merger-node) and [`ChannelSplitterNode`](/docs/effects/channel-splitter-node). 
+The rest of the nodes have at most one input and output. You can connect multiple nodes to a single input, but keep in mind that the data will be put through a mixing process described below.
+
 #### Mixing
 
-When node has more then one input or number of inputs channels differs from output up-mixing or down-mixing must be conducted.
+When a nodes input has more then one input or number of inputs channels differs from output up-mixing or down-mixing must be conducted.
 There are three properties involved in mixing process: `channelCount`, [`ChannelCountMode`](/docs/types/channel-count-mode), [`ChannelInterpretation`](/docs/types/channel-interpretation).
 Based on them we can obtain output's number of channels and mixing strategy.
 
@@ -50,6 +55,50 @@ function App() {
   gainNode.gain.value = 0.5; //lower volume to 0.5
   oscillatorNode.connect(gainNode);
   gainNode.connect(audioContext.destination);
+  oscillatorNode.start(audioContext.currentTime);
+}
+```
+
+### Connecting nodes specific output to a nodes specific input
+
+```tsx
+import { OscillatorNode, GainNode, AudioContext } from 'react-native-audio-api';
+
+function App() {
+  const audioContext = new AudioContext();
+  const oscillatorNode = audioContext.createOscillator();
+  // we create a ChannelSplitterNode which will split our mono input into two channels
+  const splitterNode = audioContext.createSplitter(2);
+  // we create two separate gains for each of the channels
+  const gainNode1 = audioContext.createGain(); 
+  const gainNode2 = audioContext.createGain();
+  // we create a ChannelMergerNode which merges towo channels into one
+  const mergerNode = audioContext.createMerger(2);
+  
+
+
+  gainNode1.gain.value = 0.5; // set left channel volume to 0.5
+  gainNode2.gain.values = 1; // set right channel volume to 1
+  /*
+    we connect oscillator to the splitter
+    oscillator has one output and splitter has one input 
+    so we dont need to specify the indices
+  */
+  oscillatorNode.connect(splitterNode);
+  // we connect output 0 (left channel) of the splittter to input 0 of the gain1
+  splitterNode.connect(gainNode1, 0, 0);
+  // we connect output 1 (right channel) of the splitter to input 0 of gain2 
+  splitterNode.connect(gainNode1, 1, 0);
+  // we connect output 0 of the gain1 to input 0 of the merger 
+  gainNode1.connect(mergerNode, 0, 0);
+  // we connect output 0 of the gain2 to input 1 of the merger 
+  gainNode2.connect(mergerNode, 0, 1);
+  /*
+    we connect merger to the destination
+    merger has one output and destination has one input 
+    so we dont need to specify the indices
+  */
+  mergerNode.connect(audioContext.destination);
   oscillatorNode.start(audioContext.currentTime);
 }
 ```
@@ -90,6 +139,8 @@ Connects one of the node's outputs to a destination.
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `destination` | [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param) | `AudioNode` or `AudioParam` to which to connect. |
+| `outputIndex` <Optional/> | `number` | An index specifying which output of the current `AudioNode` to connect to the destination. Defaults to 0. |
+| `inputIndex` <Optional/> | `number` | An index describing which input of the destination you want to connect the current `AudioNode` to. Defaults to 0. Cannot be used with when destination is an `AudioParam`.|
 
 #### Errors:
 
@@ -101,13 +152,26 @@ Connects one of the node's outputs to a destination.
 
 ### `disconnect`
 
-Disconnects one or more nodes from the node.
+Disconnects one or more nodes / params from the node.
 
 | Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `destination` <Optional /> | [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param) | `AudioNode` or `AudioParam` from which to disconnect. |
+| `outputIndex` <Optional/> | `number` | An index specifying which output of the current `AudioNode` is to be disconnected.|
+| `inputIndex` <Optional/> | `number` | An index describing which input of the destination you want to disconnect the current `AudioNode` from. Cannot be used with when destination is an `AudioParam`.|
 
-If no arguments provided node disconnects from all outgoing connections.
+The method behaves differently depending on the combination of the provided parameters: 
+
+#### `disconnect()`
+Disconnects all outgoing connections from the [`AudioNode`](/docs/core/audio-node).
+#### `disconnect(outputIndex)`
+Disconnects all connections going out from the specified `outputIndex` of the [`AudioNode`](/docs/core/audio-node) .
+#### `disconnect(destination)`
+Disconnects all outputs of the [`AudioNode`](/docs/core/audio-node) going to a specific destination [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param).
+#### `disconnect(destination, outputIndex)`
+Disconnects a specific output of the [`AudioNode`](/docs/core/audio-node) from any and all inputs of some destination [`AudioNode`](/docs/core/audio-node) or [`AudioParam`](/docs/core/audio-param). 
+#### `disconnect(destinationNode, outputIndex,inputIndex)`
+Disconnects a specific output of the [`AudioNode`](/docs/core/audio-node) from a specific input of some destination [`AudioNode`](/docs/core/audio-node).
 
 #### Returns `undefined`.
 
