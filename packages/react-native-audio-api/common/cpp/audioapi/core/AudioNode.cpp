@@ -151,7 +151,8 @@ void AudioNode::processAudio(
     }
   }
 
-  // we could also do the check in NodeConnections::processInputAtIndex, not sure which is better
+  // we could also do the check in NodeConnections::processInputAtIndex, not
+  // sure which is better
   if (!isEnabled_) {
     return;
   }
@@ -306,7 +307,18 @@ void AudioNode::cleanup() {
   m_connections->cleanup();
 }
 
-// this acts as an adapter for all the single input/output nodes (every node besides merger/splitter)
+std::shared_ptr<AudioBus> AudioNode::processNode(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+  if (!processingBus) {
+    return nullptr;
+  }
+  processingBus->zero();
+  return processingBus;
+}
+
+// this acts as an adapter for all the single input/output nodes (every node
+// besides merger/splitter)
 void AudioNode::processNode(
     const std::vector<std::shared_ptr<AudioBus>> &inputBuses,
     int framesToProcess) {
