@@ -19,10 +19,6 @@ std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
   return panParam_;
 }
 
-std::shared_ptr<AudioParam> StereoPannerNode::getPanParam() const {
-  return panParam_;
-}
-
 std::shared_ptr<AudioBus> StereoPannerNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {

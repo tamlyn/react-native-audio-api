@@ -20,6 +20,18 @@ AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
   }
 }
 
+AudioNode::AudioNode(BaseAudioContext *context, unsigned int numberOfInputs)
+    : context_(context), numberOfInputs_(numberOfInputs) {
+  m_connections = std::make_unique<NodeConnections>(this, context);
+  isInitialized_ = true;
+
+  m_outputBuses.resize(numberOfOutputs_);
+  for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
+    m_outputBuses[i] = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  }
+}
+
 AudioNode::~AudioNode() {
   if (isInitialized_) {
     cleanup();

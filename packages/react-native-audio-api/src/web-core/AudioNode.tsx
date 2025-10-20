@@ -22,7 +22,6 @@ export default class AudioNode {
     this.channelInterpretation = this.node.channelInterpretation;
   }
 
-
   public connect(
     destination: AudioNode | AudioParam,
     output = 0,
