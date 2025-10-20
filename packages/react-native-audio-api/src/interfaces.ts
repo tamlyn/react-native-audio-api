@@ -252,7 +252,7 @@ export interface IWorkletProcessingNode extends IAudioNode {}
 
 export interface IAudioRecorder {
   start: () => void;
-  stop: () => void;
+  stop: () => void | string;
   connect: (node: IRecorderAdapterNode) => void;
   disconnect: () => void;
 

@@ -16,13 +16,23 @@ namespace audioapi {
 AudioRecorderHostObject::AudioRecorderHostObject(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
-    int bufferLength) {
+    int bufferLength,
+    bool recordToFile,
+    const std::string &fileDirectory) {
 #ifdef ANDROID
   audioRecorder_ = std::make_shared<AndroidAudioRecorder>(
-      sampleRate, bufferLength, audioEventHandlerRegistry);
+      sampleRate,
+      bufferLength,
+      recordToFile,
+      fileDirectory,
+      audioEventHandlerRegistry);
 #else
   audioRecorder_ = std::make_shared<IOSAudioRecorder>(
-      sampleRate, bufferLength, audioEventHandlerRegistry);
+      sampleRate,
+      bufferLength,
+      recordToFile,
+      fileDirectory,
+      audioEventHandlerRegistry);
 #endif
 
   addSetters(JSI_EXPORT_PROPERTY_SETTER(AudioRecorderHostObject, onAudioReady));

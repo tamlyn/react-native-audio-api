@@ -1,5 +1,7 @@
 export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
+export type FileDirectory = 'Document' | 'Cache';
+
 export type ChannelInterpretation = 'speakers' | 'discrete';
 
 export type BiquadFilterType =
@@ -12,7 +14,7 @@ export type BiquadFilterType =
   | 'notch'
   | 'allpass';
 
-export type ContextState = 'running' | 'closed' | `suspended`;
+export type ContextState = 'running' | 'closed' | 'suspended';
 
 export type AudioWorkletRuntime = 'AudioRuntime' | 'UIRuntime';
 
@@ -40,7 +42,9 @@ export interface OfflineAudioContextOptions {
 
 export interface AudioRecorderOptions {
   sampleRate: number;
-  bufferLengthInSamples: number;
+  bufferLengthInSamples?: number;
+  recordToFile?: boolean;
+  fileDirectory?: FileDirectory;
 }
 
 export type WindowType = 'blackman' | 'hann';

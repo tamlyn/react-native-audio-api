@@ -19,28 +19,40 @@
   if (self = [super init]) {
     self.audioAPIModule = audioAPIModule;
     self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
-
-    dispatch_async(dispatch_get_main_queue(), ^{
-      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
-    });
+    self.isReceivingRemoteCommands = false;
   }
 
   return self;
 }
 
+- (void)toggleRemoteCommands:(bool)enable
+{
+  if (enable && !self.isReceivingRemoteCommands) {
+    self.isReceivingRemoteCommands = true;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[UIApplication sharedApplication] beginReceivingRemoteControlEvents];
+    });
+    return;
+  } else if (!enable && self.isReceivingRemoteCommands) {
+    self.isReceivingRemoteCommands = false;
+    dispatch_async(dispatch_get_main_queue(), ^{
+      [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
+    });
+    return;
+  }
+}
+
 - (void)cleanup
 {
   NSLog(@"[LockScreenManager] cleanup");
+  [self toggleRemoteCommands:false];
   [self resetLockScreenInfo];
-
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [[UIApplication sharedApplication] endReceivingRemoteControlEvents];
-  });
 }
 
 - (void)setLockScreenInfo:(NSDictionary *)info
 {
   self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
+  [self toggleRemoteCommands:true];
 
   // now playing info(lock screen info)
   NSMutableDictionary *lockScreenInfoDict;
@@ -79,6 +91,7 @@
 
 - (void)resetLockScreenInfo
 {
+  [self toggleRemoteCommands:false];
   self.playingInfoCenter = [MPNowPlayingInfoCenter defaultCenter];
   self.playingInfoCenter.nowPlayingInfo = nil;
   self.artworkUrl = nil;

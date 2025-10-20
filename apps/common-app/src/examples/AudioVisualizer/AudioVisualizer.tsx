@@ -1,15 +1,15 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { ActivityIndicator, View } from 'react-native';
 import {
-  AudioContext,
   AnalyserNode,
   AudioBuffer,
   AudioBufferSourceNode,
+  AudioContext,
 } from 'react-native-audio-api';
-import { ActivityIndicator, View } from 'react-native';
 
-import FreqTimeChart from './FreqTimeChart';
-import { Container, Button } from '../../components';
+import { Button, Container } from '../../components';
 import { layout } from '../../styles';
+import FreqTimeChart from './FreqTimeChart';
 
 const FFT_SIZE = 512;
 

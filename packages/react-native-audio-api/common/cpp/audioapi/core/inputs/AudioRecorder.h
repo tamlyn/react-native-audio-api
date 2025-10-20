@@ -3,6 +3,7 @@
 #include <memory>
 #include <atomic>
 #include <mutex>
+#include <string>
 
 namespace audioapi {
 
@@ -17,6 +18,8 @@ class AudioRecorder {
   explicit AudioRecorder(
     float sampleRate,
     int bufferLength,
+    bool recordToFile,
+    const std::string &fileDirectory,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
   );
 
@@ -25,6 +28,10 @@ class AudioRecorder {
   void setOnAudioReadyCallbackId(uint64_t callbackId);
   void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
   void sendRemainingData();
+
+  bool hasCallback() const {
+    return onAudioReadyCallbackId_ != 0;
+  }
 
   /// @brief
   /// # Connects the recorder to the adapter node.
@@ -47,9 +54,12 @@ class AudioRecorder {
   float sampleRate_;
   int bufferLength_;
   size_t ringBufferSize_;
+  bool recordToFile_;
+  std::string fileDirectory_;
 
   std::atomic<bool> isRunning_;
   std::shared_ptr<CircularAudioArray> circularBuffer_;
+  // std::shared_ptr<CircularAudioArray> circularFileBuffer_;
 
   mutable std::mutex adapterNodeLock_;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;

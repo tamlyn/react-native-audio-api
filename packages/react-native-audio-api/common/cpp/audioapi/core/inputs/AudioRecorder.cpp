@@ -12,12 +12,24 @@ namespace audioapi {
 AudioRecorder::AudioRecorder(
     float sampleRate,
     int bufferLength,
+    bool recordToFile,
+    const std::string &fileDirectory,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
+      recordToFile_(recordToFile),
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
   constexpr int minRingBufferSize = 8192;
   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
+
+  recordToFile_ = recordToFile;
+  fileDirectory_ = fileDirectory;
+
+  // if (recordToFile_) {
+  //   circularFileBuffer_ =
+  //   std::make_shared<CircularAudioArray>(ringBufferSize_);
+  // }
+
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
   isRunning_.store(false);
 }
@@ -29,6 +41,10 @@ void AudioRecorder::setOnAudioReadyCallbackId(uint64_t callbackId) {
 void AudioRecorder::invokeOnAudioReadyCallback(
     const std::shared_ptr<AudioBus> &bus,
     int numFrames) {
+  if (!hasCallback()) {
+    return;
+  }
+
   auto audioBuffer = std::make_shared<AudioBuffer>(bus);
   auto audioBufferHostObject =
       std::make_shared<AudioBufferHostObject>(audioBuffer);
@@ -44,6 +60,10 @@ void AudioRecorder::invokeOnAudioReadyCallback(
 }
 
 void AudioRecorder::sendRemainingData() {
+  if (!hasCallback()) {
+    return;
+  }
+
   auto bus = std::make_shared<AudioBus>(
       circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
   auto *outputChannel = bus->getChannel(0)->getData();
@@ -76,7 +96,14 @@ void AudioRecorder::writeToBuffers(const float *data, int numFrames) {
     }
     adapterNodeLock_.unlock();
   }
-  circularBuffer_->push_back(data, numFrames);
+
+  // if (recordToFile_) {
+  //   circularFileBuffer_->push_back(data, numFrames);
+  // }
+
+  if (hasCallback()) {
+    circularBuffer_->push_back(data, numFrames);
+  }
 }
 
 } // namespace audioapi

@@ -12,6 +12,7 @@
 
 @property (nonatomic, weak) MPNowPlayingInfoCenter *playingInfoCenter;
 @property (nonatomic, copy) NSString *artworkUrl;
+@property (nonatomic, assign) bool isReceivingRemoteCommands;
 
 - (instancetype)initWithAudioAPIModule:(AudioAPIModule *)audioAPIModule;
 - (void)cleanup;
