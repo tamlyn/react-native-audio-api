@@ -1,8 +1,8 @@
+import { AudioEventEmitter } from '../events';
+import { OnAudioReadyEventType } from '../events/types';
 import { IAudioRecorder } from '../interfaces';
 import { AudioRecorderOptions } from '../types';
 import AudioBuffer from './AudioBuffer';
-import { OnAudioReadyEventType } from '../events/types';
-import { AudioEventEmitter } from '../events';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
 export default class AudioRecorder {

@@ -24,7 +24,7 @@ export default class AudioScheduledSourceNode<
     }
 
     this.node.onended = () => {
-      this.onEndedCallback?.({ bufferId: undefined });
+      this.onEndedCallback?.({ bufferId: undefined, isLast: false });
     };
   }
 }

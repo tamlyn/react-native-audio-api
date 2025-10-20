@@ -1,10 +1,13 @@
 import { InvalidStateError, RangeError } from '../../errors';
-// import { EventEmptyType } from '../../events';
+import { AudioEventSubscription } from '../../events';
 import type {
   IGenericAudioBuffer,
   IGenericBaseAudioContext,
 } from '../../types/generics';
-import type { IAudioBufferSourceNode } from '../../types/interfaces';
+import type {
+  IAudioBufferSourceNode,
+  LoopEndedEventCallback,
+} from '../../types/interfaces';
 import AudioBuffer from '../AudioBuffer';
 import AudioBufferBaseSourceNode, {
   NativeAudioBufferBaseSourceNode,
@@ -21,6 +24,8 @@ interface NativeAudioBufferSourceNode extends NativeAudioBufferBaseSourceNode {
 
   start(when?: number): void;
   start(when: number, offset: number, duration?: number): void;
+
+  onLoopEnded: string;
 }
 
 export default class AudioBufferSourceNode<
@@ -29,16 +34,23 @@ export default class AudioBufferSourceNode<
   extends AudioBufferBaseSourceNode<TContext, NativeAudioBufferSourceNode>
   implements IAudioBufferSourceNode<TContext>
 {
-  public get buffer(): AudioBuffer | null {
-    if (!this.node.buffer) {
-      return null;
-    }
+  private mBuffer: AudioBuffer | null = null;
+  private onLoopEndedSubscription?: AudioEventSubscription;
+  private onLoopEndedCallback?: LoopEndedEventCallback;
 
-    return new AudioBuffer(this.node.buffer);
+  public get buffer(): AudioBuffer | null {
+    return this.mBuffer;
   }
 
   public set buffer(buffer: IGenericAudioBuffer | null) {
     this.node.setBuffer(buffer);
+
+    if (!this.node.buffer) {
+      this.mBuffer = null;
+      return;
+    }
+
+    this.mBuffer = new AudioBuffer(this.node.buffer);
   }
 
   public get loopSkip(): boolean {
@@ -98,6 +110,29 @@ export default class AudioBufferSourceNode<
 
     this.hasBeenStarted = true;
     this.node.start(when, offset, duration);
+  }
+
+  public get onLoopEnded(): LoopEndedEventCallback | undefined {
+    return this.onLoopEndedCallback;
+  }
+
+  public set onLoopEnded(callback: LoopEndedEventCallback | null) {
+    if (!callback) {
+      this.node.onLoopEnded = '0';
+      this.onLoopEndedSubscription?.remove();
+      this.onLoopEndedSubscription = undefined;
+      this.onLoopEndedCallback = undefined;
+
+      return;
+    }
+
+    this.onLoopEndedCallback = callback;
+    this.onLoopEndedSubscription = this.audioEventEmitter.addAudioEventListener(
+      'loopEnded',
+      callback
+    );
+
+    this.node.onLoopEnded = this.onLoopEndedSubscription.subscriptionId;
   }
 
   // ?????????????????????????

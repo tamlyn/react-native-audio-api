@@ -1,4 +1,5 @@
 import { InvalidStateError } from '../../errors';
+import type { EventEmptyType } from '../../events';
 import type { OscillatorType } from '../../types';
 import type {
   IGenericBaseAudioContext,
@@ -51,5 +52,15 @@ export default class OscillatorNode<
 
   public setPeriodicWave(wave: PeriodicWave<TContext, NContext>): void {
     this.node.setPeriodicWave(wave.periodicWave);
+  }
+
+  public override get onEnded(): ((event: EventEmptyType) => void) | undefined {
+    return super.onEnded as ((event: EventEmptyType) => void) | undefined;
+  }
+
+  public override set onEnded(
+    callback: ((event: EventEmptyType) => void) | null
+  ) {
+    super.onEnded = callback;
   }
 }

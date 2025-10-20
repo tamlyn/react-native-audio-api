@@ -29,7 +29,10 @@ class AudioDecoder {
   static std::shared_ptr<AudioBuffer>
   makeAudioBufferFromFloatBuffer(const std::vector<float> &buffer, float outputSampleRate, int outputChannels);
 
-  static AudioFormat detectAudioFormat(const void *data, size_t size) {
+  static AudioFormat detectAudioFormat(
+      const void *data,
+      size_t size
+  ) {
     if (size < 12)
       return AudioFormat::UNKNOWN;
     const auto *bytes = static_cast<const unsigned char *>(data);

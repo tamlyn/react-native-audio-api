@@ -4,6 +4,7 @@ import type { ChannelCountMode, ChannelInterpretation } from '../../types';
 import type { IGenericBaseAudioContext } from '../../types/generics';
 import type {
   IAudioBufferSourceNode,
+  LoopEndedEventCallback,
   OnEndedEventCallback,
   OnPositionChangedEventCallback,
 } from '../../types/interfaces';
@@ -357,8 +358,17 @@ export default class AudioBufferSourceNode<
     this.mCallback = callback;
 
     this.mNode.onended = () => {
-      this.mCallback?.({ bufferId: undefined });
+      this.mCallback?.({ bufferId: undefined, isLast: true });
     };
+  }
+
+  public get onLoopEnded(): LoopEndedEventCallback | undefined {
+    availabilityWarn('AudioBufferSourceNode.onLoopEnded', 'web');
+    return undefined;
+  }
+
+  public set onLoopEnded(callback: LoopEndedEventCallback | null) {
+    availabilityWarn('AudioBufferSourceNode.onLoopEnded', 'web');
   }
 
   public connect<ONode extends AudioNode<TContext, NativeAudioContext>>(

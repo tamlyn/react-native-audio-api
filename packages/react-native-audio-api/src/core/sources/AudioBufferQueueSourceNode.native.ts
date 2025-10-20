@@ -46,7 +46,7 @@ export default class AudioBufferQueueSourceNode<
     this.node.clearBuffers();
   }
 
-  public override start(when: number = 0, _offset?: number): void {
+  public override start(when: number = 0): void {
     if (when < 0) {
       throw new RangeError(
         `when must be a finite non-negative number: ${when}`

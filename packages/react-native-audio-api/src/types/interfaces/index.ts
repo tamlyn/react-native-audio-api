@@ -11,7 +11,11 @@ export type {
   OnPositionChangedEventCallback,
 } from './IAudioBufferBaseSourceNode';
 export type { default as IAudioBufferQueueSourceNode } from './IAudioBufferQueueSourceNode';
-export type { default as IAudioBufferSourceNode } from './IAudioBufferSourceNode';
+export type {
+  default as IAudioBufferSourceNode,
+  LoopEndedEvent,
+  LoopEndedEventCallback,
+} from './IAudioBufferSourceNode';
 export type {
   default as IAudioScheduledSourceNode,
   OnEndedEventCallback,

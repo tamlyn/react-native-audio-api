@@ -1,15 +1,15 @@
-import React, { useRef, FC, useEffect } from 'react';
+import React, { FC, useEffect, useRef } from 'react';
 import {
+  AudioBuffer,
+  AudioBufferSourceNode,
   AudioContext,
   AudioManager,
   AudioRecorder,
   RecorderAdapterNode,
-  AudioBufferSourceNode,
-  AudioBuffer,
 } from 'react-native-audio-api';
 
-import { Container, Button } from '../../components';
-import { View, Text } from 'react-native';
+import { Text, View } from 'react-native';
+import { Button, Container } from '../../components';
 import { colors } from '../../styles';
 
 const SAMPLE_RATE = 16000;
@@ -101,6 +101,8 @@ const Record: FC = () => {
       console.log('Audio recorder buffer ready:', buffer.duration, numFrames);
       audioBuffersRef.current.push(buffer);
     });
+
+    recorderAdapterRef.current.onAudioReady = () => {};
 
     recorderRef.current.start();
 
