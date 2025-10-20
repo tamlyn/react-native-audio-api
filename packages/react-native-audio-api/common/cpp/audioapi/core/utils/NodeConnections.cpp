@@ -273,7 +273,6 @@ void NodeConnections::disconnectParam(
   }
 }
 
-// og version only notified the output nodes and ignored params
 void NodeConnections::cleanup() {
   for (std::map<unsigned int, std::vector<OutputConnection>>::iterator map_it =
            m_indexedOutputs.begin();
@@ -407,10 +406,7 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
     AudioNode *sourceNode = connections[0].sourceNode;
     if (sourceNode) {
       sourceNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
-      try {
-        return sourceNode->getOutputBus(connections[0].outputIndexFromSource);
-      } catch (...) {
-      }
+      return sourceNode->getOutputBus(connections[0].outputIndexFromSource);
     }
     // fallback to silent bus
     auto fallback = getProcessingBusForIndex(index, 1, framesToProcess);

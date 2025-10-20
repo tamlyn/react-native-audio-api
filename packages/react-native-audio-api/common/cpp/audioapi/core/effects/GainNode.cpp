@@ -19,16 +19,16 @@ std::shared_ptr<AudioParam> GainNode::getGainParam() const {
 std::shared_ptr<AudioBus> GainNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  double time = context_->getCurrentTime();
-  auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
-  for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
-    dsp::multiply(
-        processingBus->getChannel(i)->getData(),
-        gainParamValues->getChannel(0)->getData(),
-        processingBus->getChannel(i)->getData(),
-        framesToProcess);
-  }
-
+    double time = context_->getCurrentTime();
+    auto gainParamValues = gainParam_->processARateParam(framesToProcess, time);
+    for (int i = 0; i < processingBus->getNumberOfChannels(); i += 1) {
+      dsp::multiply(
+          processingBus->getChannel(i)->getData(),
+          gainParamValues->getChannel(0)->getData(),
+          processingBus->getChannel(i)->getData(),
+          framesToProcess);
+    }
+    
   return processingBus;
 }
 

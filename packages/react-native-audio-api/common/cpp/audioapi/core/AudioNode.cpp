@@ -118,20 +118,18 @@ void AudioNode::disconnect(
   m_connections->disconnect(param, outputIndex);
 }
 
-std::shared_ptr<AudioBus> AudioNode::processAudio(
+void AudioNode::processAudio(
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   if (!isInitialized_ || framesToProcess <= 0) {
-    return nullptr;
+    return;
   }
 
   if (checkIsAlreadyProcessed && isAlreadyProcessed()) {
-    if (!m_outputBuses.empty()) {
-      return m_outputBuses[0];
-    }
-    return nullptr;
+    return;
   }
 
+  // this is very defensive, maybe too much
   if (m_outputBuses.size() != static_cast<size_t>(numberOfOutputs_)) {
     m_outputBuses.resize(numberOfOutputs_);
   }
@@ -153,18 +151,18 @@ std::shared_ptr<AudioBus> AudioNode::processAudio(
     }
   }
 
+  // we could also do the check in NodeConnections::processInputAtIndex, not sure which is better
+  if (!isEnabled_) {
+    return;
+  }
+
+  // process all inputs for each input index
   const auto &inputBuses =
       m_connections->processAllInputs(framesToProcess, checkIsAlreadyProcessed);
-
+  // process the node itself
   processNode(inputBuses, framesToProcess);
-
-  if (!m_outputBuses.empty()) {
-    return m_outputBuses[0];
-  }
-  return nullptr;
 }
 
-// --- Getters & State ---
 int AudioNode::getNumberOfInputs() const {
   return numberOfInputs_;
 }
@@ -308,16 +306,7 @@ void AudioNode::cleanup() {
   m_connections->cleanup();
 }
 
-std::shared_ptr<AudioBus> AudioNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  if (!processingBus) {
-    return nullptr;
-  }
-  processingBus->zero();
-  return processingBus;
-}
-
+// this acts as an adapter for all the single input/output nodes (every node besides merger/splitter)
 void AudioNode::processNode(
     const std::vector<std::shared_ptr<AudioBus>> &inputBuses,
     int framesToProcess) {

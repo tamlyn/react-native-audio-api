@@ -31,7 +31,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   // just delegates it to the NodeManager
   void connect(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex = 0);
 
-  // Overloaded Disconnect Methode - these just call equivalent methods in NodeConnection
+  // overloaded disconnect methods - these just call equivalent methods in NodeConnection
   void disconnect();
   void disconnect(unsigned int outputIndex);
   void disconnect(const std::shared_ptr<AudioNode> &destination);
@@ -41,7 +41,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void disconnect(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
 
   // calls NodeConnections::processAllInputs
-  virtual std::shared_ptr<AudioBus> processAudio(int framesToProcess, bool checkIsAlreadyProcessed);
+  virtual void processAudio(int framesToProcess, bool checkIsAlreadyProcessed);
 
   std::shared_ptr<AudioBus> getOutputBus(unsigned int outputIndex);
 
@@ -60,9 +60,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   ChannelInterpretation getChannelInterpretationEnum() const {
     return channelInterpretation_;
   }
-  // Sets the node's state to enabled and propagates this change to its outputs.
+  // sets the node's state to enabled and propagates this change to its outputs.
   void enable();
-  // Sets the node's state to disabled and propagates this change to its outputs.
+  // sets the node's state to disabled and propagates this change to its outputs.
   virtual void disable();
 
  protected:
@@ -71,7 +71,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
 
   explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs);
 
-  // these are forwarders to NodeConnections
+  // these are all forwarders to NodeConnections
   void connectNode(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
   void onInputConnected(AudioNode *source, unsigned int outputIndexFromSource, unsigned int inputIndex);
 
@@ -82,13 +82,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connectParam(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
   void disconnectParam(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
 
-  // created for backwards compatibility
+  // created for compability with the single input/ouput nodes
   virtual std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess);
   virtual void processNode(const std::vector<std::shared_ptr<AudioBus>> &inputBuses, int framesToProcess);
 
-  // Called by an upstream node when it becomes enabled. Increments the active input counter.
+  // called by an upstream node when it becomes enabled. Increments the active input counter.
   void onInputEnabled();
-  // Called by an upstream node when it becomes disabled. Decrements the active input counter.
+  // called by an upstream node when it becomes disabled. Decrements the active input counter.
   void onInputDisabled();
 
   BaseAudioContext *context_;

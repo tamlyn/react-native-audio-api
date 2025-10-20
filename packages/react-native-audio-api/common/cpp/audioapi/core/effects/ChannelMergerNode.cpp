@@ -8,7 +8,7 @@ namespace audioapi {
 ChannelMergerNode::ChannelMergerNode(
     BaseAudioContext *context,
     unsigned numberOfInputs)
-    : AudioNode(context,numberOfInputs) {
+    : AudioNode(context, numberOfInputs) {
   numberOfInputs_ = numberOfInputs;
   numberOfOutputs_ = 1;
 
