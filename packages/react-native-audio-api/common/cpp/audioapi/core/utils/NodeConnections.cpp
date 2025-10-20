@@ -192,28 +192,6 @@ void NodeConnections::onInputConnected(
   m_indexedInputs[inputIndex].push_back(newConnection);
 }
 
-// not sure if this is needed/valid - probably should be handled in cleanup()
-void NodeConnections::disconnectAll() {
-  // This internal method is called on cleanup. It should directly notify nodes.
-  for (std::map<unsigned int, std::vector<OutputConnection>>::iterator it =
-           m_indexedOutputs.begin();
-       it != m_indexedOutputs.end();
-       ++it) {
-    const unsigned int outputIndex = it->first;
-    const std::vector<OutputConnection> &connections = it->second;
-    for (std::vector<OutputConnection>::const_iterator conn_it =
-             connections.begin();
-         conn_it != connections.end();
-         ++conn_it) {
-      conn_it->destinationNode->onInputDisconnected(
-          m_owner, outputIndex, conn_it->inputIndexAtDestination);
-    }
-  }
-  m_indexedOutputs.clear();
-
-  m_indexedOutputParams.clear();
-}
-
 void NodeConnections::disconnectNode(
     const std::shared_ptr<AudioNode> &destination,
     unsigned int outputIndex,

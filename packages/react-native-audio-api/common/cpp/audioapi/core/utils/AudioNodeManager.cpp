@@ -162,9 +162,6 @@ void AudioNodeManager::settlePendingConnections() {
       case ConnectionType::DISCONNECT:
         handleDisconnectEvent(std::move(value));
         break;
-      // case ConnectionType::DISCONNECT_ALL:
-      //   handleDisconnectAllEvent(std::move(value));
-      //   break;
       case ConnectionType::ADD:
         handleAddToDeconstructionEvent(std::move(value));
         break;

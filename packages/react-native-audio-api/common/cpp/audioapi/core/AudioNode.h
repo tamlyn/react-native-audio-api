@@ -75,7 +75,6 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   void connectNode(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
   void onInputConnected(AudioNode *source, unsigned int outputIndexFromSource, unsigned int inputIndex);
 
-  void disconnectAll();
   void disconnectNode(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
   void onInputDisconnected(AudioNode *source, unsigned int outputIndexFromSource, unsigned int inputIndex);
 

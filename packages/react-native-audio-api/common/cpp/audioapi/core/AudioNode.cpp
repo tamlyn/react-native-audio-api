@@ -242,10 +242,6 @@ void AudioNode::onInputConnected(
   }
 }
 
-void AudioNode::disconnectAll() {
-  m_connections->disconnectAll();
-}
-
 void AudioNode::disconnectNode(
     const std::shared_ptr<AudioNode> &destination,
     unsigned int outputIndex,
