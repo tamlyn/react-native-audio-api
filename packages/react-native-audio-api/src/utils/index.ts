@@ -1,4 +1,5 @@
 import type { ShareableWorkletCallback } from '../interfaces';
+export * from './bitEnums';
 
 interface SimplifiedWorkletModule {
   makeShareableCloneRecursive: (

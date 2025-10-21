@@ -59,7 +59,6 @@ class AudioRecorder {
 
   std::atomic<bool> isRunning_;
   std::shared_ptr<CircularAudioArray> circularBuffer_;
-  // std::shared_ptr<CircularAudioArray> circularFileBuffer_;
 
   mutable std::mutex adapterNodeLock_;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;

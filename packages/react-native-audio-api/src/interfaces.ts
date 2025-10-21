@@ -1,5 +1,5 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
-import {
+import type {
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
@@ -250,14 +250,64 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
+export type IOSAudioRecorderFileDescriptor = number;
+export type AndroidAudioRecorderFileDescriptor = number;
+export type AudioRecorderCommonOptions = number;
+
+export interface IAudioRecorderFileOptions {
+  sampleRate: number; // TODO: / FIXME: secondary sample rate config might be confusing for users
+  channels: number;
+  bitRate?: number;
+  /**
+   * Common file recording options
+   *
+   * - `directory` - FileDirectory, bitmask 0 x 000000FF
+   * - `bitDepth` - BitDepth, bitmask 0 x 0000FF00
+   */
+  common: AudioRecorderCommonOptions;
+  /**
+   * IOS specific file recording options
+   *
+   * - `format` - IOSFormat, bitmask 0 x 000000FF
+   * - `quality` - IOSAudioQuality, bitmask 0 x 0000FF00
+   * - `flacCompressionLevel` - FlacCompressionLevel, bitmask 0 x 00FF0000
+   */
+  ios: IOSAudioRecorderFileDescriptor;
+  /**
+   * Android specific file recording options
+   *
+   * - He he
+   */
+  android: AndroidAudioRecorderFileDescriptor;
+}
+
+export interface IAudioRecorderOptions {
+  fileRecord: IAudioRecorderFileOptions | false;
+}
+
 export interface IAudioRecorder {
+  // default recorder methods
   start: () => void;
-  stop: () => void | string;
+  stop: () => string | void;
+
+  // pause and resume methods for file recording
+  pause: () => void;
+  resume: () => void;
+
+  // status method
+  // TODO: implement if needed
+  // isRecording: () => boolean;
+
+  // Graph integration methods
   connect: (node: IRecorderAdapterNode) => void;
   disconnect: () => void;
 
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onAudioReady: string;
+  setOnAudioReady: (
+    sampleRate: number,
+    bufferLength: number,
+    callbackId: string
+  ) => void;
+  clearOnAudioReady: () => void;
 }
 
 export interface IAudioDecoder {

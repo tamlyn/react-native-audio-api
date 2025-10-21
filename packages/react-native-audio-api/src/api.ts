@@ -3,11 +3,11 @@ import type {
   IAudioDecoder,
   IAudioEventEmitter,
   IAudioRecorder,
+  IAudioRecorderOptions,
   IAudioStretcher,
   IOfflineAudioContext,
 } from './interfaces';
 import { NativeAudioAPIModule } from './specs';
-import { AudioRecorderOptions } from './types';
 
 /* eslint-disable no-var */
 declare global {
@@ -25,7 +25,7 @@ declare global {
     audioWorkletRuntime: any
   ) => IOfflineAudioContext;
 
-  var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
+  var createAudioRecorder: (options: IAudioRecorderOptions) => IAudioRecorder;
 
   var createAudioDecoder: () => IAudioDecoder;
 

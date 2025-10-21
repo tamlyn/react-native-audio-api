@@ -5,7 +5,6 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
-#include <audioapi/utils/CircularOverflowableAudioArray.h>
 
 namespace audioapi {
 
@@ -24,11 +23,6 @@ AudioRecorder::AudioRecorder(
 
   recordToFile_ = recordToFile;
   fileDirectory_ = fileDirectory;
-
-  // if (recordToFile_) {
-  //   circularFileBuffer_ =
-  //   std::make_shared<CircularAudioArray>(ringBufferSize_);
-  // }
 
   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
   isRunning_.store(false);
@@ -96,10 +90,6 @@ void AudioRecorder::writeToBuffers(const float *data, int numFrames) {
     }
     adapterNodeLock_.unlock();
   }
-
-  // if (recordToFile_) {
-  //   circularFileBuffer_->push_back(data, numFrames);
-  // }
 
   if (hasCallback()) {
     circularBuffer_->push_back(data, numFrames);

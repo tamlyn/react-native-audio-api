@@ -49,9 +49,27 @@ export interface OnEndedEventType extends EventEmptyType {
   isLast: boolean | undefined;
 }
 
+/**
+ * Represents the data payload received by the audio recorder callback each time
+ * a new audio buffer becomes available during recording.
+ */
 export interface OnAudioReadyEventType {
+  /**
+   * The audio buffer containing the recorded PCM data. This buffer includes one
+   * or more channels of floating-point samples in the range of -1.0 to 1.0.
+   */
   buffer: AudioBuffer;
+
+  /**
+   * The number of audio frames contained in this buffer. A frame represents a
+   * single sample across all channels.
+   */
   numFrames: number;
+
+  /**
+   * The timestamp (in seconds) indicating when this buffer was captured,
+   * relative to the start of the recording session.
+   */
   when: number;
 }
 
