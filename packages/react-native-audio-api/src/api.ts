@@ -3,7 +3,6 @@ import type {
   IAudioDecoder,
   IAudioEventEmitter,
   IAudioRecorder,
-  IAudioRecorderOptions,
   IAudioStretcher,
   IOfflineAudioContext,
 } from './interfaces';
@@ -25,7 +24,7 @@ declare global {
     audioWorkletRuntime: any
   ) => IOfflineAudioContext;
 
-  var createAudioRecorder: (options: IAudioRecorderOptions) => IAudioRecorder;
+  var createAudioRecorder: () => IAudioRecorder;
 
   var createAudioDecoder: () => IAudioDecoder;
 

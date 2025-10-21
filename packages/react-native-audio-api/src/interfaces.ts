@@ -250,27 +250,21 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
-export type IOSAudioRecorderFileDescriptor = number;
-export type AndroidAudioRecorderFileDescriptor = number;
-export type AudioRecorderCommonOptions = number;
+type IOSAudioRecorderFileDescriptor = number;
+type AndroidAudioRecorderFileDescriptor = number;
 
-export interface IAudioRecorderFileOptions {
-  sampleRate: number; // TODO: / FIXME: secondary sample rate config might be confusing for users
+interface IAudioRecorderFileOptions {
+  sampleRate: number;
   channels: number;
-  bitRate?: number;
-  /**
-   * Common file recording options
-   *
-   * - `directory` - FileDirectory, bitmask 0 x 000000FF
-   * - `bitDepth` - BitDepth, bitmask 0 x 0000FF00
-   */
-  common: AudioRecorderCommonOptions;
+  bitRate: number;
   /**
    * IOS specific file recording options
    *
-   * - `format` - IOSFormat, bitmask 0 x 000000FF
-   * - `quality` - IOSAudioQuality, bitmask 0 x 0000FF00
-   * - `flacCompressionLevel` - FlacCompressionLevel, bitmask 0 x 00FF0000
+   * - `format` - IOSFormat, bitmask 0 x 0000000F
+   * - `quality` - IOSAudioQuality, bitmask 0 x 000000F0
+   * - `flacCompressionLevel` - FlacCompressionLevel, bitmask 0 x 00000F00
+   * - `directory` - FileDirectory, bitmask 0 x 0000F000
+   * - `bitDepth` - BitDepth, bitmask 0 x 000F0000
    */
   ios: IOSAudioRecorderFileDescriptor;
   /**
@@ -281,32 +275,31 @@ export interface IAudioRecorderFileOptions {
   android: AndroidAudioRecorderFileDescriptor;
 }
 
-export interface IAudioRecorderOptions {
-  fileRecord: IAudioRecorderFileOptions | false;
+interface IAudioRecorderCallbackOptions {
+  sampleRate: number;
+  bufferLength: number;
+  channelCount: number;
+  callbackId: string;
 }
 
 export interface IAudioRecorder {
   // default recorder methods
   start: () => void;
   stop: () => string | void;
+  isRecording: () => boolean;
+
+  enableFileOutput: (options: IAudioRecorderFileOptions) => void;
+  disableFileOutput: () => void;
 
   // pause and resume methods for file recording
   pause: () => void;
   resume: () => void;
 
-  // status method
-  // TODO: implement if needed
-  // isRecording: () => boolean;
-
   // Graph integration methods
   connect: (node: IRecorderAdapterNode) => void;
   disconnect: () => void;
 
-  setOnAudioReady: (
-    sampleRate: number,
-    bufferLength: number,
-    callbackId: string
-  ) => void;
+  setOnAudioReady: (options: IAudioRecorderCallbackOptions) => void;
   clearOnAudioReady: () => void;
 }
 

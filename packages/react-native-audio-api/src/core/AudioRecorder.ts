@@ -1,9 +1,9 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import { OnAudioReadyEventType } from '../events/types';
-import { IAudioRecorder, IAudioRecorderOptions } from '../interfaces';
+import { IAudioRecorder } from '../interfaces';
 import {
   AudioRecorderCallbackOptions,
-  AudioRecorderOptions,
+  AudioRecorderFileOptions,
   BitDepth,
   FileDirectory,
   IOSAudioQuality,
@@ -13,92 +13,88 @@ import { encodeFlags } from '../utils';
 import AudioBuffer from './AudioBuffer';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
-function withDefaultOptions(inOptions: AudioRecorderOptions) {
-  const defaultOptions = {
-    fileRecord: {
-      directory: FileDirectory.Document,
-      sampleRate: 48000,
-      channels: 2,
-      bitRate: 128000,
-      bitDepth: BitDepth.Bit24,
-      ios: {
-        format: IOSFormat.M4A,
-        quality: IOSAudioQuality.High,
-      },
-      android: {},
-    },
-  };
-
+function withDefaultOptions(inOptions: AudioRecorderFileOptions) {
   return {
-    ...defaultOptions,
+    directory: FileDirectory.Cache,
+    sampleRate: 48000,
+    channels: 2,
+    bitRate: 128000,
+    bitDepth: BitDepth.Bit24,
     ...inOptions,
-    fileRecord: {
-      ...defaultOptions.fileRecord,
-      ...inOptions.fileRecord,
-      ios: {
-        ...defaultOptions.fileRecord.ios,
-        ...(inOptions.fileRecord ? inOptions.fileRecord.ios : {}),
-      },
-      android: {
-        ...defaultOptions.fileRecord.android,
-        ...(inOptions.fileRecord ? inOptions.fileRecord.android : {}),
-      },
+    ios: {
+      format: IOSFormat.M4A,
+      quality: IOSAudioQuality.High,
+      ...(inOptions.ios ?? {}),
+    },
+    android: {
+      ...(inOptions.android ?? {}),
     },
   };
 }
 
-function parseOptions(inOptions: AudioRecorderOptions): IAudioRecorderOptions {
-  if (inOptions.fileRecord === false) {
-    return {
-      fileRecord: false,
-    };
-  }
-
-  const options = withDefaultOptions(inOptions);
-
+function parseFileOptions(inOptions: AudioRecorderFileOptions) {
   const {
-    directory,
     sampleRate,
     channels,
     bitRate,
+    directory,
     bitDepth,
     ios /* , android */,
-  } = options.fileRecord;
+  } = withDefaultOptions(inOptions);
 
   const iosFlags = encodeFlags(
     ios.format,
     ios.quality,
-    ios.flacCompressionLevel || 0
+    ios.flacCompressionLevel || 0,
+    directory,
+    bitDepth
   );
 
-  const androidFlags = 0x0;
-
-  const commonFlags = encodeFlags(directory, bitDepth);
+  // TODO: ensure directory and bitDepth are last in the bitmask
+  const androidFlags = encodeFlags(directory, bitDepth);
 
   return {
-    fileRecord: {
-      sampleRate,
-      channels,
-      bitRate,
-      common: commonFlags,
-      ios: iosFlags,
-      android: androidFlags,
-    },
+    sampleRate,
+    channels,
+    bitRate,
+    ios: iosFlags,
+    android: androidFlags,
   };
 }
 
 export default class AudioRecorder {
   protected onAudioReadySubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
-  readonly options: AudioRecorderOptions;
+  protected options_: AudioRecorderFileOptions | null = null;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
   );
 
-  constructor(options: AudioRecorderOptions) {
-    this.options = options;
-    this.recorder = global.createAudioRecorder(parseOptions(options));
+  constructor() {
+    this.recorder = global.createAudioRecorder();
+  }
+
+  enableFileOutput(options: AudioRecorderFileOptions): void {
+    if (this.recorder.isRecording()) {
+      throw new Error(
+        'Cannot enable file output while recording is in progress. Please stop the recorder before changing output options.'
+      );
+    }
+
+    this.options_ = options;
+
+    const parsedOptions = parseFileOptions(options);
+    this.recorder.enableFileOutput(parsedOptions);
+  }
+
+  public get options(): AudioRecorderFileOptions | null {
+    return this.options_;
+  }
+
+  disableFileOutput(): void {
+    this.options_ = null;
+    this.recorder.disableFileOutput();
   }
 
   /** Starts the audio recording process with configured output options */
@@ -131,6 +127,12 @@ export default class AudioRecorder {
    * @throws If the node has already been connected.
    */
   public connect(node: RecorderAdapterNode): void {
+    if (this.recorder.isRecording()) {
+      throw new Error(
+        'Cannot connect adapter node while recording is in progress. Please stop the recorder before connecting new nodes.'
+      );
+    }
+
     if (node.wasConnected) {
       throw new Error(
         'RecorderAdapterNode cannot be connected more than once. Refer to the documentation for more details.'
@@ -170,6 +172,12 @@ export default class AudioRecorder {
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
   ): void {
+    if (this.recorder.isRecording()) {
+      throw new Error(
+        'Cannot set onAudioReady callback while recording is in progress. Please stop the recorder before setting a new callback.'
+      );
+    }
+
     if (this.onAudioReadySubscription) {
       this.recorder.clearOnAudioReady();
       this.onAudioReadySubscription.remove();
@@ -185,11 +193,12 @@ export default class AudioRecorder {
         });
       });
 
-    this.recorder.setOnAudioReady(
-      options.sampleRate,
-      options.bufferLength,
-      this.onAudioReadySubscription.subscriptionId
-    );
+    this.recorder.setOnAudioReady({
+      sampleRate: options.sampleRate,
+      bufferLength: options.bufferLength,
+      channelCount: options.channelCount,
+      callbackId: this.onAudioReadySubscription.subscriptionId,
+    });
   }
 
   /**
@@ -200,6 +209,12 @@ export default class AudioRecorder {
    * registered.
    */
   public clearOnAudioReady(): void {
+    if (this.recorder.isRecording()) {
+      throw new Error(
+        'Cannot clear onAudioReady callback while recording is in progress. Please stop the recorder before clearing the callback.'
+      );
+    }
+
     if (!this.onAudioReadySubscription) {
       return;
     }
@@ -208,5 +223,9 @@ export default class AudioRecorder {
 
     this.onAudioReadySubscription.remove();
     this.onAudioReadySubscription = null;
+  }
+
+  public isRecording(): boolean {
+    return this.recorder.isRecording();
   }
 }

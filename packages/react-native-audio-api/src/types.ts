@@ -87,17 +87,13 @@ export interface AudioRecorderFileOptionsAndroid {
 }
 
 export interface AudioRecorderFileOptions {
-  directory: FileDirectory;
+  directory?: FileDirectory;
   sampleRate?: number;
   channels?: number;
   bitRate?: number;
   bitDepth?: BitDepth;
   ios?: AudioRecorderFileOptionsIOS;
   android?: AudioRecorderFileOptionsAndroid;
-}
-
-export interface AudioRecorderOptions {
-  fileRecord?: AudioRecorderFileOptions | false;
 }
 
 export type WindowType = 'blackman' | 'hann';
