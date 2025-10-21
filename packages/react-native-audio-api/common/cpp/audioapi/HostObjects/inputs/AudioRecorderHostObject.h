@@ -17,20 +17,26 @@ class AudioEventHandlerRegistry;
 class AudioRecorderHostObject : public JsiHostObject {
  public:
   explicit AudioRecorderHostObject(
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      float sampleRate,
-      int bufferLength,
-      bool recordToFile,
-      const std::string &fileDirectory);
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
 
-  JSI_PROPERTY_SETTER_DECL(onAudioReady);
+  JSI_HOST_FUNCTION_DECL(start);
+  JSI_HOST_FUNCTION_DECL(stop);
+  JSI_HOST_FUNCTION_DECL(isRecording);
+
+  JSI_HOST_FUNCTION_DECL(enableFileOutput);
+  JSI_HOST_FUNCTION_DECL(disableFileOutput);
+
+  JSI_HOST_FUNCTION_DECL(pause);
+  JSI_HOST_FUNCTION_DECL(resume);
 
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
-  JSI_HOST_FUNCTION_DECL(start);
-  JSI_HOST_FUNCTION_DECL(stop);
+
+  JSI_HOST_FUNCTION_DECL(onAudioReady);
+  JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;
 };
+
 } // namespace audioapi

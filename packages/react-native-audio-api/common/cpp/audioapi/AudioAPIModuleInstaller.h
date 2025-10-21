@@ -161,33 +161,8 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = args[0].getObject(runtime);
-
-          float sampleRate = static_cast<float>(
-              options.getProperty(runtime, "sampleRate").getNumber()
-          );
-
-          int bufferLength = 1024; // TODO: better default?
-          bool recordToFile = false;
-          std::string fileDirectory = "Cache";
-
-          if (options.hasProperty(runtime, "bufferLengthInSamples")) {
-              bufferLength = static_cast<int>(
-                  options.getProperty(runtime, "bufferLengthInSamples").getNumber()
-              );
-          }
-
-          if (options.hasProperty(runtime, "recordToFile")) {
-              recordToFile = options.getProperty(runtime, "recordToFile").getBool();
-          }
-
-          if (options.hasProperty(runtime, "fileDirectory")) {
-              fileDirectory = options.getProperty(runtime, "fileDirectory").getString(runtime).utf8(runtime);
-          }
-
           auto audioRecorderHostObject =
-              std::make_shared<AudioRecorderHostObject>(
-                  audioEventHandlerRegistry, sampleRate, bufferLength, recordToFile, fileDirectory);
+              std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry);
 
           return jsi::Object::createFromHostObject(
               runtime, audioRecorderHostObject);
