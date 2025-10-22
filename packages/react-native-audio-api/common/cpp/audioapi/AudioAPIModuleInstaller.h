@@ -14,12 +14,16 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
+#include <vector>
 
 namespace audioapi {
 
 using namespace facebook;
 
 class AudioAPIModuleInstaller {
+ private:
+  inline static std::vector<std::weak_ptr<AudioContext>> contexts_ = {};
+
  public:
   static void injectJSIBindings(
     jsi::Runtime *jsiRuntime,
@@ -37,6 +41,19 @@ class AudioAPIModuleInstaller {
 
     auto audioEventHandlerRegistryHostObject = std::make_shared<AudioEventHandlerRegistryHostObject>(audioEventHandlerRegistry);
     jsiRuntime->global().setProperty(*jsiRuntime, "AudioEventEmitter", jsi::Object::createFromHostObject(*jsiRuntime, audioEventHandlerRegistryHostObject));
+  }
+
+  static void closeAllContexts() {
+    for (auto it = contexts_.begin(); it != contexts_.end(); ++it) {
+      auto weakContext = *it;
+
+      if (auto context = weakContext.lock()) {
+        context->close();
+      }
+
+      it = contexts_.erase(it);
+    --it;
+    }
   }
 
  private:
@@ -67,9 +84,16 @@ class AudioAPIModuleInstaller {
               auto runtimeRegistry = RuntimeRegistry{};
           #endif
 
-          audioContext = std::make_shared<AudioContext>(sampleRate, initSuspended, audioEventHandlerRegistry, runtimeRegistry);
-          auto audioContextHostObject = std::make_shared<AudioContextHostObject>(
-              audioContext, &runtime, jsCallInvoker);
+          audioContext = std::make_shared<AudioContext>(
+              sampleRate,
+              initSuspended,
+              audioEventHandlerRegistry,
+              runtimeRegistry);
+          AudioAPIModuleInstaller::contexts_.push_back(audioContext);
+
+          auto audioContextHostObject =
+              std::make_shared<AudioContextHostObject>(
+                  audioContext, &runtime, jsCallInvoker);
 
           return jsi::Object::createFromHostObject(
               runtime, audioContextHostObject);
@@ -103,9 +127,16 @@ class AudioAPIModuleInstaller {
             auto runtimeRegistry = RuntimeRegistry{};
             #endif
 
-            auto offlineAudioContext = std::make_shared<OfflineAudioContext>(numberOfChannels, length, sampleRate, audioEventHandlerRegistry, runtimeRegistry);
-            auto audioContextHostObject = std::make_shared<OfflineAudioContextHostObject>(
-                offlineAudioContext, &runtime, jsCallInvoker);
+            auto offlineAudioContext = std::make_shared<OfflineAudioContext>(
+              numberOfChannels,
+              length,
+              sampleRate,
+              audioEventHandlerRegistry,
+              runtimeRegistry);
+
+            auto audioContextHostObject =
+              std::make_shared<OfflineAudioContextHostObject>(
+                    offlineAudioContext, &runtime, jsCallInvoker);
 
             return jsi::Object::createFromHostObject(
                 runtime, audioContextHostObject);
