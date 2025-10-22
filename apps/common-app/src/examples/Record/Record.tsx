@@ -1,7 +1,5 @@
-import React, { FC, useEffect, useMemo, useRef, useState } from 'react';
+import React, { FC, useMemo, useState } from 'react';
 import {
-  AudioBuffer,
-  AudioBufferSourceNode,
   AudioContext,
   AudioManager,
   AudioRecorder,
@@ -9,7 +7,6 @@ import {
   FileDirectory,
   IOSAudioQuality,
   IOSFormat,
-  RecorderAdapterNode,
 } from 'react-native-audio-api';
 
 import { Text, View } from 'react-native';

@@ -55,7 +55,6 @@ void IOSAudioRecorder::start()
   }
 
   if (usesFileOutput()) {
-    NSLog(@"input format: %@", [nativeRecorder_ getInputFormat]);
     fileWriter_->openFile([nativeRecorder_ getInputFormat]);
   }
 
