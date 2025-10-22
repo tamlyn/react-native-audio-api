@@ -8,18 +8,29 @@ typedef struct objc_object AudioBufferList;
 
 namespace audioapi {
 
+class IOSAudioFileOptions;
+
 class IOSAudioFileWriter {
  public:
-  IOSAudioFileWriter();
+  IOSAudioFileWriter(
+    float sampleRate,
+    size_t channelCount,
+    size_t bitRate,
+    size_t iosFlags);
   ~IOSAudioFileWriter();
 
-  void openFile();
+  void openFile(
+  );
   std::string closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
 
  private:
-  NSDictionary *fileSettings_;
+  NSString *getISODateStringForDirectory();
+  NSString *getTimestampForFilename();
+  NSURL *getFileURL();
+
+  std::shared_ptr<IOSAudioFileOptions> fileOptions_;
   AVAudioFile *audioFile_;
   NSURL *fileURL_;
 };

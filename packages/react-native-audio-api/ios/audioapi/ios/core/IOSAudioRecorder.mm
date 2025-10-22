@@ -5,6 +5,7 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
+#include <audioapi/ios/core/IOSAudioFileWriter.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -14,230 +15,117 @@
 namespace audioapi {
 
 IOSAudioRecorder::IOSAudioRecorder(
-    float sampleRate,
-    int bufferLength,
-    bool recordToFile,
-    const std::string &fileDirectory,
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(sampleRate, bufferLength, recordToFile, fileDirectory, audioEventHandlerRegistry)
-{
-  currentFileURL_ = nil;
-  currentAudioFile_ = nil;
-
-  AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-    if (isRunning_.load()) {
-      auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
-      writeToBuffers(inputChannel, numFrames);
-    }
-
-    while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
-      auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-      auto *outputChannel = bus->getChannel(0)->getData();
-
-      circularBuffer_->pop_front(outputChannel, bufferLength_);
-
-      invokeOnAudioReadyCallback(bus, bufferLength_);
-    }
-
-    if (recordToFile_) {
-      writeToFile(inputBuffer, numFrames);
-    }
-  };
-
-  audioRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
-                                                         bufferLength:bufferLength
-                                                           sampleRate:sampleRate];
+    : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr) {
 }
 
-IOSAudioRecorder::~IOSAudioRecorder()
-{
-  stop();
-  [audioRecorder_ cleanup];
+IOSAudioRecorder::~IOSAudioRecorder() {
+  // stop();
+  // [audioRecorder_ cleanup]; --- IGNORE ---
 }
 
-void IOSAudioRecorder::start()
-{
-  if (isRunning_.load()) {
-    return;
-  }
+void IOSAudioRecorder::start() { }
 
-  if (recordToFile_) {
-    createFileForWriting();
-  }
-
-  [audioRecorder_ start];
-  isRunning_.store(true);
+std::string IOSAudioRecorder::stop() {
+  return std::string("");
 }
 
-void IOSAudioRecorder::stop()
-{
-  if (!isRunning_.load()) {
-    return;
-  }
-
-  isRunning_.store(false);
-  [audioRecorder_ stop];
-
-  sendRemainingData();
-
-  if (recordToFile_) {
-    releaseFile();
-  }
+void IOSAudioRecorder::enableFileOutput(
+        float sampleRate,
+      size_t channelCount,
+      size_t bitRate,
+      size_t iosFlags,
+      size_t androidFlags) {
+  fileOutputEnabled_.store(true);
+  fileWriter_ = std::make_shared<IOSAudioFileWriter>(
+    sampleRate,
+    channelCount,
+    bitRate,
+    iosFlags);
 }
 
-void IOSAudioRecorder::writeToFile(const AudioBufferList *inputBuffer, int numFrames)
-{
-  if (!recordToFile_) {
-    return;
-  }
-
-  @autoreleasepool {
-    if (currentAudioFile_ == nil) {
-      return;
-    }
-
-    AVAudioFormat *filePCMFormat = [currentAudioFile_ processingFormat];
-    const AVAudioChannelCount fileChannelCount = [filePCMFormat channelCount];
-
-    if (!filePCMFormat.isStandard || filePCMFormat.commonFormat != AVAudioPCMFormatFloat32) {
-      NSLog(@"⚠️ writeToFile: Unsupported audio file format for writing");
-      return;
-    }
-
-    if (inputBuffer->mNumberBuffers != fileChannelCount) {
-      NSLog(@"⚠️ writeToFile: Mismatched channel count between input buffer and audio file");
-      return;
-    }
-
-    AVAudioPCMBuffer *pcmBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:filePCMFormat frameCapacity:numFrames];
-
-    pcmBuffer.frameLength = numFrames;
-
-    for (AVAudioChannelCount ch = 0; ch < fileChannelCount; ++ch) {
-      float *fileChannelData = pcmBuffer.floatChannelData[ch];
-      float *inputChannelData = static_cast<float *>(inputBuffer->mBuffers[ch].mData);
-
-      std::memcpy(fileChannelData, inputChannelData, sizeof(float) * numFrames);
-    }
-
-    NSError *error = nil;
-
-    [currentAudioFile_ writeFromBuffer:pcmBuffer error:&error];
-
-    if (error != nil) {
-      NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
-    }
-  }
+void IOSAudioRecorder::disableFileOutput() {
+  fileOutputEnabled_.store(false);
+  fileWriter_ = nullptr;
 }
 
-void IOSAudioRecorder::createFileForWriting()
-{
-  @autoreleasepool {
-    if (currentAudioFile_ != nil) {
-      NSLog(@"⚠️ createFileForWriting: currentAudioFile_ already exists");
-      return;
-    }
+void IOSAudioRecorder::pause() {
 
-    NSError *error = nil;
-
-    currentFileURL_ = getFileURL();
-
-    NSLog(@"currentFileURL: %@", currentFileURL_);
-
-    NSDictionary *settings = @{
-      AVFormatIDKey : @(kAudioFormatMPEG4AAC),
-      AVSampleRateKey : @44100.0,
-      AVNumberOfChannelsKey : @1,
-      AVEncoderBitRateKey : @128000,
-      AVEncoderAudioQualityKey : @(AVAudioQualityHigh)
-    };
-
-    currentAudioFile_ = [[AVAudioFile alloc] initForWriting:currentFileURL_ settings:settings error:&error];
-
-    if (error != nil || currentAudioFile_ == nil) {
-      NSLog(@"Error creating audio file for writing: %@", [error debugDescription]);
-      currentAudioFile_ = nil;
-    }
-  }
 }
 
-void IOSAudioRecorder::releaseFile()
-{
-  @autoreleasepool {
-    currentAudioFile_ = nil;
-    currentFileURL_ = nil;
-  }
+void IOSAudioRecorder::resume() {
+
 }
+// IOSAudioRecorder::IOSAudioRecorder(
+//     float sampleRate,
+//     int bufferLength,
+//     bool recordToFile,
+//     const std::string &fileDirectory,
+//     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+//     : AudioRecorder(sampleRate, bufferLength, recordToFile, fileDirectory, audioEventHandlerRegistry)
+// {
+//   currentFileURL_ = nil;
+//   currentAudioFile_ = nil;
 
-static inline NSString *ISODateStringForFolder()
-{
-  NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-  fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyy-MM-dd";
-  return [fmt stringFromDate:[NSDate date]];
-}
+//   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
+//     if (isRunning_.load()) {
+//       auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
+//       writeToBuffers(inputChannel, numFrames);
+//     }
 
-static inline NSString *TimestampForFilename()
-{
-  NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-  fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyyMMdd_HHmmss_SSS";
-  return [fmt stringFromDate:[NSDate date]];
-}
+//     while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
+//       auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
+//       auto *outputChannel = bus->getChannel(0)->getData();
 
-NSURL *IOSAudioRecorder::getFileURL()
-{
-  @autoreleasepool {
-    NSSearchPathDirectory dir;
+//       circularBuffer_->pop_front(outputChannel, bufferLength_);
 
-    if (fileDirectory_ == "Document") {
-      dir = NSDocumentDirectory;
-    } else if (fileDirectory_ == "Cache") {
-      dir = NSCachesDirectory;
-    } else {
-      NSString *tmp = NSTemporaryDirectory();
-      NSString *directory = [NSString stringWithFormat:@"AudioAPIRecordings/%@", ISODateStringForFolder()];
-      NSString *name = [NSString stringWithFormat:@"recording_%@.m4a", TimestampForFilename()];
-      NSURL *base = [NSURL fileURLWithPath:tmp isDirectory:YES];
-      NSURL *dirURL = [base URLByAppendingPathComponent:directory isDirectory:YES];
+//       invokeOnAudioReadyCallback(bus, bufferLength_);
+//     }
 
-      NSError *error = nil;
-      [[NSFileManager defaultManager] createDirectoryAtURL:dirURL
-                               withIntermediateDirectories:YES
-                                                attributes:nil
-                                                     error:&error];
+//     if (recordToFile_) {
+//       writeToFile(inputBuffer, numFrames);
+//     }
+//   };
 
-      if (error != nil) {
-        NSLog(@"Error creating directory for audio recordings: %@", [error debugDescription]);
+//   audioRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
+//                                                          bufferLength:bufferLength
+//                                                            sampleRate:sampleRate];
+// }
 
-        return [base URLByAppendingPathComponent:name];
-      }
+// IOSAudioRecorder::~IOSAudioRecorder()
+// {
+//   stop();
+//   [audioRecorder_ cleanup];
+// }
 
-      return [dirURL URLByAppendingPathComponent:name];
-    }
+// void IOSAudioRecorder::start()
+// {
+//   if (isRunning_.load()) {
+//     return;
+//   }
 
-    NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:dir inDomains:NSUserDomainMask] firstObject];
+//   if (recordToFile_) {
+//     createFileForWriting();
+//   }
 
-    NSString *directory = [NSString stringWithFormat:@"AudioAPIRecordings/%@", ISODateStringForFolder()];
-    NSURL *dirURL = [baseURL URLByAppendingPathComponent:directory isDirectory:YES];
+//   [audioRecorder_ start];
+//   isRunning_.store(true);
+// }
 
-    NSError *error = nil;
-    [[NSFileManager defaultManager] createDirectoryAtURL:dirURL
-                             withIntermediateDirectories:YES
-                                              attributes:nil
-                                                   error:&error];
+// void IOSAudioRecorder::stop()
+// {
+//   if (!isRunning_.load()) {
+//     return;
+//   }
 
-    if (error != nil) {
-      NSLog(@"Error creating directory for audio recordings: %@", [error debugDescription]);
-      dirURL = baseURL;
-    }
+//   isRunning_.store(false);
+//   [audioRecorder_ stop];
 
-    NSString *name = [NSString stringWithFormat:@"recording_%@.m4a", TimestampForFilename()];
+//   sendRemainingData();
 
-    return [dirURL URLByAppendingPathComponent:name];
-  }
-}
+//   if (recordToFile_) {
+//     releaseFile();
+//   }
+// }
 
 } // namespace audioapi

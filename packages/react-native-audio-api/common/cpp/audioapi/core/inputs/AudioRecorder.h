@@ -10,55 +10,64 @@ namespace audioapi {
 class RecorderAdapterNode;
 class AudioBus;
 class CircularAudioArray;
-class CircularOverflowableAudioArray;
 class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
-  explicit AudioRecorder(
-    float sampleRate,
-    int bufferLength,
-    bool recordToFile,
-    const std::string &fileDirectory,
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry
-  );
-
+  explicit AudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   virtual ~AudioRecorder() = default;
 
-  void setOnAudioReadyCallbackId(uint64_t callbackId);
-  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
-  void sendRemainingData();
+  virtual void start() = 0;
+  virtual std::string stop() = 0;
 
-  bool hasCallback() const {
-    return onAudioReadyCallbackId_ != 0;
-  }
+  bool isRecording();
 
-  /// @brief
-  /// # Connects the recorder to the adapter node.
-  ///
-  /// The adapter node will be used to read audio data from the recorder.
-  /// @note Few frames of audio might not yet be written to the buffer when connecting.
+  virtual void enableFileOutput(
+    float sampleRate,
+    size_t channelCount,
+    size_t bitRate,
+    size_t iosFlags,
+    size_t androidFlags) = 0;
+  virtual void disableFileOutput() = 0;
+
+  virtual void pause() = 0;
+  virtual void resume() = 0;
+
   void connect(const std::shared_ptr<RecorderAdapterNode> &node);
-
-  /// @brief
-  /// # Disconnects the recorder from the adapter node.
-  ///
-  /// The adapter node will no longer be used to read audio data from the recorder.
-  /// @note Last few frames of audio might be written to the buffer after disconnecting.
   void disconnect();
 
-  virtual void start() = 0;
-  virtual void stop() = 0;
+  void setOnAudioReadyCallback(
+    float sampleRate,
+    size_t bufferLength,
+    size_t channelCount,
+    uint64_t callbackId);
+  void clearOnAudioReadyCallback();
+
+  void invokeOnAudioReadyCallback(
+      const std::shared_ptr<AudioBus> &bus,
+      int numFrames);
+  void sendRemainingCallbackData();
+
+  bool usesCallback() const;
+  bool usesFileOutput() const;
+  bool isConnected() const;
 
  protected:
-  float sampleRate_;
-  int bufferLength_;
-  size_t ringBufferSize_;
-  bool recordToFile_;
-  std::string fileDirectory_;
+  struct CallbackProperties {
+    float sampleRate;
+    size_t bufferLength;
+    size_t channelCount;
+    uint64_t callbackId;
+  };
+
+  CallbackProperties callbackProperties_;
+  // size_t ringBufferSize_;
 
   std::atomic<bool> isRunning_;
-  std::shared_ptr<CircularAudioArray> circularBuffer_;
+  std::atomic<bool> fileOutputEnabled_;
+  std::atomic<bool> callbackOutputEnabled_;
+  std::atomic<bool> isConnected_;
+  // std::shared_ptr<CircularAudioArray> circularBuffer_;
 
   mutable std::mutex adapterNodeLock_;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
@@ -66,7 +75,7 @@ class AudioRecorder {
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   uint64_t onAudioReadyCallbackId_ = 0;
 
-  void writeToBuffers(const float *data, int numFrames);
+  // void writeToBuffers(const float *data, int numFrames);
 };
 
 } // namespace audioapi

@@ -1,7 +1,7 @@
 #pragma once
 
 #ifdef __OBJC__ // when compiled as Objective-C++
-#import <NativeAudioRecorder.h>
+// #import <NativeAudioRecorder.h>
 #else // when compiled as C++
 typedef struct objc_object NativeAudioRecorder;
 typedef struct objc_object AVAudioFile;
@@ -15,32 +15,33 @@ namespace audioapi {
 
 class AudioBus;
 class CircularAudioArray;
+class IOSAudioFileWriter;
+class AudioEventHandlerRegistry;
 
 class IOSAudioRecorder : public AudioRecorder {
  public:
-  IOSAudioRecorder(
-      float sampleRate,
-      int bufferLength,
-      bool recordToFile,
-      const std::string &fileDirectory,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
-
+  IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
   void start() override;
-  void stop() override;
+  std::string stop() override;
 
-  void writeToFile(const AudioBufferList *inputBuffer, int numFrames);
+  void enableFileOutput(
+      float sampleRate,
+      size_t channelCount,
+      size_t bitRate,
+      size_t iosFlags,
+      size_t androidFlags) override;
+  void disableFileOutput() override;
+
+  void pause() override;
+  void resume() override;
+
+  // void writeToFile(const AudioBufferList *inputBuffer, int numFrames);
 
  private:
-  NativeAudioRecorder *audioRecorder_;
-  AVAudioFile *currentAudioFile_;
-
-  void createFileForWriting();
-  void releaseFile();
-
-  NSURL *getFileURL();
-  NSURL *currentFileURL_;
+  std::shared_ptr<IOSAudioFileWriter> fileWriter_;
+  // NativeAudioRecorder *audioRecorder_;
 };
 
 } // namespace audioapi
