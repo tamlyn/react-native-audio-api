@@ -14,21 +14,78 @@
 
 namespace audioapi {
 
+// AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
+//   if (isRunning_.load()) {
+//     auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
+//     writeToBuffers(inputChannel, numFrames);
+//   }
+
+//   while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
+//     auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
+//     auto *outputChannel = bus->getChannel(0)->getData();
+
+//     circularBuffer_->pop_front(outputChannel, bufferLength_);
+
+//     invokeOnAudioReadyCallback(bus, bufferLength_);
+//   }
+// };
+
 IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr)
 {
+  AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
+    if (usesFileOutput()) {
+      fileWriter_->writeAudioData(inputBuffer, numFrames);
+    }
+  };
+
+  nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
 }
 
 IOSAudioRecorder::~IOSAudioRecorder()
 {
-  // stop();
-  // [audioRecorder_ cleanup]; --- IGNORE ---
+  stop();
+  [nativeRecorder_ cleanup];
 }
 
-void IOSAudioRecorder::start() {}
+void IOSAudioRecorder::start()
+{
+  if (isRecording()) {
+    return;
+  }
+
+  if (usesFileOutput()) {
+    NSLog(@"input format: %@", [nativeRecorder_ getInputFormat]);
+    fileWriter_->openFile([nativeRecorder_ getInputFormat]);
+  }
+
+  if (usesCallback()) {
+    // TODO: create circular buffer and converter?
+  }
+
+  if (isConnected()) {
+    // TODO: set adapter node properties?
+  }
+
+  [nativeRecorder_ start];
+  isRunning_.store(true);
+}
 
 std::string IOSAudioRecorder::stop()
 {
+  if (!isRecording()) {
+    return std::string("");
+  }
+
+  isRunning_.store(false);
+  [nativeRecorder_ stop];
+
+  // TODO: send remaining data?
+
+  if (usesFileOutput()) {
+    return fileWriter_->closeFile();
+  }
+
   return std::string("");
 }
 
@@ -52,76 +109,5 @@ void IOSAudioRecorder::disableFileOutput()
 void IOSAudioRecorder::pause() {}
 
 void IOSAudioRecorder::resume() {}
-// IOSAudioRecorder::IOSAudioRecorder(
-//     float sampleRate,
-//     int bufferLength,
-//     bool recordToFile,
-//     const std::string &fileDirectory,
-//     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-//     : AudioRecorder(sampleRate, bufferLength, recordToFile, fileDirectory, audioEventHandlerRegistry)
-// {
-//   currentFileURL_ = nil;
-//   currentAudioFile_ = nil;
-
-//   AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-//     if (isRunning_.load()) {
-//       auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
-//       writeToBuffers(inputChannel, numFrames);
-//     }
-
-//     while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
-//       auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-//       auto *outputChannel = bus->getChannel(0)->getData();
-
-//       circularBuffer_->pop_front(outputChannel, bufferLength_);
-
-//       invokeOnAudioReadyCallback(bus, bufferLength_);
-//     }
-
-//     if (recordToFile_) {
-//       writeToFile(inputBuffer, numFrames);
-//     }
-//   };
-
-//   audioRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:audioReceiverBlock
-//                                                          bufferLength:bufferLength
-//                                                            sampleRate:sampleRate];
-// }
-
-// IOSAudioRecorder::~IOSAudioRecorder()
-// {
-//   stop();
-//   [audioRecorder_ cleanup];
-// }
-
-// void IOSAudioRecorder::start()
-// {
-//   if (isRunning_.load()) {
-//     return;
-//   }
-
-//   if (recordToFile_) {
-//     createFileForWriting();
-//   }
-
-//   [audioRecorder_ start];
-//   isRunning_.store(true);
-// }
-
-// void IOSAudioRecorder::stop()
-// {
-//   if (!isRunning_.load()) {
-//     return;
-//   }
-
-//   isRunning_.store(false);
-//   [audioRecorder_ stop];
-
-//   sendRemainingData();
-
-//   if (recordToFile_) {
-//     releaseFile();
-//   }
-// }
 
 } // namespace audioapi

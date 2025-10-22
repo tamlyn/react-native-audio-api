@@ -5,6 +5,10 @@ import {
   AudioContext,
   AudioManager,
   AudioRecorder,
+  BitDepth,
+  FileDirectory,
+  IOSAudioQuality,
+  IOSFormat,
   RecorderAdapterNode,
 } from 'react-native-audio-api';
 
@@ -12,27 +16,32 @@ import { Text, View } from 'react-native';
 import { Button, Container } from '../../components';
 import { colors } from '../../styles';
 
-const SAMPLE_RATE = 48000;
+const SAMPLE_RATE = 16000;
 
 const Record: FC = () => {
   const [isRecording, setIsRecording] = useState(false);
+  const [lastOutput, setLastOutput] = useState<string | null>(null);
 
-  // const audioContext = useMemo(() => {
-  //   return new AudioContext({ sampleRate: SAMPLE_RATE, initSuspended: true });
-  // }, []);
+  const audioContext = useMemo(() => {
+    return new AudioContext({ initSuspended: true });
+  }, []);
 
-  const recorder = useMemo(
-    () =>
-      new AudioRecorder({
-        sampleRate: SAMPLE_RATE,
-        bufferLengthInSamples: 2048,
-        recordToFile: true,
-        fileDirectory: 'Document',
-      }),
-    []
-  );
+  const recorder = useMemo(() => new AudioRecorder(), []);
 
   const onStartRecording = async () => {
+    recorder.enableFileOutput({
+      sampleRate: 16000,
+      channels: 1,
+      bitRate: 32000,
+      bitDepth: BitDepth.Bit24,
+      directory: FileDirectory.Document,
+      ios: {
+        format: IOSFormat.M4A,
+        quality: IOSAudioQuality.Medium,
+      },
+      android: {},
+    });
+
     AudioManager.setAudioSessionOptions({
       iosCategory: 'playAndRecord',
       iosMode: 'spokenAudio',
@@ -47,7 +56,25 @@ const Record: FC = () => {
 
   const onStopRecording = () => {
     setIsRecording(false);
-    recorder.stop();
+    const output = recorder.stop();
+
+    setLastOutput(typeof output === 'string' ? output : null);
+  };
+
+  const onPlayOutput = async () => {
+    if (!lastOutput) {
+      return;
+    }
+
+    const buffer = await audioContext.decodeAudioData(lastOutput);
+    const source = audioContext.createBufferSource();
+    source.buffer = buffer;
+    source.connect(audioContext.destination);
+    source.start();
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
   };
 
   return (
@@ -65,6 +92,12 @@ const Record: FC = () => {
         ) : (
           <Button title="Start Recording" onPress={onStartRecording} />
         )}
+        <View style={{ height: 20 }} />
+        <Button
+          title="Play Last Recording"
+          onPress={onPlayOutput}
+          disabled={!lastOutput}
+        />
       </View>
     </Container>
   );

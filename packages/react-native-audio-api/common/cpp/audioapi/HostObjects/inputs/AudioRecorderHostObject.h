@@ -32,7 +32,7 @@ class AudioRecorderHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(connect);
   JSI_HOST_FUNCTION_DECL(disconnect);
 
-  JSI_HOST_FUNCTION_DECL(onAudioReady);
+  JSI_HOST_FUNCTION_DECL(setOnAudioReady);
   JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
 
  private:

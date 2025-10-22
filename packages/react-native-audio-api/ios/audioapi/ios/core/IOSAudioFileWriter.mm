@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+#include <audioapi/ios/core/IOSAudioFileOptions.h>
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
 
 namespace audioapi {
@@ -14,7 +15,7 @@ IOSAudioFileWriter::~IOSAudioFileWriter()
   closeFile();
 }
 
-void IOSAudioFileWriter::openFile()
+void IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
@@ -22,13 +23,25 @@ void IOSAudioFileWriter::openFile()
       return;
     }
 
+    bufferFormat_ = bufferFormat;
+
     NSError *error = nil;
     NSDictionary *settings = fileOptions_->getFileSettings();
     fileURL_ = getFileURL();
 
     NSLog(@"ℹ️ Creating audio file at URL: %@", [fileURL_ absoluteString]);
 
-    audioFile_ = [[AVAudioFile alloc] initForWriting:fileURL_ settings:settings error:&error];
+    audioFile_ = [[AVAudioFile alloc] initForWriting:fileURL_
+                                            settings:settings
+                                        commonFormat:AVAudioPCMFormatFloat32
+                                         interleaved:bufferFormat.interleaved
+                                               error:&error];
+    converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat toFormat:[audioFile_ processingFormat]];
+    converter_.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
+    converter_.sampleRateConverterQuality = AVAudioQualityMax;
+    converter_.primeMethod = AVAudioConverterPrimeMethod_None;
+
+    NSLog(@"buferFormat: %@ fileFormat: %@", bufferFormat, [audioFile_ processingFormat]);
 
     if (error != nil || audioFile_ == nil) {
       NSLog(@"Error creating audio file for writing: %@", [error debugDescription]);
@@ -37,16 +50,19 @@ void IOSAudioFileWriter::openFile()
   }
 }
 
-void IOSAudioFileWriter::closeFile()
+std::string IOSAudioFileWriter::closeFile()
 {
   @autoreleasepool {
+    std::string filePath = [[fileURL_ path] UTF8String];
+
     if (audioFile_ == nil) {
-      return;
+      return "";
     }
 
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
     fileURL_ = nil;
+    return filePath;
   }
 }
 
@@ -61,35 +77,63 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
   @autoreleasepool {
     NSError *error = nil;
     AVAudioFormat *filePCMFormat = [audioFile_ processingFormat];
-    AVAudioChannelCount fileChannelCount = [filePCMFormat channelCount];
 
-    // Hallucinated check?
-    if (!filePCMFormat.isStandard || filePCMFormat.commonFormat != AVAudioPCMFormatFloat32) {
-      NSLog(@"⚠️ writeAudioData: Unsupported audio file format for writing");
-      return false;
+    if (audioBufferList->mNumberBuffers != filePCMFormat.channelCount ||
+        bufferFormat_.sampleRate != filePCMFormat.sampleRate ||
+        bufferFormat_.interleaved != filePCMFormat.interleaved) {
+      int outputFrameCount = ceil(numFrames * filePCMFormat.sampleRate / bufferFormat_.sampleRate);
+
+      AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat_
+                                                                    frameCapacity:(AVAudioFrameCount)numFrames];
+
+      for (int i = 0; i < bufferFormat_.channelCount; i++) {
+        memcpy(
+            inputBuffer.mutableAudioBufferList->mBuffers[i].mData,
+            audioBufferList->mBuffers[i].mData,
+            audioBufferList->mBuffers[i].mDataByteSize);
+      }
+
+      inputBuffer.frameLength = numFrames;
+      AVAudioPCMBuffer *outputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:filePCMFormat
+                                                                     frameCapacity:outputFrameCount];
+      outputBuffer.frameLength = outputFrameCount;
+
+      AVAudioConverterInputBlock inputBlock =
+          ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+      {
+        // this line is probably an delusion, but for my sanity lets keep it
+        inNumberOfPackets = numFrames;
+        *outStatus = AVAudioConverterInputStatus_HaveData;
+        return inputBuffer;
+      };
+
+      [converter_ convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
+
+      if (error != nil) {
+        NSLog(@"Error during audio conversion: %@", [error debugDescription]);
+        return false;
+      }
+
+      [audioFile_ writeFromBuffer:outputBuffer error:&error];
+
+      if (error != nil) {
+        NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
+        return false;
+      }
+    } else {
+      AVAudioPCMBuffer *processingBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:filePCMFormat
+                                                                      bufferListNoCopy:audioBufferList
+                                                                           deallocator:NULL];
+
+      [audioFile_ writeFromBuffer:processingBuffer error:&error];
+
+      if (error != nil) {
+        NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
+        return false;
+      }
     }
 
-    // Hallucinated check? TODO: verify if writing mixed channel counts is supported
-    if (audioBufferList->mNumberBuffers != fileChannelCount) {
-      NSLog(@"⚠️ writeAudioData: Mismatched channel count between input buffer and audio file");
-      return false;
-    }
-
-    AVAudioPCMBuffer *pcmBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:filePCMFormat frameCapacity:numFrames];
-    pcmBuffer.frameLength = numFrames;
-
-    for (AVAudioChannelCount channel = 0; channel < fileChannelCount; ++channel) {
-      float *dest = pcmBuffer.floatChannelData[channel];
-      float *src = (float *)audioBufferList->mBuffers[channel].mData;
-      std::memcpy(dest, src, numFrames * sizeof(float));
-    }
-
-    [audioFile_ writeFromBuffer:pcmBuffer error:&error];
-
-    if (error != nil) {
-      NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
-      return false;
-    }
+    return true;
   }
 }
 
@@ -111,7 +155,7 @@ NSString *IOSAudioFileWriter::getTimestampForFilename()
   return [fmt stringFromDate:[NSDate date]];
 }
 
-NSURL *getFileURL()
+NSURL *IOSAudioFileWriter::getFileURL()
 {
   NSError *error = nil;
 

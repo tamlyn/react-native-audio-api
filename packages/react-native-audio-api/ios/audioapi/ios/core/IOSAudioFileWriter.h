@@ -1,5 +1,8 @@
 #pragma once
 
+#include <memory>
+#include <string>
+
 #ifndef __OBJC__ // when compiled as C++
 typedef struct objc_object AVAudioFile;
 typedef struct objc_object NSURL;
@@ -15,7 +18,7 @@ class IOSAudioFileWriter {
   IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags);
   ~IOSAudioFileWriter();
 
-  void openFile();
+  void openFile(AVAudioFormat *bufferFormat);
   std::string closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
@@ -27,6 +30,8 @@ class IOSAudioFileWriter {
 
   std::shared_ptr<IOSAudioFileOptions> fileOptions_;
   AVAudioFile *audioFile_;
+  AVAudioFormat *bufferFormat_;
+  AVAudioConverter *converter_;
   NSURL *fileURL_;
 };
 

@@ -14,13 +14,9 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 @property (nonatomic, copy) AVAudioSinkNodeReceiverBlock receiverSinkBlock;
 @property (nonatomic, copy) AudioReceiverBlock receiverBlock;
 
-@property (nonatomic, strong) AVAudioConverter *audioConverter;
-@property (nonatomic, strong) AVAudioFormat *inputFormat;
-@property (nonatomic, strong) AVAudioFormat *outputFormat;
+- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock;
 
-- (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
-                         bufferLength:(int)bufferLength
-                           sampleRate:(float)sampleRate;
+- (AVAudioFormat *)getInputFormat;
 
 - (void)start;
 

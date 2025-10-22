@@ -87,7 +87,7 @@ NSString *IOSAudioFileOptions::getFileExtension() const
   }
 }
 
-NSUInteger IOSAudioFileOptions::getBitDepth() const
+NSInteger IOSAudioFileOptions::getBitDepth() const
 {
   switch (bitDepth_) {
     case 1:

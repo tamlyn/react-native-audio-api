@@ -1,12 +1,12 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C++
-// #import <NativeAudioRecorder.h>
-#else // when compiled as C++
-typedef struct objc_object NativeAudioRecorder;
+#ifdef __OBJC__ // when compiled as C++
+#import <NativeAudioRecorder.h>
+#else
 typedef struct objc_object AVAudioFile;
 typedef struct objc_object NSURL;
 typedef struct objc_object AudioBufferList;
+typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
@@ -33,11 +33,9 @@ class IOSAudioRecorder : public AudioRecorder {
   void pause() override;
   void resume() override;
 
-  // void writeToFile(const AudioBufferList *inputBuffer, int numFrames);
-
  private:
   std::shared_ptr<IOSAudioFileWriter> fileWriter_;
-  // NativeAudioRecorder *audioRecorder_;
+  NativeAudioRecorder *nativeRecorder_;
 };
 
 } // namespace audioapi
