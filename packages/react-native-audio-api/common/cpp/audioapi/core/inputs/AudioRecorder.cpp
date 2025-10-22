@@ -9,8 +9,7 @@
 namespace audioapi {
 
 AudioRecorder::AudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry>
-        &audioEventHandlerRegistry)
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : audioEventHandlerRegistry_(audioEventHandlerRegistry) {
   isRunning_.store(false);
   fileOutputEnabled_.store(false);
@@ -22,17 +21,16 @@ bool AudioRecorder::isRecording() {
   return isRunning_.load();
 }
 
-void AudioRecorder::connect(
-    const std::shared_ptr<RecorderAdapterNode> &node) {
+void AudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
   // node->init();
   // adapterNodeLock_.lock();
   // adapterNode_ = node;
   // adapterNodeLock_.unlock();
   // isConnected_.store(true);
-//   node->init(ringBufferSize_);
-//   adapterNodeLock_.lock();
-//   adapterNode_ = node;
-//   adapterNodeLock_.unlock();
+  //   node->init(ringBufferSize_);
+  //   adapterNodeLock_.lock();
+  //   adapterNode_ = node;
+  //   adapterNodeLock_.unlock();
 }
 
 void AudioRecorder::disconnect() {
@@ -41,7 +39,6 @@ void AudioRecorder::disconnect() {
   // adapterNodeLock_.unlock();
   // isConnected_.store(false);
 }
-
 
 void AudioRecorder::setOnAudioReadyCallback(
     float sampleRate,
@@ -64,39 +61,39 @@ void AudioRecorder::clearOnAudioReadyCallback() {
 void AudioRecorder::invokeOnAudioReadyCallback(
     const std::shared_ptr<AudioBus> &bus,
     int numFrames) {
-//   if (!hasCallback()) {
-//     return;
-//   }
+  //   if (!hasCallback()) {
+  //     return;
+  //   }
 
-//   auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-//   auto audioBufferHostObject =
-//       std::make_shared<AudioBufferHostObject>(audioBuffer);
+  //   auto audioBuffer = std::make_shared<AudioBuffer>(bus);
+  //   auto audioBufferHostObject =
+  //       std::make_shared<AudioBufferHostObject>(audioBuffer);
 
-//   std::unordered_map<std::string, EventValue> body = {};
-//   body.insert({"buffer", audioBufferHostObject});
-//   body.insert({"numFrames", numFrames});
+  //   std::unordered_map<std::string, EventValue> body = {};
+  //   body.insert({"buffer", audioBufferHostObject});
+  //   body.insert({"numFrames", numFrames});
 
-//   if (audioEventHandlerRegistry_ != nullptr) {
-//     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-//         "audioReady", onAudioReadyCallbackId_, body);
-//   }
+  //   if (audioEventHandlerRegistry_ != nullptr) {
+  //     audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+  //         "audioReady", onAudioReadyCallbackId_, body);
+  //   }
 }
 
 void AudioRecorder::sendRemainingCallbackData() {
-//   if (!hasCallback()) {
-//     return;
-//   }
+  //   if (!hasCallback()) {
+  //     return;
+  //   }
 
-//   auto bus = std::make_shared<AudioBus>(
-//       circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
-//   auto *outputChannel = bus->getChannel(0)->getData();
-//   auto availableFrames =
-//       static_cast<int>(circularBuffer_->getNumberOfAvailableFrames());
+  //   auto bus = std::make_shared<AudioBus>(
+  //       circularBuffer_->getNumberOfAvailableFrames(), 1, sampleRate_);
+  //   auto *outputChannel = bus->getChannel(0)->getData();
+  //   auto availableFrames =
+  //       static_cast<int>(circularBuffer_->getNumberOfAvailableFrames());
 
-//   circularBuffer_->pop_front(
-//       outputChannel, circularBuffer_->getNumberOfAvailableFrames());
+  //   circularBuffer_->pop_front(
+  //       outputChannel, circularBuffer_->getNumberOfAvailableFrames());
 
-//   invokeOnAudioReadyCallback(bus, availableFrames);
+  //   invokeOnAudioReadyCallback(bus, availableFrames);
 }
 
 bool AudioRecorder::usesCallback() const {
@@ -112,7 +109,8 @@ bool AudioRecorder::isConnected() const {
 }
 
 // AudioRecorder::AudioRecorder(
-//     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+//     const std::shared_ptr<AudioEventHandlerRegistry>
+//     &audioEventHandlerRegistry)
 //       audioEventHandlerRegistry_(audioEventHandlerRegistry) {
 //   constexpr int minRingBufferSize = 8192;
 //   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);

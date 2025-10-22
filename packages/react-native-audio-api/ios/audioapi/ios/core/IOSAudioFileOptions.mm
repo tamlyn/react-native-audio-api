@@ -5,11 +5,7 @@
 
 namespace audioapi {
 
-IOSAudioFileOptions::IOSAudioFileOptions(
-  float sampleRate,
-  size_t channelCount,
-  size_t bitRate,
-  size_t flags)
+IOSAudioFileOptions::IOSAudioFileOptions(float sampleRate, size_t channelCount, size_t bitRate, size_t flags)
 {
   sampleRate_ = sampleRate;
   channelCount_ = channelCount;
@@ -22,64 +18,91 @@ IOSAudioFileOptions::IOSAudioFileOptions(
   bitDepth_ = static_cast<uint8_t>(((flags >> 16) & 0xF));
 }
 
-AudioFormatID IOSAudioFileOptions::getFormat() const {
+AudioFormatID IOSAudioFileOptions::getFormat() const
+{
   switch (format_) {
-    case 1: return kAudioFormatLinearPCM;  // WAV <-> Linear PCM container
-    case 2: return kAudioFormatLinearPCM;  // CAF <-> Linear PCM container
-    case 3: return kAudioFormatMPEG4AAC;   // M4A <-> AAC
-    case 4: return kAudioFormatFLAC;       // FLAC <-> FLAC
-    default: return kAudioFormatLinearPCM; // Default to Linear PCM
+    case 1:
+      return kAudioFormatLinearPCM; // WAV <-> Linear PCM container
+    case 2:
+      return kAudioFormatLinearPCM; // CAF <-> Linear PCM container
+    case 3:
+      return kAudioFormatMPEG4AAC; // M4A <-> AAC
+    case 4:
+      return kAudioFormatFLAC; // FLAC <-> FLAC
+    default:
+      return kAudioFormatLinearPCM; // Default to Linear PCM
   }
 }
 
-NSInteger IOSAudioFileOptions::getQuality() const {
+NSInteger IOSAudioFileOptions::getQuality() const
+{
   switch (quality_) {
-    case 1: return AVAudioQualityMin;
-    case 2: return AVAudioQualityLow;
-    case 3: return AVAudioQualityMedium;
-    case 4: return AVAudioQualityHigh;
-    case 5: return AVAudioQualityMax;
-    default: return AVAudioQualityMedium; // Default to Medium
+    case 1:
+      return AVAudioQualityMin;
+    case 2:
+      return AVAudioQualityLow;
+    case 3:
+      return AVAudioQualityMedium;
+    case 4:
+      return AVAudioQualityHigh;
+    case 5:
+      return AVAudioQualityMax;
+    default:
+      return AVAudioQualityMedium; // Default to Medium
   }
 }
 
-
-NSInteger IOSAudioFileOptions::getFlacCompressionLevel() const {
+NSInteger IOSAudioFileOptions::getFlacCompressionLevel() const
+{
   // Shift the quality from 1-9 to 0-8 for real values
   // Default to 5 if out of range
-  return (flacCompressionLevel_ >= 1 && flacCompressionLevel_ <= 9)
-    ? flacCompressionLevel_ - 1
-    : 5;
+  return (flacCompressionLevel_ >= 1 && flacCompressionLevel_ <= 9) ? flacCompressionLevel_ - 1 : 5;
 }
 
-NSSearchPathDirectory IOSAudioFileOptions::getDirectory() const {
+NSSearchPathDirectory IOSAudioFileOptions::getDirectory() const
+{
   switch (directory_) {
-    case 1: return NSDocumentDirectory;
-    case 2: return NSCachesDirectory;
-    default: return NSCachesDirectory; // Default to Caches
+    case 1:
+      return NSDocumentDirectory;
+    case 2:
+      return NSCachesDirectory;
+    default:
+      return NSCachesDirectory; // Default to Caches
   }
 }
 
-NSString *IOSAudioFileOptions::getFileExtension() const {
+NSString *IOSAudioFileOptions::getFileExtension() const
+{
   switch (format_) {
-    case 1: return @"wav";  // WAV <-> Linear PCM container
-    case 2: return @"caf";  // CAF <-> Linear PCM container
-    case 3: return @"m4a";  // M4A <-> AAC
-    case 4: return @"flac"; // FLAC <-> FLAC
-    default: return @"wav"; // Default to WAV
+    case 1:
+      return @"wav"; // WAV <-> Linear PCM container
+    case 2:
+      return @"caf"; // CAF <-> Linear PCM container
+    case 3:
+      return @"m4a"; // M4A <-> AAC
+    case 4:
+      return @"flac"; // FLAC <-> FLAC
+    default:
+      return @"wav"; // Default to WAV
   }
 }
 
-NSUInteger IOSAudioFileOptions::getBitDepth() const {
+NSUInteger IOSAudioFileOptions::getBitDepth() const
+{
   switch (bitDepth_) {
-    case 1: return 16;
-    case 2: return 24;
-    case 3: return 32;
-    default: return 24; // Default to 24-bit
+    case 1:
+      return 16;
+    case 2:
+      return 24;
+    case 3:
+      return 32;
+    default:
+      return 24; // Default to 24-bit
   }
 }
 
-NSDictionary *IOSAudioFileOptions::getFileSettings() {
+NSDictionary *IOSAudioFileOptions::getFileSettings()
+{
   AudioFormatID format = getFormat();
   NSMutableDictionary *settings = [NSMutableDictionary dictionary];
 

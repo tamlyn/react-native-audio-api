@@ -12,15 +12,10 @@ class IOSAudioFileOptions;
 
 class IOSAudioFileWriter {
  public:
-  IOSAudioFileWriter(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t iosFlags);
+  IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags);
   ~IOSAudioFileWriter();
 
-  void openFile(
-  );
+  void openFile();
   std::string closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);

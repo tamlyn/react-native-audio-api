@@ -3,25 +3,19 @@
 
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
 
-
 namespace audioapi {
-IOSAudioFileWriter::IOSAudioFileWriter(
-  float sampleRate,
-  size_t channelCount,
-  size_t bitRate,
-  size_t iosFlags) {
-  fileOptions_ = std::make_shared<IOSAudioFileOptions>(
-    sampleRate,
-    channelCount,
-    bitRate,
-    iosFlags);
+IOSAudioFileWriter::IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags)
+{
+  fileOptions_ = std::make_shared<IOSAudioFileOptions>(sampleRate, channelCount, bitRate, iosFlags);
 }
 
-IOSAudioFileWriter::~IOSAudioFileWriter() {
+IOSAudioFileWriter::~IOSAudioFileWriter()
+{
   closeFile();
 }
 
-void IOSAudioFileWriter::openFile() {
+void IOSAudioFileWriter::openFile()
+{
   @autoreleasepool {
     if (audioFile_ != nil) {
       NSLog(@"⚠️ createFileForWriting: currentAudioFile_ already exists");
@@ -43,7 +37,8 @@ void IOSAudioFileWriter::openFile() {
   }
 }
 
-void IOSAudioFileWriter::closeFile() {
+void IOSAudioFileWriter::closeFile()
+{
   @autoreleasepool {
     if (audioFile_ == nil) {
       return;
@@ -55,7 +50,8 @@ void IOSAudioFileWriter::closeFile() {
   }
 }
 
-bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames) {
+bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
+{
   if (audioFile_ == nil) {
     NSLog(@"⚠️ writeAudioData: audioFile is nil, cannot write data");
     return false;
@@ -122,20 +118,22 @@ NSURL *getFileURL()
   NSSearchPathDirectory searchDirectory = fileOptions_->getDirectory();
   NSString *directory = [NSString stringWithFormat:@"AudioAPI/%@", getISODateStringForDirectory()];
 
-  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:searchDirectory inDomains:NSUserDomainMask] firstObject];
+  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:searchDirectory
+                                                           inDomains:NSUserDomainMask] firstObject];
   NSURL *dirURL = [baseURL URLByAppendingPathComponent:directory isDirectory:YES];
 
   [[NSFileManager defaultManager] createDirectoryAtURL:dirURL
-                            withIntermediateDirectories:YES
+                           withIntermediateDirectories:YES
                                             attributes:nil
-                                                  error:&error];
+                                                 error:&error];
 
   if (error != nil) {
     NSLog(@"Error creating directory for audio recordings: %@", [error debugDescription]);
     dirURL = baseURL;
   }
 
-  NSString *fileName = [NSString stringWithFormat:@"audio_%@.%@", getTimestampForFilename(), fileOptions_->getFileExtension()];
+  NSString *fileName =
+      [NSString stringWithFormat:@"audio_%@.%@", getTimestampForFilename(), fileOptions_->getFileExtension()];
   return [dirURL URLByAppendingPathComponent:fileName];
 }
 

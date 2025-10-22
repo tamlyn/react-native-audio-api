@@ -4,8 +4,8 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
+#include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -14,48 +14,44 @@
 
 namespace audioapi {
 
-IOSAudioRecorder::IOSAudioRecorder(
-    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr) {
+IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+    : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr)
+{
 }
 
-IOSAudioRecorder::~IOSAudioRecorder() {
+IOSAudioRecorder::~IOSAudioRecorder()
+{
   // stop();
   // [audioRecorder_ cleanup]; --- IGNORE ---
 }
 
-void IOSAudioRecorder::start() { }
+void IOSAudioRecorder::start() {}
 
-std::string IOSAudioRecorder::stop() {
+std::string IOSAudioRecorder::stop()
+{
   return std::string("");
 }
 
 void IOSAudioRecorder::enableFileOutput(
-        float sampleRate,
-      size_t channelCount,
-      size_t bitRate,
-      size_t iosFlags,
-      size_t androidFlags) {
+    float sampleRate,
+    size_t channelCount,
+    size_t bitRate,
+    size_t iosFlags,
+    size_t androidFlags)
+{
   fileOutputEnabled_.store(true);
-  fileWriter_ = std::make_shared<IOSAudioFileWriter>(
-    sampleRate,
-    channelCount,
-    bitRate,
-    iosFlags);
+  fileWriter_ = std::make_shared<IOSAudioFileWriter>(sampleRate, channelCount, bitRate, iosFlags);
 }
 
-void IOSAudioRecorder::disableFileOutput() {
+void IOSAudioRecorder::disableFileOutput()
+{
   fileOutputEnabled_.store(false);
   fileWriter_ = nullptr;
 }
 
-void IOSAudioRecorder::pause() {
+void IOSAudioRecorder::pause() {}
 
-}
-
-void IOSAudioRecorder::resume() {
-
-}
+void IOSAudioRecorder::resume() {}
 // IOSAudioRecorder::IOSAudioRecorder(
 //     float sampleRate,
 //     int bufferLength,

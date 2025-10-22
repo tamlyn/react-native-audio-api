@@ -26,12 +26,8 @@ class IOSAudioRecorder : public AudioRecorder {
   void start() override;
   std::string stop() override;
 
-  void enableFileOutput(
-      float sampleRate,
-      size_t channelCount,
-      size_t bitRate,
-      size_t iosFlags,
-      size_t androidFlags) override;
+  void enableFileOutput(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags, size_t androidFlags)
+      override;
   void disableFileOutput() override;
 
   void pause() override;
