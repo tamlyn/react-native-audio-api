@@ -3,6 +3,7 @@
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
+#include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioBus.h>
 #include <algorithm>
 #include <stdexcept>
@@ -425,13 +426,11 @@ std::shared_ptr<AudioBus> NodeConnections::getProcessingBusForIndex(
     unsigned int numChannels,
     int framesToProcess) {
   auto &bus = m_processingInputBuses[inputIndex];
-  if (!bus || bus->getSize() != static_cast<size_t>(framesToProcess) ||
-      bus->getNumberOfChannels() != numChannels ||
+  // this handles source (0 input) node case
+  if (!bus || bus->getNumberOfChannels() != numChannels ||
       bus->getSampleRate() != m_context->getSampleRate()) {
     bus = std::make_shared<AudioBus>(
-        static_cast<size_t>(framesToProcess),
-        numChannels,
-        m_context->getSampleRate());
+        RENDER_QUANTUM_SIZE, numChannels, m_context->getSampleRate());
   }
   return bus;
 }

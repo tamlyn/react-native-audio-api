@@ -129,26 +129,8 @@ void AudioNode::processAudio(
     return;
   }
 
-  // this is very defensive, maybe too much
-  if (m_outputBuses.size() != static_cast<size_t>(numberOfOutputs_)) {
-    m_outputBuses.resize(numberOfOutputs_);
-  }
   for (int i = 0; i < numberOfOutputs_; ++i) {
-    if (!m_outputBuses[i]) {
-      m_outputBuses[i] = std::make_shared<AudioBus>(
-          static_cast<size_t>(framesToProcess),
-          channelCount_,
-          context_->getSampleRate());
-    } else {
-      if (m_outputBuses[i]->getSize() != static_cast<size_t>(framesToProcess) ||
-          m_outputBuses[i]->getSampleRate() != context_->getSampleRate()) {
-        m_outputBuses[i] = std::make_shared<AudioBus>(
-            static_cast<size_t>(framesToProcess),
-            channelCount_,
-            context_->getSampleRate());
-      }
-      m_outputBuses[i]->zero();
-    }
+      m_outputBuses[i]->zero();  
   }
 
   // we could also do the check in NodeConnections::processInputAtIndex, not
@@ -320,9 +302,10 @@ void AudioNode::processNode(
     int framesToProcess) {
   std::shared_ptr<AudioBus> processingBus;
 
+  // this handles source (0 input) node case
   if (inputBuses.empty() || !inputBuses[0]) {
     processingBus = std::make_shared<AudioBus>(
-        static_cast<size_t>(framesToProcess),
+        RENDER_QUANTUM_SIZE,
         channelCount_,
         context_->getSampleRate());
     processingBus->zero();

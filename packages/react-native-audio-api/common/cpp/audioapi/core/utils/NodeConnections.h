@@ -82,7 +82,7 @@ class NodeConnections {
   std::map<unsigned int, std::vector<OutputConnection>> m_indexedOutputs;
   std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>> m_indexedOutputParams;
 
-  // used for calculations inside processnputAtIndex
+  // used for calculations inside processInputAtIndex
   std::vector<std::shared_ptr<AudioBus>> m_processingInputBuses;
 
   // processes all inputs connected to a particular input index
