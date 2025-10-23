@@ -14,7 +14,15 @@
 #endif
 {
   MIDIClientRef midiClient;
-
+  BOOL sysexEnabled;
+  MIDIPortRef inputPort;
+  MIDIPortRef outputPort;
 }
+
+@property (nonatomic) MIDIClientRef midiClient;
+@property (nonatomic) MIDIPortRef inputPort;
+@property (nonatomic) MIDIPortRef outputPort;
+@property (nonatomic) BOOL sysexEnabled;
+@property (nonatomic, strong) NSMutableDictionary* openPorts;
 
 @end

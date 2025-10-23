@@ -13,9 +13,12 @@ export interface MIDIPortInfo {
 
 export interface Spec extends TurboModule {
   test(): void;
-  prepareMIDIClient(): void;
+  prepareMIDIClient(sysex: boolean): void;
   getSources(): MIDIPortInfo[];
   getDestinations(): MIDIPortInfo[];
+
+  openPort(portId: string): boolean;
+  closePort(portId: string): boolean;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('Medi');
