@@ -7,7 +7,7 @@ namespace audioapi {
 
 class ChannelMergerNode : public AudioNode {
  public:
-  explicit ChannelMergerNode(BaseAudioContext *context, unsigned numberOfInputs = 6);
+  explicit ChannelMergerNode(BaseAudioContext *context, unsigned int numberOfInputs = 6);
   virtual ~ChannelMergerNode() = default;
 
  protected:

@@ -25,4 +25,8 @@ static constexpr float PI = static_cast<float>(M_PI);
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT = 4;
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE = 32;
 static constexpr size_t PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE = 32;
+
+// default node attributes
+static constexpr int DEFAULT_NUMBER_OF_INPUTS = 1;
+static constexpr int MAX_BUS_CHANNELS = 32;
 } // namespace audioapi

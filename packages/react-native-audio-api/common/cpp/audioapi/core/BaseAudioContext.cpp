@@ -142,7 +142,7 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
 }
 
 std::shared_ptr<ChannelSplitterNode> BaseAudioContext::createChannelSplitter(
-    unsigned numberOfOutputs) {
+    unsigned int numberOfOutputs) {
   auto channelSplitter =
       std::make_shared<ChannelSplitterNode>(this, numberOfOutputs);
   nodeManager_->addProcessingNode(channelSplitter);
@@ -150,7 +150,7 @@ std::shared_ptr<ChannelSplitterNode> BaseAudioContext::createChannelSplitter(
 }
 
 std::shared_ptr<ChannelMergerNode> BaseAudioContext::createChannelMerger(
-    unsigned numberOfInputs) {
+    unsigned int numberOfInputs) {
   auto channelMerger =
       std::make_shared<ChannelMergerNode>(this, numberOfInputs);
   nodeManager_->addProcessingNode(channelMerger);

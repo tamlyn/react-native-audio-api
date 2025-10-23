@@ -7,7 +7,7 @@ namespace audioapi {
 
 class ChannelSplitterNode : public AudioNode {
  public:
-  explicit ChannelSplitterNode(BaseAudioContext *context, unsigned numberOfOutputs = 6);
+  explicit ChannelSplitterNode(BaseAudioContext *context, unsigned int numberOfOutputs = 6);
   virtual ~ChannelSplitterNode() = default;
 
  protected:

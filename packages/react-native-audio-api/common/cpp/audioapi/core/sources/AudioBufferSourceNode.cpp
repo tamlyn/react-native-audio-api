@@ -90,7 +90,7 @@ void AudioBufferSourceNode::setBuffer(
 
     // Re-initialize output buses with the correct channel count.
     for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
-      m_outputBuses[i] = std::make_shared<AudioBus>(
+      outputBuses_[i] = std::make_shared<AudioBus>(
           RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
     }
   }

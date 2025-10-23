@@ -1,5 +1,5 @@
-#include "ChannelMergerNode.h"
 #include <audioapi/core/BaseAudioContext.h>
+#include <audioapi/core/effects/ChannelMergerNode.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
@@ -7,17 +7,14 @@ namespace audioapi {
 
 ChannelMergerNode::ChannelMergerNode(
     BaseAudioContext *context,
-    unsigned numberOfInputs)
+    unsigned int numberOfInputs)
     : AudioNode(context, numberOfInputs) {
-  numberOfInputs_ = numberOfInputs;
-  numberOfOutputs_ = 1;
-
   channelCount_ = 1;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
   channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
-  m_outputBuses.clear();
-  m_outputBuses.push_back(
+  outputBuses_.clear();
+  outputBuses_.push_back(
       std::make_shared<AudioBus>(
           RENDER_QUANTUM_SIZE, numberOfInputs_, context->getSampleRate()));
 
@@ -29,7 +26,7 @@ void ChannelMergerNode::processNode(
     int framesToProcess) {
   auto outputBus = getOutputBus(0);
 
-  for (unsigned i = 0; i < numberOfInputs_; ++i) {
+  for (unsigned int i = 0; i < numberOfInputs_; ++i) {
     bool isInputConnected = i < inputBuses.size() && inputBuses[i];
 
     if (isInputConnected) {

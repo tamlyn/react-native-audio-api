@@ -22,7 +22,7 @@ class NodeConnections;
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
   // allocates correct amount of space for m_outputBuses
-  explicit AudioNode(BaseAudioContext *context);
+  //explicit AudioNode(BaseAudioContext *context);
   virtual ~AudioNode();
 
   // just delegates it to the NodeManager
@@ -69,7 +69,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioNodeManager;
   friend class NodeConnections;
 
-  explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs);
+  explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs = 1);
 
   // these are all forwarders to NodeConnections
   void connectNode(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
@@ -97,8 +97,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
-  std::vector<std::shared_ptr<AudioBus>> m_outputBuses;
-  std::unique_ptr<NodeConnections> m_connections;
+  std::vector<std::shared_ptr<AudioBus>> outputBuses_;
+  std::unique_ptr<NodeConnections> connections_;
 
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;

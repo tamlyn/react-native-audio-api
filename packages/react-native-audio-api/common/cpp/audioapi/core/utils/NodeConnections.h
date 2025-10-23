@@ -75,15 +75,15 @@ class NodeConnections {
   void propagateDisable();
 
  private:
-  AudioNode *m_owner;
-  BaseAudioContext *m_context;
+  AudioNode *owner_;
+  BaseAudioContext *context_;
 
-  std::map<unsigned int, std::vector<InputConnection>> m_indexedInputs;
-  std::map<unsigned int, std::vector<OutputConnection>> m_indexedOutputs;
-  std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>> m_indexedOutputParams;
+  std::map<unsigned int, std::vector<InputConnection>> indexedInputs_;
+  std::map<unsigned int, std::vector<OutputConnection>> indexedOutputs_;
+  std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>> indexedOutputParams_;
 
   // used for calculations inside processInputAtIndex
-  std::vector<std::shared_ptr<AudioBus>> m_processingInputBuses;
+  std::vector<std::shared_ptr<AudioBus>> processingInputBuses_;
 
   // processes all inputs connected to a particular input index
   std::shared_ptr<AudioBus> processInputAtIndex(unsigned int index, int framesToProcess, bool checkIsAlreadyProcessed);

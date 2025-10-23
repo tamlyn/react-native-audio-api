@@ -60,8 +60,8 @@ class BaseAudioContext {
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
-  std::shared_ptr<ChannelSplitterNode> createChannelSplitter(unsigned numberOfOutputs = 6);
-  std::shared_ptr<ChannelMergerNode> createChannelMerger(unsigned numberOfInputs = 6);
+  std::shared_ptr<ChannelSplitterNode> createChannelSplitter(unsigned int numberOfOutputs = 6);
+  std::shared_ptr<ChannelMergerNode> createChannelMerger(unsigned int numberOfInputs = 6);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(

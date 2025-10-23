@@ -10,7 +10,6 @@ namespace audioapi {
 AudioDestinationNode::AudioDestinationNode(BaseAudioContext *context)
     : AudioNode(context), currentSampleFrame_(0) {
   numberOfOutputs_ = 0;
-  numberOfInputs_ = 1;
   channelCountMode_ = ChannelCountMode::EXPLICIT;
   isInitialized_ = true;
 }
@@ -44,7 +43,7 @@ void AudioDestinationNode::renderAudio(
 
   destinationBus->zero();
 
-  const auto &inputBuses = m_connections->processAllInputs(numFrames, true);
+  const auto &inputBuses = connections_->processAllInputs(numFrames, true);
 
   if (!inputBuses.empty() && inputBuses[0]) {
     destinationBus->copy(inputBuses[0].get());
