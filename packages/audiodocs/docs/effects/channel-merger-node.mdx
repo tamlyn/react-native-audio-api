@@ -1,0 +1,33 @@
+---
+sidebar_position: 2
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly, Optional } from '@site/src/components/Badges';
+
+# ChannelMergerNode
+
+The `ChannelMergerNode`, often used in conjunction with its opposite,[`ChannelSplitterNode`](/docs/effects/channel-splitter-node),
+combines multiple mono inputs into a single output channel. This is useful for mixing audio signals from different sources, allowing for more complex audio routing and processing.
+
+The `numberOfInputs` is defined by a parameter passed to the [`BaseAudioContext.createChannelMerger(numberOfInputs)`](/docs/core/base-audio-context#createchannelmerger). 
+This number in most cases should be equal to the number of inputs you want to connect to the merger.
+If you create a six-input merger and only connect one node to input 0, the output will be a 5.1 signal with channel 0 containing the audio from the connected node and the rest of the channels being silent.
+If you connect a non-mono signal to the merger (e.g., a stereo signal to input 0), the signal will be down-mixed into mono before merging. 
+
+#### [`AudioNode`](/docs/core/audio-node#read-only-properties) properties
+<AudioNodePropsTable numberOfInputs={"variable - defaults to 6"} numberOfOutputs={1} channelCount={"numberOfInputs"} channelCountMode={"explicit"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createChannelMerger()`](/docs/core/base-audio-context#createchannelmerger)
+
+## Methods
+
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+## Remarks
+
+#### `numberOfInputs`
+- Default value is 6.
+- range is from 1 to 32 inputs.

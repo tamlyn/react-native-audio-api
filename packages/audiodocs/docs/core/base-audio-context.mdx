@@ -207,6 +207,38 @@ Creates [`BiquadFilterNode`](/docs/effects/biquad-filter-node).
 
 #### Returns `BiquadFilterNode`.
 
+### `createChannelSplitter` 
+
+Creates [`ChannelSplitterNode`](/docs/effects/channel-splitter-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfOutputs` | `number` | The number of outputs. | <ReadOnly /> |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `IndexSizeError` | `numberOfOutputs` is outside the nominal range [1, 32]. |
+
+#### Returns `ChannelSplitterNode`.
+
+### `createChannelMerger` 
+
+Creates [`ChannelMergerNode`](/docs/effects/channel-merger-node).
+
+| Parameter | Type | Description |
+| :---: | :---: | :---- |
+| `numberOfInputs` | `number` | The number of inputs. | <ReadOnly /> |
+
+#### Errors
+
+| Error type | Description |
+| :---: | :---- |
+| `IndexSizeError` | `numberOfInputs` is outside the nominal range [1, 32]. |
+
+#### Returns `ChannelMergerNode`.
+
 :::caution
 Supported file formats:
 - aac
