@@ -1,6 +1,6 @@
 # Instruction on how to compile your own version of the ffmpeg and to replace binary files with yours.
 
-If you would like to change ffmpeg binaries f.e. to include some of its functionalities. There are possible solutions to do that. 
+If you would like to change ffmpeg binaries f.e. to include some of its functionalities. There are possible solutions to do that.
 
 Basically, there are two options to achieve it:
 
@@ -23,4 +23,10 @@ Put your corresponding .so files for each architecture (TARGET_ABI) to packages/
 
 Put corresponding .xcframework files in packages/react-native-audio-api/common/cpp/audioapi/external
 
-## Warning: due to how xcode build an app, it is recommended to delete output directory after moving prebuilt
+## Additional steps - IMPORTANT!
+
+- after moving the corresponding platform files, delete the all output files from this directory
+  - otherwise XCode will try to link them
+- remove `time.h` from include directories as it will conflict with system one in XCode
+- rename all local occurrences of `AVMediaType` to f.e. `AVMediaTypeFFMPEG`
+- finally remove `build` directory from your example app `ios` directory as most likely XCode will choke on that too

@@ -15,6 +15,12 @@ import { colors } from '../../styles';
 
 const SAMPLE_RATE = 16000;
 
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'playAndRecord',
+  iosMode: 'default',
+  iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+});
+
 const Record: FC = () => {
   const [isRecording, setIsRecording] = useState(false);
   const [lastOutput, setLastOutput] = useState<string | null>(null);
@@ -23,10 +29,10 @@ const Record: FC = () => {
     return new AudioContext({ initSuspended: true });
   }, []);
 
-  const recorder = useMemo(() => new AudioRecorder(), []);
+  const recorder = useMemo(() => {
+    const rec = new AudioRecorder();
 
-  const onStartRecording = async () => {
-    recorder.enableFileOutput({
+    rec.enableFileOutput({
       sampleRate: 16000,
       channels: 1,
       bitRate: 32000,
@@ -39,21 +45,21 @@ const Record: FC = () => {
       android: {},
     });
 
-    AudioManager.setAudioSessionOptions({
-      iosCategory: 'playAndRecord',
-      iosMode: 'spokenAudio',
-      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-    });
+    return rec;
+  }, []);
 
+  const onStartRecording = async () => {
     await AudioManager.setAudioSessionActivity(true);
 
     recorder.start();
     setIsRecording(true);
   };
 
-  const onStopRecording = () => {
+  const onStopRecording = async () => {
     setIsRecording(false);
     const output = recorder.stop();
+
+    await AudioManager.setAudioSessionActivity(false);
 
     setLastOutput(typeof output === 'string' ? output : null);
   };
@@ -63,11 +69,18 @@ const Record: FC = () => {
       return;
     }
 
+    await AudioManager.setAudioSessionActivity(true);
+
     const buffer = await audioContext.decodeAudioData(lastOutput);
     const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.connect(audioContext.destination);
     source.start();
+
+    source.onEnded = async () => {
+      await audioContext.suspend();
+      await AudioManager.setAudioSessionActivity(false);
+    };
 
     if (audioContext.state === 'suspended') {
       await audioContext.resume();

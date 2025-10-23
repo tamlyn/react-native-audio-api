@@ -118,9 +118,9 @@ static AudioEngine *_sharedInstance = nil;
 - (void)stopEngine
 {
   NSLog(@"[AudioEngine] stopEngine");
-  if (![self.audioEngine isRunning]) {
-    return;
-  }
+  //  if (![self.audioEngine isRunning]) {
+  //    return;
+  //  }
 
   self.isSupposedToBeRunning = false;
   [self.audioEngine stop];

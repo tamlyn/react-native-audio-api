@@ -4,7 +4,7 @@
 # Builds shared ffmpeg binaries for iOS and Android architectures
 set -e
 
-SOURCE_DIR="/path/to/your/ffmpeg"  # Change this to your FFmpeg source directory
+SOURCE_DIR="/Users/michalsek/Documents/work/FFmpeg"  # Change this to your FFmpeg source directory
 if [ ! -d "${SOURCE_DIR}" ]; then
     echo "FFmpeg source directory does not exist: ${SOURCE_DIR}"
     exit 1
@@ -48,12 +48,22 @@ COMMON_CONFIG="
 --enable-demuxer=mp3
 --enable-parser=aac
 --enable-decoder=aac
+--enable-decoder=alac
 --enable-decoder=mp3
 --enable-decoder=flac
+--enable-encoder=aac
+--enable-encoder=flac
+--enable-encoder=alac
+--enable-encoder=pcm_s16le
+--enable-muxer=wav
+--enable-muxer=mp4
+--enable-muxer=flac
+--enable-muxer=caf
 --enable-protocol=udp
 --enable-protocol=file
 --enable-pic
 --disable-x86asm
+--disable-inline-asm
 "
 
 build_arch() {
@@ -64,7 +74,7 @@ build_arch() {
     local CFLAGS=$5
     local LDFLAGS=$6
     local EXTRA_CONFIG=$7
-    
+
     if [[ ${PLATFORM} == "android" ]]; then
         PLATFORM_NAME="android"
         if [[ ${ARCH} == "aarch64" ]]; then
@@ -87,20 +97,20 @@ build_arch() {
     fi
 
     echo "Building FFmpeg for ${PLATFORM_NAME} ${ARCH_NAME}..."
-    
+
     SOURCE_PATH="${BUILD_DIR}/ffmpeg-${PLATFORM_NAME}-${ARCH_NAME}"
     OUTPUT_PATH="${OUTPUT_DIR}/${PLATFORM_NAME}/${ARCH_NAME}"
-    
+
     mkdir -p "${OUTPUT_PATH}"
-    
+
     echo "Copying source for ${PLATFORM_NAME} ${ARCH_NAME}..."
     rm -rf "${SOURCE_PATH}"
     cp -r "${SOURCE_DIR}" "${SOURCE_PATH}"
-    
+
     cd "${SOURCE_PATH}"
-    
+
     make distclean 2>/dev/null || true
-    
+
     if [[ ${PLATFORM} == "darwinsim" ]]; then
         PLATFORM="darwin"
     fi
@@ -119,18 +129,18 @@ build_arch() {
         --prefix="${OUTPUT_PATH}" \
         ${COMMON_CONFIG} \
         ${EXTRA_CONFIG}
-    
+
     # Build
     make -j10
     make install
-    
+
     echo "Completed ${PLATFORM} ${ARCH}"
     cd - > /dev/null
 }
 
 fix_dynamic_ios_linkage() {
     local LIB_PATH=$1
-    
+
     # Get all dependencies that are not system libraries (including the library itself)
     otool -L "${LIB_PATH}" | grep -v "/usr/lib/" | grep -v "/System/" | awk 'NR>1 {print $1}' | while read -r dep; do
         if [[ -n "$dep" ]]; then
@@ -141,7 +151,7 @@ fix_dynamic_ios_linkage() {
             install_name_tool -change "$dep" "$framework_path" "${LIB_PATH}"
         fi
     done
-    
+
     # Also update the library's own install name to use @rpath with framework structure
     local lib_name=$(basename "${LIB_PATH}" | sed 's/\.dylib$//' | sed 's/\.[0-9][0-9.]*$//')
     local framework_path="@rpath/${lib_name}.framework/${lib_name}"
@@ -241,11 +251,11 @@ fi
 # iOS Architectures
 if [[ "$OSTYPE" == "darwin"* ]]; then
     echo "Building for iOS architectures..."
-    
+
     # iOS SDK paths
     IOS_SDK_PATH=$(xcrun --sdk iphoneos --show-sdk-path)
     IOS_SIM_SDK_PATH=$(xcrun --sdk iphonesimulator --show-sdk-path)
-    
+
     # iOS Device architecture
     build_arch "arm64" "darwin" \
         "$(xcrun --sdk iphoneos --find clang)" \
@@ -258,7 +268,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
     fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libavformat.${AVFORMAT_VERSION}.dylib"
     fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libavutil.${AVUTIL_VERSION}.dylib"
     fix_dynamic_ios_linkage "${OUTPUT_DIR}/ios/iphoneos/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib"
-    
+
     rm -rf "${OUTPUT_DIR}/ios/iphoneos/share"
 
     # iOS Simulator arm (Silicon Macs)
@@ -301,12 +311,12 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
         "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavformat.${AVFORMAT_VERSION}.dylib" \
         "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavformat.${AVFORMAT_VERSION}.dylib" \
         -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavformat.${AVFORMAT_VERSION}.dylib"
-    
+
     lipo -create \
         "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libavutil.${AVUTIL_VERSION}.dylib" \
         "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libavutil.${AVUTIL_VERSION}.dylib" \
-        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavutil.${AVUTIL_VERSION}.dylib" 
-       
+        -output "${OUTPUT_DIR}/ios/iphonesimulator/lib/libavutil.${AVUTIL_VERSION}.dylib"
+
     lipo -create \
         "${OUTPUT_DIR}/ios/iphonesimulator_arm64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib" \
         "${OUTPUT_DIR}/ios/iphonesimulator_x86_64/lib/libswresample.${SWRRESAMPLE_VERSION}.dylib" \
@@ -319,7 +329,7 @@ if [[ "$OSTYPE" == "darwin"* ]]; then
 
     # create frameworks from binaries
     bash ./create_xcframework.sh
-    
+
     echo "iOS builds completed!"
 else
     echo "Skipping iOS builds (requires macOS)"
@@ -328,7 +338,7 @@ fi
 # Android Architectures
 if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
     echo "Building for Android architectures..."
-        
+
     # ARM64-v8a
     build_arch "aarch64" "android" \
         "${TOOLCHAIN}/bin/aarch64-linux-android${API_LEVEL}-clang" \
@@ -338,7 +348,7 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
         "--enable-openssl --extra-libs=-lz"
 
     rm -rf ${OUTPUT_DIR}/android/arm64-v8a/share
-    
+
     # ARMv7a
     build_arch "armv7a" "android" \
         "${TOOLCHAIN}/bin/armv7a-linux-androideabi${API_LEVEL}-clang" \
@@ -370,7 +380,7 @@ if [ -n "$ANDROID_NDK_ROOT" ] || [ -n "$NDK_ROOT" ]; then
 
     rm -rf ${OUTPUT_DIR}/android/x86_64/share
 
-        
+
     echo "Android builds completed!"
 else
     echo "Skipping Android builds (ANDROID_NDK_ROOT or NDK_ROOT not set)"

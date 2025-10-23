@@ -76,8 +76,8 @@ std::string IOSAudioRecorder::stop()
     return std::string("");
   }
 
-  isRunning_.store(false);
   [nativeRecorder_ stop];
+  isRunning_.store(false);
 
   // TODO: send remaining data?
 
