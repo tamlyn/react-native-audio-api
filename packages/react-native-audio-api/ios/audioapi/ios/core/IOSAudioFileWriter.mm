@@ -12,7 +12,10 @@ IOSAudioFileWriter::IOSAudioFileWriter(float sampleRate, size_t channelCount, si
 
 IOSAudioFileWriter::~IOSAudioFileWriter()
 {
-  closeFile();
+  fileURL_ = nil;
+  audioFile_ = nil;
+  converter_ = nil;
+  bufferFormat_ = nil;
 }
 
 void IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat)
