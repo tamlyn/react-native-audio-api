@@ -407,7 +407,8 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
   unsigned int computedChannels = computeNumberOfChannelsForInput(index);
 
   // Determine how many channels the summing/workbench bus needs to have:
-  // at least as many as the widest source and at least as many as computedChannels.
+  // at least as many as the widest source and at least as many as
+  // computedChannels.
   unsigned int maxSourceChannels = 0;
   for (const InputConnection &ic : connections) {
     AudioNode *sourceNode = ic.sourceNode;
@@ -421,25 +422,27 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
       srcBus = nullptr;
     }
     if (srcBus) {
-      maxSourceChannels = std::max(maxSourceChannels,
-                                   (unsigned int)srcBus->getNumberOfChannels());
+      maxSourceChannels = std::max(
+          maxSourceChannels, (unsigned int)srcBus->getNumberOfChannels());
     }
   }
 
-  unsigned int requiredSummingChannels = std::max(computedChannels, maxSourceChannels);
+  unsigned int requiredSummingChannels =
+      std::max(computedChannels, maxSourceChannels);
   if (requiredSummingChannels == 0)
     requiredSummingChannels = 1;
 
-  if (internalSummingBus_  == nullptr ||
+  if (internalSummingBus_ == nullptr ||
       internalSummingBus_->getNumberOfChannels() != requiredSummingChannels ||
       internalSummingBus_->getSampleRate() != context_->getSampleRate()) {
     internalSummingBus_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE, requiredSummingChannels, context_->getSampleRate());
+        RENDER_QUANTUM_SIZE,
+        requiredSummingChannels,
+        context_->getSampleRate());
   }
 
   auto finalBus =
       getProcessingBusForIndex(index, computedChannels, framesToProcess);
-
 
   auto sumBus = internalSummingBus_;
   sumBus->zero();

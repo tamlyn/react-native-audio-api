@@ -4,6 +4,7 @@ import {
   AudioContext,
   AudioBufferSourceNode,
   AudioBuffer,
+  OscillatorNode, 
 } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
@@ -16,7 +17,8 @@ const INITIAL_GAIN = 0.5;
 const labelWidth = 100;
 
 const SplitterMerger: FC = () => {
-  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPlayingFile, setIsPlayingFile] = useState(false);
+  const [isPlayingOsc, setIsPlayingOsc] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const [gain1, setGain1] = useState(INITIAL_GAIN);
@@ -86,6 +88,7 @@ const SplitterMerger: FC = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
+  const oscNodeRef = useRef<OscillatorNode | null>(null); // New ref for osc
 
   useEffect(() => {
     const fetchAndDecodeAudio = async () => {
@@ -109,23 +112,29 @@ const SplitterMerger: FC = () => {
     fetchAndDecodeAudio();
 
     return () => {
+      // Cleanup both sources
       if (sourceNodeRef.current) {
         sourceNodeRef.current.stop(0);
         sourceNodeRef.current.disconnect();
         sourceNodeRef.current = null;
+      }
+      if (oscNodeRef.current) {
+        oscNodeRef.current.stop(0);
+        oscNodeRef.current.disconnect();
+        oscNodeRef.current = null;
       }
       context.close();
     };
-  }, [context]); 
+  }, [context]);
 
-  const handlePlayPause = () => {
-    if (isPlaying) {
+  const handlePlayPauseFile = () => {
+    if (isPlayingFile) {
       if (sourceNodeRef.current) {
         sourceNodeRef.current.stop(0);
         sourceNodeRef.current.disconnect();
         sourceNodeRef.current = null;
       }
-      setIsPlaying(false);
+      setIsPlayingFile(false);
     } else {
       if (!audioBuffer) return;
 
@@ -137,7 +146,29 @@ const SplitterMerger: FC = () => {
 
       sourceNode.start(0);
       sourceNodeRef.current = sourceNode;
-      setIsPlaying(true);
+      setIsPlayingFile(true);
+    }
+  };
+
+  // New handler for the oscillator
+  const handlePlayPauseOsc = () => {
+    if (isPlayingOsc) {
+      if (oscNodeRef.current) {
+        oscNodeRef.current.stop(0);
+        oscNodeRef.current.disconnect();
+        oscNodeRef.current = null;
+      }
+      setIsPlayingOsc(false);
+    } else {
+      const osc = context.createOscillator();
+      osc.type = 'sine';
+      osc.frequency.value = 440; // A4
+
+      osc.connect(splitter);
+
+      osc.start(0);
+      oscNodeRef.current = osc;
+      setIsPlayingOsc(true);
     }
   };
 
@@ -170,9 +201,15 @@ const SplitterMerger: FC = () => {
     <Container centered>
       {isLoading && <ActivityIndicator size="large" color="#FFFFFF" />}
       <Button
-        onPress={handlePlayPause}
-        title={isPlaying ? 'Stop' : 'Play'}
+        onPress={handlePlayPauseFile}
+        title={isPlayingFile ? 'Stop File' : 'Play File'}
         disabled={isLoading || !audioBuffer}
+      />
+      <Spacer.Vertical size={15} />
+      <Button
+        onPress={handlePlayPauseOsc}
+        title={isPlayingOsc ? 'Stop Oscillator' : 'Play Oscillator'}
+        disabled={isLoading}
       />
       <Spacer.Vertical size={30} />
 
