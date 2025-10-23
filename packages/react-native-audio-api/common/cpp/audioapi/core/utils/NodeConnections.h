@@ -84,6 +84,7 @@ class NodeConnections {
 
   // used for calculations inside processInputAtIndex
   std::vector<std::shared_ptr<AudioBus>> processingInputBuses_;
+  std::shared_ptr<AudioBus> internalSummingBus_; //used for calculations, always 32-channel
 
   // processes all inputs connected to a particular input index
   std::shared_ptr<AudioBus> processInputAtIndex(unsigned int index, int framesToProcess, bool checkIsAlreadyProcessed);

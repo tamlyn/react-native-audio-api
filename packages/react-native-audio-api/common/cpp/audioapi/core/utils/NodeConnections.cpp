@@ -13,11 +13,8 @@ namespace audioapi {
 NodeConnections::NodeConnections(AudioNode *owner, BaseAudioContext *context)
     : owner_(owner), context_(context) {
   processingInputBuses_.resize(owner_->getNumberOfInputs());
-  // safe minimum allocation to 32 channels as per audio api spec
-  for (size_t i = 0; i < processingInputBuses_.size(); ++i) {
-    processingInputBuses_[i] = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE, , context->getSampleRate());
-  }
+  internalSummingBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE, 1, context->getSampleRate());
 }
 
 void NodeConnections::disconnect() {
@@ -342,8 +339,9 @@ unsigned int NodeConnections::computeNumberOfChannelsForInput(
     const std::vector<InputConnection> &connections = indexedInputs_.at(index);
     for (const InputConnection &ic : connections) {
       if (ic.sourceNode) {
+        auto sourceBus = ic.sourceNode->getOutputBus(ic.outputIndexFromSource);
         maxInputChannels = std::max(
-            maxInputChannels, (unsigned int)ic.sourceNode->getChannelCount());
+            maxInputChannels, (unsigned int)sourceBus->getNumberOfChannels());
       }
     }
   }
@@ -364,6 +362,11 @@ const std::vector<std::shared_ptr<AudioBus>> &NodeConnections::processAllInputs(
     bool checkIsAlreadyProcessed) {
   int numInputs = owner_->getNumberOfInputs();
 
+  if (internalSummingBus_->getSampleRate() != context_->getSampleRate()) {
+    internalSummingBus_ = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
+  }
+
   for (int i = 0; i < numInputs; ++i) {
     processingInputBuses_[i] = processInputAtIndex(
         static_cast<unsigned int>(i), framesToProcess, checkIsAlreadyProcessed);
@@ -376,6 +379,7 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
     unsigned int index,
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
+  // handle silent input
   if (!indexedInputs_.count(index) || indexedInputs_.at(index).empty()) {
     unsigned int channels = owner_->getChannelCount();
     auto bus = getProcessingBusForIndex(index, channels, framesToProcess);
@@ -386,22 +390,58 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
   const std::vector<InputConnection> &connections = indexedInputs_.at(index);
   const ChannelCountMode mode = owner_->getChannelCountModeEnum();
 
+  // If there's only one connection and mode is MAX, we can just return
+  // the source bus directly without any summing.
   if (connections.size() == 1 && mode == ChannelCountMode::MAX) {
     AudioNode *sourceNode = connections[0].sourceNode;
     if (sourceNode) {
       sourceNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
       return sourceNode->getOutputBus(connections[0].outputIndexFromSource);
     }
-    // fallback to silent bus
+    // Fallback if source is null
     auto fallback = getProcessingBusForIndex(index, 1, framesToProcess);
     fallback->zero();
     return fallback;
   }
 
   unsigned int computedChannels = computeNumberOfChannelsForInput(index);
-  auto sumBus =
+
+  // Determine how many channels the summing/workbench bus needs to have:
+  // at least as many as the widest source and at least as many as computedChannels.
+  unsigned int maxSourceChannels = 0;
+  for (const InputConnection &ic : connections) {
+    AudioNode *sourceNode = ic.sourceNode;
+    if (!sourceNode)
+      continue;
+
+    std::shared_ptr<AudioBus> srcBus;
+    try {
+      srcBus = sourceNode->getOutputBus(ic.outputIndexFromSource);
+    } catch (...) {
+      srcBus = nullptr;
+    }
+    if (srcBus) {
+      maxSourceChannels = std::max(maxSourceChannels,
+                                   (unsigned int)srcBus->getNumberOfChannels());
+    }
+  }
+
+  unsigned int requiredSummingChannels = std::max(computedChannels, maxSourceChannels);
+  if (requiredSummingChannels == 0)
+    requiredSummingChannels = 1;
+
+  if (internalSummingBus_  == nullptr ||
+      internalSummingBus_->getNumberOfChannels() != requiredSummingChannels ||
+      internalSummingBus_->getSampleRate() != context_->getSampleRate()) {
+    internalSummingBus_ = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, requiredSummingChannels, context_->getSampleRate());
+  }
+
+  auto finalBus =
       getProcessingBusForIndex(index, computedChannels, framesToProcess);
 
+
+  auto sumBus = internalSummingBus_;
   sumBus->zero();
 
   for (const InputConnection &ic : connections) {
@@ -423,7 +463,9 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
     }
   }
 
-  return sumBus;
+  finalBus->copy(sumBus.get(), 0, 0, framesToProcess);
+
+  return finalBus;
 }
 
 std::shared_ptr<AudioBus> NodeConnections::getProcessingBusForIndex(
@@ -432,11 +474,11 @@ std::shared_ptr<AudioBus> NodeConnections::getProcessingBusForIndex(
     int framesToProcess) {
   auto &bus = processingInputBuses_[inputIndex];
   // this handles source (0 input) node case
-  // if (bus == nullptr || bus->getNumberOfChannels() != numChannels ||
-  //     bus->getSampleRate() != context_->getSampleRate()) {
-  //   bus = std::make_shared<AudioBus>(
-  //       RENDER_QUANTUM_SIZE, numChannels, context_->getSampleRate());
-  // }
+  if (bus == nullptr || bus->getNumberOfChannels() != numChannels ||
+      bus->getSampleRate() != context_->getSampleRate()) {
+    bus = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, numChannels, context_->getSampleRate());
+  }
   return bus;
 }
 
