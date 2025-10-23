@@ -84,15 +84,30 @@ class NodeConnections {
 
   // used for calculations inside processInputAtIndex
   std::vector<std::shared_ptr<AudioBus>> processingInputBuses_;
-  std::shared_ptr<AudioBus> internalSummingBus_; //used for calculations, always 32-channel
+  std::shared_ptr<AudioBus> internalSummingBus_;
 
   // processes all inputs connected to a particular input index
   std::shared_ptr<AudioBus> processInputAtIndex(unsigned int index, int framesToProcess, bool checkIsAlreadyProcessed);
   unsigned int computeNumberOfChannelsForInput(unsigned int index) const;
 
-  std::shared_ptr<AudioBus> getProcessingBusForIndex(unsigned int inputIndex,
-    unsigned int numChannels,
-    int framesToProcess);
+  // helpers for processInputAtIndex
+  std::shared_ptr<AudioBus>
+  getProcessingBusForIndex(unsigned int inputIndex, unsigned int numChannels, int framesToProcess);
+  bool hasSilentInput(unsigned int index) const;
+  std::shared_ptr<AudioBus> createSilentBus(unsigned int index, int framesToProcess);
+  bool canUseDirectBusPassthrough(const std::vector<InputConnection> &connections) const;
+  std::shared_ptr<AudioBus>
+  processDirectConnection(const InputConnection &connection, int framesToProcess, bool checkIsAlreadyProcessed);
+  std::shared_ptr<AudioBus> processMixedConnections(
+      unsigned int index,
+      const std::vector<InputConnection> &connections,
+      int framesToProcess,
+      bool checkIsAlreadyProcessed);
+  unsigned int findMaxSourceChannels(const std::vector<InputConnection> &connections) const;
+  std::shared_ptr<AudioBus> getSourceBusSafely(AudioNode *sourceNode, unsigned int outputIndex) const;
+  void prepareSummingBus(unsigned int computedChannels, unsigned int maxSourceChannels);
+  void
+  sumAllConnections(const std::vector<InputConnection> &connections, int framesToProcess, bool checkIsAlreadyProcessed);
 };
 
 } // namespace audioapi
