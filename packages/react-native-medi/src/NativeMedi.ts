@@ -13,6 +13,9 @@ export interface MIDIPortInfo {
 
 export interface Spec extends TurboModule {
   test(): void;
+  prepareMIDIClient(): void;
+  getSources(): MIDIPortInfo[];
+  getDestinations(): MIDIPortInfo[];
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('Medi');
