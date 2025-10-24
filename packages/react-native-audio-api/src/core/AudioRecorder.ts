@@ -2,6 +2,7 @@ import { AudioEventEmitter, AudioEventSubscription } from '../events';
 import { OnAudioReadyEventType } from '../events/types';
 import { IAudioRecorder } from '../interfaces';
 import {
+  AndroidFormat,
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
   BitDepth,
@@ -27,20 +28,15 @@ function withDefaultOptions(inOptions: AudioRecorderFileOptions) {
       ...(inOptions.ios ?? {}),
     },
     android: {
+      format: AndroidFormat.Wav,
       ...(inOptions.android ?? {}),
     },
   };
 }
 
 function parseFileOptions(inOptions: AudioRecorderFileOptions) {
-  const {
-    sampleRate,
-    channels,
-    bitRate,
-    directory,
-    bitDepth,
-    ios /* , android */,
-  } = withDefaultOptions(inOptions);
+  const { sampleRate, channels, bitRate, directory, bitDepth, ios, android } =
+    withDefaultOptions(inOptions);
 
   const iosFlags = encodeFlags(
     ios.format,
@@ -51,7 +47,7 @@ function parseFileOptions(inOptions: AudioRecorderFileOptions) {
   );
 
   // TODO: ensure directory and bitDepth are last in the bitmask
-  const androidFlags = encodeFlags(directory, bitDepth);
+  const androidFlags = encodeFlags(android.format, directory, bitDepth);
 
   return {
     sampleRate,

@@ -22,15 +22,15 @@ class NativeAudioRecorder : public jni::JavaClass<NativeAudioRecorder> {
     return newInstance();
   }
 
-    void start() {
-        static const auto method = javaClassStatic()->getMethod<void()>("start");
-        method(self());
-    }
+  void start() {
+    static const auto method = javaClassStatic()->getMethod<void()>("start");
+    method(self());
+  }
 
-    void stop() {
-        static const auto method = javaClassStatic()->getMethod<void()>("stop");
-        method(self());
-    }
+  void stop() {
+    static const auto method = javaClassStatic()->getMethod<void()>("stop");
+    method(self());
+  }
 };
 
 } // namespace audioapi

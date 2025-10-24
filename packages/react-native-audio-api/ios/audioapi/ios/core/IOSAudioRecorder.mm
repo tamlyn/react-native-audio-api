@@ -1,5 +1,6 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
+#include <unordered_map>
 
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -10,7 +11,6 @@
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
-#include <unordered_map>
 
 namespace audioapi {
 

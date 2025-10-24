@@ -1,3 +1,4 @@
+#include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
@@ -23,7 +24,15 @@ AndroidAudioRecorder::AndroidAudioRecorder(
       ->setDataCallback(this)
       ->openStream(mStream_);
 
+  streamSampleRate_ = mStream_->getSampleRate();
+  streamChannelCount_ = mStream_->getChannelCount();
+  streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
+
   nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
+  inputBus_ = std::make_shared<AudioBus>(
+      streamMaxBufferSizeInFrames_,
+      streamChannelCount_,
+      static_cast<float>(streamSampleRate_));
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
@@ -42,12 +51,15 @@ void AndroidAudioRecorder::start() {
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
-    printf("Audio stream is not initialized.\n");
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Audio stream is not initialized.\n");
     return;
   }
 
   if (usesFileOutput()) {
-    fileWriter_->openFile();
+    fileWriter_->openFile(streamSampleRate_, streamChannelCount_);
   }
 
   if (usesCallback()) {
@@ -57,11 +69,6 @@ void AndroidAudioRecorder::start() {
   if (isConnected()) {
     // TODO: set adapter node properties?
   }
-
-  // if (mStream_) {
-  //   nativeAudioRecorder_->start();
-  //   mStream_->requestStart();
-  // }
 
   nativeAudioRecorder_->start();
   mStream_->requestStart();
@@ -74,7 +81,10 @@ std::string AndroidAudioRecorder::stop() {
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
-    printf("Audio stream is not initialized.\n");
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Audio stream is not initialized.\n");
     return "";
   }
 
@@ -115,21 +125,25 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
     oboe::AudioStream *oboeStream,
     void *audioData,
     int32_t numFrames) {
-  // if (isRunning_.load()) {
-  //   auto *inputChannel = static_cast<float *>(audioData);
-  //   writeToBuffers(inputChannel, numFrames);
-  // }
-
-  // while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
-  //   auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-  //   auto *outputChannel = bus->getChannel(0)->getData();
-
-  //   circularBuffer_->pop_front(outputChannel, bufferLength_);
-
-  //   invokeOnAudioReadyCallback(bus, bufferLength_);
-  // }
+  if (usesFileOutput()) {
+    fileWriter_->writeAudioData(audioData, numFrames);
+  }
 
   return DataCallbackResult::Continue;
 }
 
 } // namespace audioapi
+
+// if (isRunning_.load()) {
+//   auto *inputChannel = static_cast<float *>(audioData);
+//   writeToBuffers(inputChannel, numFrames);
+// }
+
+// while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
+//   auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
+//   auto *outputChannel = bus->getChannel(0)->getData();
+
+//   circularBuffer_->pop_front(outputChannel, bufferLength_);
+
+//   invokeOnAudioReadyCallback(bus, bufferLength_);
+// }

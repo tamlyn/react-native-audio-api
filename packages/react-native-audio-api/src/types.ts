@@ -58,6 +58,13 @@ export enum IOSAudioQuality {
   Max = 5,
 }
 
+export enum AndroidFormat {
+  Wav = 1,
+  Caf = 2,
+  M4A = 3,
+  Flac = 4,
+}
+
 export enum FlacCompressionLevel {
   L0 = 1,
   L1 = 2,
@@ -83,7 +90,7 @@ export interface AudioRecorderFileOptionsIOS {
 }
 
 export interface AudioRecorderFileOptionsAndroid {
-  // TODO: add Android specific options when needed
+  format?: AndroidFormat;
 }
 
 export interface AudioRecorderFileOptions {

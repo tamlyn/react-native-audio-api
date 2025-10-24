@@ -1,6 +1,9 @@
 
+#include <android/log.h>
 #include <audioapi/android/core/utils/AndroidAudioFileOptions.h>
 #include <audioapi/android/core/utils/AndroidAudioFileWriter.h>
+#include <audioapi/android/core/utils/FileBackend.h>
+#include <audioapi/android/core/utils/MiniaudioFileBackend.h>
 
 namespace audioapi {
 
@@ -11,24 +14,37 @@ AndroidAudioFileWriter::AndroidAudioFileWriter(
     size_t androidFlags) {
   fileOptions_ = std::make_shared<AndroidAudioFileOptions>(
       sampleRate, channelCount, bitRate, androidFlags);
+
+  AudioFormat format = fileOptions_->getFormat();
+
+  if (format == AudioFormat::WAV) {
+    fileBackend_ = std::make_shared<MiniaudioFileBackend>(fileOptions_);
+  }
 }
 
-AndroidAudioFileWriter::~AndroidAudioFileWriter() {}
+AndroidAudioFileWriter::~AndroidAudioFileWriter() {
+  fileBackend_.reset();
+}
 
-void AndroidAudioFileWriter::openFile() {
-  // Implementation for opening the audio file goes here
+void AndroidAudioFileWriter::openFile(
+    int32_t streamSampleRate,
+    int32_t streamChannelCount) {
+  std::string fileName = fileOptions_->getFilePath("audio");
+  __android_log_print(
+      ANDROID_LOG_INFO,
+      "AndroidAudioFileWriter",
+      "Opening audio file at path: %s",
+      fileName.c_str());
+
+  fileBackend_->openFile(fileName, streamSampleRate, streamChannelCount);
 }
 
 std::string AndroidAudioFileWriter::closeFile() {
-  // Implementation for closing the audio file goes here
-  return std::string(""); // Return the file path
+  return fileBackend_->closeFile();
 }
 
-bool AndroidAudioFileWriter::writeAudioData(
-    const int16_t *audioData,
-    int numFrames) {
-  // Implementation for writing audio data to the file goes here
-  return true; // Return true if write was successful
+bool AndroidAudioFileWriter::writeAudioData(void *inputBus, int numFrames) {
+  return fileBackend_->writeAudioData(inputBus, numFrames);
 }
 
 } // namespace audioapi
