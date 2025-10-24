@@ -9,35 +9,6 @@ void MiniaudioFileBackend::openFile(
     std::string filePath,
     int32_t streamSampleRate,
     int32_t streamChannelCount) {
-  filePath_ = filePath;
-  uint8_t bitDepth = fileOptions_->getBitDepth();
-  ma_result result;
-  streamSampleRate_ = streamSampleRate;
-  streamChannelCount_ = streamChannelCount;
-
-  __android_log_print(
-      ANDROID_LOG_INFO,
-      "MiniaudioFileBackend",
-      "Opening file at path: %s with bit depth: %d, sample rate: %d, channel count: %d, file sample rate: %f, file channel count: %zu",
-      filePath_.c_str(),
-      bitDepth,
-      streamSampleRate_,
-      streamChannelCount_,
-      fileOptions_->getSampleRate(),
-      fileOptions_->getChannelCount());
-
-  switch (bitDepth) {
-    case 1:
-      fileFormat_ = ma_format_s16;
-      break;
-    case 2:
-      fileFormat_ = ma_format_s24;
-      break;
-    case 3:
-      fileFormat_ = ma_format_f32;
-      break;
-  }
-
   converterConfig_ = ma_data_converter_config_init(
       ma_format_f32,
       fileFormat_,
