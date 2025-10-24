@@ -67,18 +67,17 @@ export default class AudioNode {
     input?: number
   ): void {
     const numberOfOutputs = this.node.numberOfOutputs;
-    const numberOfInputs = this.node.numberOfInputs;
-    // probably needs a switch statement
-    // Case 1: disconnect()
+
+    // disconnect()
     if (destinationOrOutput === undefined) {
       this.node.disconnect();
       return;
     }
 
-    // Case 2: disconnect(outputIndex: number)
+    // disconnect(outputIndex: number)
     if (typeof destinationOrOutput === 'number') {
       const outputIndex = destinationOrOutput;
-      if (outputIndex >= numberOfOutputs) {
+      if (outputIndex < 0 || outputIndex >= numberOfOutputs) {
         throw new IndexSizeError('Output index is out of range.');
       }
       this.node.disconnect(outputIndex);
@@ -94,32 +93,38 @@ export default class AudioNode {
         this.node.disconnect(destination.audioParam);
       } else {
         // disconnect(destination: AudioParam, output: number)
-        if (output >= numberOfOutputs) {
+        if (output < 0 || output >= numberOfOutputs) {
           throw new IndexSizeError('Output index is out of range.');
         }
         this.node.disconnect(destination.audioParam, output);
       }
-    } else {
+    } else if (destination instanceof AudioNode) {
       // Destination is an AudioNode
       if (output === undefined) {
         // disconnect(destination: AudioNode)
         this.node.disconnect(destination.node);
       } else if (input === undefined) {
         // disconnect(destination: AudioNode, output: number)
-        if (output >= numberOfOutputs) {
+        if (output < 0 || output >= numberOfOutputs) {
           throw new IndexSizeError('Output index is out of range.');
         }
         this.node.disconnect(destination.node, output);
       } else {
         // disconnect(destination: AudioNode, output: number, input: number)
-        if (output >= numberOfOutputs) {
+        if (output < 0 || output >= numberOfOutputs) {
           throw new IndexSizeError('Output index is out of range.');
         }
-        if (input >= numberOfInputs) {
+        if (input < 0 || input >= destination.numberOfInputs) {
           throw new IndexSizeError('Input index is out of range.');
         }
+
         this.node.disconnect(destination.node, output, input);
       }
+    } else {
+      throw new TypeError(
+        "Failed to execute 'disconnect' on 'AudioNode': " +
+          'Overload resolution failed.'
+      );
     }
   }
 }

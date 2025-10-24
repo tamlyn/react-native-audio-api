@@ -90,7 +90,8 @@ void NodeConnections::disconnect(unsigned int outputIndex) {
   }
 }
 
-void NodeConnections::disconnect(const std::shared_ptr<AudioNode> &node) {
+bool NodeConnections::disconnect(const std::shared_ptr<AudioNode> &node) {
+  bool disconnected = false;
   for (std::map<unsigned int, std::vector<OutputConnection>>::iterator it =
            indexedOutputs_.begin();
        it != indexedOutputs_.end();
@@ -107,14 +108,17 @@ void NodeConnections::disconnect(const std::shared_ptr<AudioNode> &node) {
             AudioNodeManager::ConnectionType::DISCONNECT,
             outputIndex,
             conn_it->inputIndexAtDestination);
+        disconnected = true;
       }
     }
   }
+  return disconnected;
 }
 
-void NodeConnections::disconnect(
+bool NodeConnections::disconnect(
     const std::shared_ptr<AudioNode> &node,
     unsigned int outputIndex) {
+  bool disconnected = false;
   if (indexedOutputs_.count(outputIndex)) {
     std::vector<OutputConnection> &connections =
         indexedOutputs_.at(outputIndex);
@@ -128,15 +132,28 @@ void NodeConnections::disconnect(
             AudioNodeManager::ConnectionType::DISCONNECT,
             outputIndex,
             conn_it->inputIndexAtDestination);
+        disconnected = true;
       }
     }
   }
+  return disconnected;
 }
 
-void NodeConnections::disconnect(
+bool NodeConnections::disconnect(
     const std::shared_ptr<AudioNode> &node,
     unsigned int output,
     unsigned int input) {
+  bool connectionFound = false;
+  if (indexedOutputs_.count(output)) {
+    auto &connections = indexedOutputs_.at(output);
+    for (const auto &conn : connections) {
+      if (conn.destinationNode == node &&
+          conn.inputIndexAtDestination == input) {
+        connectionFound = true;
+        break;
+      }
+    }
+  }
   // This is a specific request, so we can dispatch a single event.
   context_->getNodeManager()->addPendingNodeConnection(
       owner_->shared_from_this(),
@@ -144,9 +161,11 @@ void NodeConnections::disconnect(
       AudioNodeManager::ConnectionType::DISCONNECT,
       output,
       input);
+  return connectionFound;
 }
 
-void NodeConnections::disconnect(const std::shared_ptr<AudioParam> &param) {
+bool NodeConnections::disconnect(const std::shared_ptr<AudioParam> &param) {
+  bool disconnected = false;
   for (std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>>::
            iterator it = indexedOutputParams_.begin();
        it != indexedOutputParams_.end();
@@ -163,19 +182,34 @@ void NodeConnections::disconnect(const std::shared_ptr<AudioParam> &param) {
             *param_it,
             AudioNodeManager::ConnectionType::DISCONNECT,
             outputIndex);
+        disconnected = true;
       }
     }
   }
+  return disconnected;
 }
 
-void NodeConnections::disconnect(
+bool NodeConnections::disconnect(
     const std::shared_ptr<AudioParam> &param,
     unsigned int output) {
-  context_->getNodeManager()->addPendingParamConnection(
-      owner_->shared_from_this(),
-      param,
-      AudioNodeManager::ConnectionType::DISCONNECT,
-      output);
+  bool connectionFound = false;
+  if (indexedOutputParams_.count(output)) {
+    auto &params = indexedOutputParams_.at(output);
+    for (const auto &p : params) {
+      if (p == param) {
+        connectionFound = true;
+        break;
+      }
+    }
+  }
+  if (connectionFound) {
+    context_->getNodeManager()->addPendingParamConnection(
+        owner_->shared_from_this(),
+        param,
+        AudioNodeManager::ConnectionType::DISCONNECT,
+        output);
+  }
+  return connectionFound;
 }
 
 void NodeConnections::connectNode(

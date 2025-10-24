@@ -31,26 +31,26 @@ class NodeConnections {
   // disconnect everything (params and nodes) from an output index
   void disconnect(unsigned int outputIndex);
   // disconnects all outputs of the node which go to a specific desitination
-  void disconnect(const std::shared_ptr<AudioNode> &node);
+  bool disconnect(const std::shared_ptr<AudioNode> &node);
   // disconnects a specific output of the node from
   // any and all inputs of some destination node
-  void disconnect(const std::shared_ptr<AudioNode> &node, unsigned int outputIndex);
+  bool disconnect(const std::shared_ptr<AudioNode> &node, unsigned int outputIndex);
   /*
   Disconnects a specific output of the node from a specific input of some destination node
    */
-  void disconnect(const std::shared_ptr<AudioNode> &node, unsigned int output, unsigned int input);
+  bool disconnect(const std::shared_ptr<AudioNode> &node, unsigned int output, unsigned int input);
   /*
   Disconnects all outputs of the node that go to a specific destination node. The contribution of this node to the
   computed parameter value goes to 0 when this operation takes effect. The intrinsic parameter value is not affected
   by this operation.
   */
-  void disconnect(const std::shared_ptr<AudioParam> &param);
+  bool disconnect(const std::shared_ptr<AudioParam> &param);
   /*
   Disconnects a specific output of the AudioNode from a specific destination AudioParam. The contribution of this
   AudioNode to the computed parameter value goes to 0 when this operation takes effect. The intrinsic parameter
   value is not affected by this operation.
   */
-  void disconnect(const std::shared_ptr<AudioParam> &param, unsigned int output);
+  bool disconnect(const std::shared_ptr<AudioParam> &param, unsigned int output);
 
   // --- Input Processing ---
   const std::vector<std::shared_ptr<AudioBus>> &processAllInputs(int framesToProcess, bool checkIsAlreadyProcessed);

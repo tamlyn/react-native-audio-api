@@ -34,11 +34,11 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   // overloaded disconnect methods - these just call equivalent methods in NodeConnection
   void disconnect();
   void disconnect(unsigned int outputIndex);
-  void disconnect(const std::shared_ptr<AudioNode> &destination);
-  void disconnect(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex);
-  void disconnect(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
-  void disconnect(const std::shared_ptr<AudioParam> &param);
-  void disconnect(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
+  bool disconnect(const std::shared_ptr<AudioNode> &destination);
+  bool disconnect(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex);
+  bool disconnect(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);
+  bool disconnect(const std::shared_ptr<AudioParam> &param);
+  bool disconnect(const std::shared_ptr<AudioParam> &param, unsigned int outputIndex);
 
   // calls NodeConnections::processAllInputs
   virtual void processAudio(int framesToProcess, bool checkIsAlreadyProcessed);

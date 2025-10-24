@@ -62,6 +62,10 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
+  auto throwInvalidAccessError = [&](const std::string &message) {
+    throw jsi::JSError(runtime, "InvalidAccessError: " + message);
+  };
+
   switch (count) {
     case 0: {
       // Signature: disconnect()
@@ -73,70 +77,77 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, disconnect) {
       const auto &arg = args[0];
       if (arg.isNumber()) {
         // Signature: disconnect(outputIndex)
+        // TS layer handled IndexSizeError
         node_->disconnect(static_cast<unsigned int>(arg.asNumber()));
-      } else if (arg.isObject()) {
+      } else {
         auto obj = arg.asObject(runtime);
         if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
           // Signature: disconnect(destinationNode)
           auto destHostObject = obj.getHostObject<AudioNodeHostObject>(runtime);
-          node_->disconnect(destHostObject->node_);
-        } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
-          // Signature: disconnect(destinationParam)
+          bool disconnected = node_->disconnect(destHostObject->node_);
+          if (!disconnected) {
+            throwInvalidAccessError(
+                "Failed to execute 'disconnect' on 'AudioNode': "
+                "the specified destination node is not connected to this node.");
+          }
+        } else {
           auto destHostObject =
               obj.getHostObject<AudioParamHostObject>(runtime);
-          node_->disconnect(destHostObject->param_);
-        } else {
-          throw jsi::JSError(
-              runtime,
-              "disconnect: Argument 1 must be a number, AudioNode, or AudioParam.");
+          bool disconnected = node_->disconnect(destHostObject->param_);
+          if (!disconnected) {
+            throwInvalidAccessError(
+                "Failed to execute 'disconnect' on 'AudioNode': "
+                "the specified destination parameter is not connected to this node.");
+          }
         }
-      } else {
-        throw jsi::JSError(runtime, "disconnect: Invalid argument.");
       }
       break;
     }
 
     case 2: {
-      if (!args[0].isObject() || !args[1].isNumber()) {
-        throw jsi::JSError(
-            runtime,
-            "disconnect: Expected arguments of type (AudioNode | AudioParam, number).");
-      }
       auto obj = args[0].asObject(runtime);
       auto outputIndex = static_cast<unsigned int>(args[1].asNumber());
+
       if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
         // Signature: disconnect(destinationNode, outputIndex)
         auto destHostObject = obj.getHostObject<AudioNodeHostObject>(runtime);
-        node_->disconnect(destHostObject->node_, outputIndex);
-      } else if (obj.isHostObject<AudioParamHostObject>(runtime)) {
-        // Signature: disconnect(destinationParam, outputIndex)
-        auto destHostObject = obj.getHostObject<AudioParamHostObject>(runtime);
-        node_->disconnect(destHostObject->param_, outputIndex);
+
+        bool disconnected =
+            node_->disconnect(destHostObject->node_, outputIndex);
+        if (!disconnected) {
+          throwInvalidAccessError(
+              "Failed to execute 'disconnect' on 'AudioNode': "
+              "no connection was found from the given output to the specified AudioNode.");
+        }
+
       } else {
-        throw jsi::JSError(
-            runtime,
-            "disconnect: Argument 1 must be an AudioNode or AudioParam.");
+        auto destHostObject = obj.getHostObject<AudioParamHostObject>(runtime);
+
+        bool disconnected =
+            node_->disconnect(destHostObject->param_, outputIndex);
+        if (!disconnected) {
+          throwInvalidAccessError(
+              "Failed to execute 'disconnect' on 'AudioNode': "
+              "no connection was found from the given output to the specified AudioParam.");
+        }
       }
       break;
     }
 
     case 3: {
-      if (!args[0].isObject() || !args[1].isNumber() || !args[2].isNumber()) {
-        throw jsi::JSError(
-            runtime,
-            "disconnect: Expected arguments of type (AudioNode, number, number).");
-      }
       auto obj = args[0].asObject(runtime);
-      if (!obj.isHostObject<AudioNodeHostObject>(runtime)) {
-        throw jsi::JSError(
-            runtime,
-            "disconnect: With 3 arguments, the first must be an AudioNode.");
-      }
       auto destHostObject = obj.getHostObject<AudioNodeHostObject>(runtime);
       auto outputIndex = static_cast<unsigned int>(args[1].asNumber());
       auto inputIndex = static_cast<unsigned int>(args[2].asNumber());
+
       // Signature: disconnect(destinationNode, outputIndex, inputIndex)
-      node_->disconnect(destHostObject->node_, outputIndex, inputIndex);
+      bool disconnected =
+          node_->disconnect(destHostObject->node_, outputIndex, inputIndex);
+      if (!disconnected) {
+        throwInvalidAccessError(
+            "Failed to execute 'disconnect' on 'AudioNode': "
+            "no connection was found from the given output to the given input of the specified AudioNode.");
+      }
       break;
     }
 

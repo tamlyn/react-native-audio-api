@@ -61,41 +61,41 @@ void AudioNode::disconnect(unsigned int outputIndex) {
 }
 
 // disconnect all connections to a specific node param / node connections
-void AudioNode::disconnect(const std::shared_ptr<AudioNode> &destination) {
+bool AudioNode::disconnect(const std::shared_ptr<AudioNode> &destination) {
   if (destination == nullptr)
-    return;
-  connections_->disconnect(destination);
+    return false;
+  return connections_->disconnect(destination);
 }
 
-void AudioNode::disconnect(
+bool AudioNode::disconnect(
     const std::shared_ptr<AudioNode> &destination,
     unsigned int outputIndex) {
   if (destination == nullptr)
-    return;
-  connections_->disconnect(destination, outputIndex);
+    return false;
+  return connections_->disconnect(destination, outputIndex);
 }
 
-void AudioNode::disconnect(
+bool AudioNode::disconnect(
     const std::shared_ptr<AudioNode> &destination,
     unsigned int outputIndex,
     unsigned int inputIndex) {
   if (destination == nullptr)
-    return;
-  connections_->disconnect(destination, outputIndex, inputIndex);
+    return false;
+  return connections_->disconnect(destination, outputIndex, inputIndex);
 }
 
-void AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
+bool AudioNode::disconnect(const std::shared_ptr<AudioParam> &param) {
   if (param == nullptr)
-    return;
-  connections_->disconnect(param);
+    return false;
+  return connections_->disconnect(param);
 }
 
-void AudioNode::disconnect(
+bool AudioNode::disconnect(
     const std::shared_ptr<AudioParam> &param,
     unsigned int outputIndex) {
   if (param == nullptr)
-    return;
-  connections_->disconnect(param, outputIndex);
+    return false;
+  return connections_->disconnect(param, outputIndex);
 }
 
 void AudioNode::processAudio(
