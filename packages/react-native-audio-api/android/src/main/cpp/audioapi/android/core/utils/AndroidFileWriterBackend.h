@@ -14,7 +14,7 @@ class AndroidFileWriterBackend {
     size_t androidFlags);
   ~AndroidFileWriterBackend() = default;
 
-  virtual void openFile(int32_t streamSampleRate, int32_t streamChannelCount) = 0;
+  virtual void openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
   virtual std::string closeFile() = 0;
 
   virtual bool writeAudioData(void *data, int numFrames) = 0;
@@ -23,8 +23,10 @@ class AndroidFileWriterBackend {
 
  protected:
   std::string filePath_{""};
-  int32_t streamSampleRate_;
-  int32_t streamChannelCount_;
+
+  int32_t streamSampleRate_{0};
+  int32_t streamChannelCount_{0};
+  int32_t streamMaxBufferSize_{0};
 };
 
 } // namespace audioapi

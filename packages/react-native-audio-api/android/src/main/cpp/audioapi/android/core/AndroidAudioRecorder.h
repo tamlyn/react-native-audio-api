@@ -15,7 +15,7 @@ using namespace oboe;
 
 class AudioBus;
 class CircularAudioArray;
-class AndroidAudioFileWriter;
+class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
 class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorder {
@@ -43,14 +43,12 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
           int32_t numFrames) override;
 
  private:
-  // std::shared_ptr<AndroidAudioFileWriter> fileWriter_;
-  // std::shared_ptr<AudioStream> mStream_;
-  // facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
-  // int32_t streamSampleRate_;
-  // int32_t streamChannelCount_;
-  // int32_t streamMaxBufferSizeInFrames_;
-
-  // std::shared_ptr<AudioBus> inputBus_;
+  std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
+  std::shared_ptr<AudioStream> mStream_;
+  facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
+  int32_t streamSampleRate_;
+  int32_t streamChannelCount_;
+  int32_t streamMaxBufferSizeInFrames_;
 };
 
 } // namespace audioapi

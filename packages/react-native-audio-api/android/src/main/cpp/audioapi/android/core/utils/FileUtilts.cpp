@@ -2,9 +2,9 @@
 #include <android/log.h>
 #include <audioapi/android/core/utils/FileUtils.h>
 #include <chrono>
+#include <filesystem>
 #include <format>
 #include <iostream>
-#include <filesystem>
 
 namespace audioapi::android::fileutils {
 
@@ -44,12 +44,14 @@ bool createDirectoryIfNotExists(const std::string &directoryPath) {
 
 std::string getTimestampString() {
   auto tNow = std::chrono::system_clock::now();
-  return std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(tNow));
+  return std::format(
+      "{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(tNow));
 }
 
 std::string getISODateString() {
   auto tNow = std::chrono::system_clock::now();
-  return std::format("{:%Y-%m-%d}", std::chrono::floor<std::chrono::days>(tNow));
+  return std::format(
+      "{:%Y-%m-%d}", std::chrono::floor<std::chrono::days>(tNow));
 }
 
 FileDirectory directoryFromFlag(uint8_t directoryFlag) {
@@ -74,18 +76,23 @@ std::string getDirectory(FileDirectory dir) {
   }
 }
 
-std::string getFilePath(const FileDirectory &directory, const std::string &baseFileName, const std::string &extension) {
+std::string getFilePath(
+    const FileDirectory &directory,
+    const std::string &baseFileName,
+    const std::string &extension) {
   std::string basePath = getDirectory(directory);
   std::string subDirectory = getISODateString();
   std::string fileTimestamp = getTimestampString();
 
-  std::string subDirectoryPath = std::format("{}/AudioAPI/{}", basePath, subDirectory);
+  std::string subDirectoryPath =
+      std::format("{}/AudioAPI/{}", basePath, subDirectory);
 
   if (!createDirectoryIfNotExists(subDirectoryPath)) {
     return "";
   }
 
-  return std::format("{}/{}_{}.{}", subDirectoryPath, baseFileName, fileTimestamp, extension);
+  return std::format(
+      "{}/{}_{}.{}", subDirectoryPath, baseFileName, fileTimestamp, extension);
 }
 
 } // namespace audioapi::android::fileutils

@@ -19,7 +19,7 @@ class MniAudioFileWriter : public AndroidFileWriterBackend {
     size_t androidFlags);
   ~MniAudioFileWriter() override;
 
-  void openFile(int32_t streamSampleRate, int32_t streamChannelCount) override;
+  void openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   std::string closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
@@ -27,24 +27,20 @@ class MniAudioFileWriter : public AndroidFileWriterBackend {
  private:
   std::shared_ptr<MiniAudioFileOptions> fileOptions_;
 
-  int32_t streamSampleRate_{0};
-  int32_t streamChannelCount_{0};
+  std::atomic<bool> isFileOpen_{false};
+  std::atomic<bool> isConverterRequired_{false};
 
-  bool isFileOpen_{false};
-  bool isConverterRequired_{false};
-  std::atomic<bool> isWriting_{false};
-
-  // Miniaudio structures, can they be safely stored as members?
-  ma_encoder encoder_{};
-  ma_format fileFormat_{};
-  ma_data_converter converter_{};
+  std::unique_ptr<ma_encoder> encoder_{nullptr};
+  std::unique_ptr<ma_data_converter> converter_{nullptr};
   void *processingBuffer_{nullptr};
+  ma_uint64 processingBufferLength_{0};
 
   bool initializeConverterIfNeeded();
   bool initializeEncoder();
   ma_uint64 convertBuffer(void *data, int numFrames);
 
   bool isFileOpen();
+  bool isConverterRequired();
 };
 
 } // namespace audioapi

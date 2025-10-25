@@ -24,7 +24,8 @@ ma_encoding_format MiniAudioFileOptions::getFormat() const {
 
 std::string MiniAudioFileOptions::getFilePath(
     const std::string &baseFileName) const {
-  android::fileutils::FileDirectory dirEnum = android::fileutils::directoryFromFlag(directory_);
+  android::fileutils::FileDirectory dirEnum =
+      android::fileutils::directoryFromFlag(directory_);
 
   return android::fileutils::getFilePath(dirEnum, baseFileName, "wav");
 }
