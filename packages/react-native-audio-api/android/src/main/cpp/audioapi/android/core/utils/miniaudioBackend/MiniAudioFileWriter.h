@@ -10,14 +10,14 @@ namespace audioapi {
 
 class MiniAudioFileOptions;
 
-class MniAudioFileWriter : public AndroidFileWriterBackend {
+class MiniAudioFileWriter : public AndroidFileWriterBackend {
  public:
-  MniAudioFileWriter(
+  MiniAudioFileWriter(
     float sampleRate,
     size_t channelCount,
     size_t bitRate,
     size_t androidFlags);
-  ~MniAudioFileWriter() override;
+  ~MiniAudioFileWriter() override;
 
   void openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   std::string closeFile() override;

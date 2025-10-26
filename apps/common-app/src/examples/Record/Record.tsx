@@ -34,10 +34,10 @@ const Record: FC = () => {
     const rec = new AudioRecorder();
 
     rec.enableFileOutput({
-      sampleRate: 16000,
-      channels: 1,
-      bitRate: 32000,
-      bitDepth: BitDepth.Bit24,
+      sampleRate: 48000,
+      channels: 2,
+      bitRate: 128000,
+      bitDepth: BitDepth.Bit32,
       directory: FileDirectory.Document,
       ios: {
         format: IOSFormat.M4A,

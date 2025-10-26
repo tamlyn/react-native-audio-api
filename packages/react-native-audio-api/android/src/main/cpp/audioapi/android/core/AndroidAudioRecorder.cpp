@@ -109,7 +109,7 @@ void AndroidAudioRecorder::enableFileOutput(
   uint8_t format = static_cast<uint8_t>(androidFlags & 0xF);
 
   if (format == 1) {
-    fileWriter_ = std::make_shared<MniAudioFileWriter>(
+    fileWriter_ = std::make_shared<MiniAudioFileWriter>(
         sampleRate, channelCount, bitRate, androidFlags);
     fileOutputEnabled_.store(true);
     return;

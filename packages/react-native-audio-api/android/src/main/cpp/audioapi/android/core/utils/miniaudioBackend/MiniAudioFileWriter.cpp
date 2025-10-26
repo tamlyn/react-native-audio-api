@@ -1,4 +1,5 @@
 #include <android/log.h>
+#include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileOptions.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
@@ -53,7 +54,7 @@ void MiniAudioFileWriter::openFile(
   isConverterRequired_.store(
       (streamSampleRate_ != fileOptions_->getSampleRate()) ||
       (streamChannelCount_ != fileOptions_->getChannelCount()) ||
-      (fileOptions_->getFormat() != ma_format_f32));
+      (fileOptions_->getDataFormat() != ma_format_f32));
 
   success = initializeConverterIfNeeded();
 
@@ -111,6 +112,13 @@ bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
     result = ma_encoder_write_pcm_frames(
         encoder_.get(), data, numFrames, &framesWritten);
 
+    __android_log_print(
+        ANDROID_LOG_DEBUG,
+        "MiniAudioFileWriter",
+        "Writing %llu frames without conversion to file: %s",
+        framesWritten,
+        filePath_.c_str());
+
     if (result != MA_SUCCESS) {
       __android_log_print(
           ANDROID_LOG_ERROR,
@@ -123,6 +131,7 @@ bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
   }
 
   ma_uint64 convertedFrameCount = convertBuffer(data, numFrames);
+
   result = ma_encoder_write_pcm_frames(
       encoder_.get(), processingBuffer_, convertedFrameCount, &framesWritten);
 
@@ -141,11 +150,8 @@ ma_uint64 MiniAudioFileWriter::convertBuffer(void *data, int numFrames) {
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;
 
-  // Probably not necessary?
-  // ma_data_converter_get_expected_output_frame_count(
-  //   converter_.get(),
-  //   inputFrameCount,
-  //   &outputFrameCount);
+  ma_data_converter_get_expected_output_frame_count(
+      converter_.get(), inputFrameCount, &outputFrameCount);
 
   ma_data_converter_process_pcm_frames(
       converter_.get(),
@@ -164,9 +170,9 @@ bool MiniAudioFileWriter::initializeConverterIfNeeded() {
 
   ma_result result;
 
-  ma_converter_config converterConfig = ma_data_converter_config_init(
+  ma_data_converter_config converterConfig = ma_data_converter_config_init(
       ma_format_f32,
-      fileOptions_->getFormat(),
+      fileOptions_->getDataFormat(),
       streamChannelCount_,
       fileOptions_->getChannelCount(),
       streamSampleRate_,
@@ -184,7 +190,7 @@ bool MiniAudioFileWriter::initializeConverterIfNeeded() {
     return false;
   }
 
-  ma_data_converter_get_required_output_frame_count(
+  ma_data_converter_get_expected_output_frame_count(
       converter_.get(), streamMaxBufferSize_, &processingBufferLength_);
 
   processingBuffer_ = ma_malloc(
@@ -196,7 +202,7 @@ bool MiniAudioFileWriter::initializeConverterIfNeeded() {
 }
 
 bool MiniAudioFileWriter::initializeEncoder() {
-  filePath_ = fileOptions_->getFilePath(baseFileName_);
+  filePath_ = fileOptions_->getFilePath("audio");
 
   ma_result result;
 

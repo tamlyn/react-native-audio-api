@@ -98,11 +98,6 @@ std::shared_ptr<AudioBuffer> AudioDecoder::decodeWithFilePath(
       sizeof(customBackends) / sizeof(customBackends[0]);
 
   if (ma_decoder_init_file(path.c_str(), &config, &decoder) != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AudioDecoder",
-        "Failed to initialize decoder for file: %s",
-        path.c_str());
     ma_decoder_uninit(&decoder);
     return nullptr;
   }

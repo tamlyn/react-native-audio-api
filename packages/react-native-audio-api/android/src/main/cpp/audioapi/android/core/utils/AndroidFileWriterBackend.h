@@ -11,8 +11,9 @@ class AndroidFileWriterBackend {
     float sampleRate,
     size_t channelCount,
     size_t bitRate,
-    size_t androidFlags);
-  ~AndroidFileWriterBackend() = default;
+    size_t androidFlags) {}
+
+  virtual ~AndroidFileWriterBackend() = default;
 
   virtual void openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
   virtual std::string closeFile() = 0;

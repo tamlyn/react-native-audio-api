@@ -20,16 +20,9 @@ class MiniAudioFileOptions {
   ma_format getDataFormat() const;
 
  private:
-  uint8_t format_;
-  uint8_t bitDepth_;
-  uint8_t directory_;
   float sampleRate_;
   size_t channelCount_;
-
-  // We store the bitRate just that we can
-  // but with miniaudio limit to WAV files only
-  // we don't really need it here
-  size_t bitRate_;
+  size_t flags_;
 };
 
 } // namespace audioapi

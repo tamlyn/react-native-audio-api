@@ -1,6 +1,7 @@
 
 #include <android/log.h>
 #include <audioapi/android/core/utils/FileUtils.h>
+#include <audioapi/android/system/NativeFileInfo.hpp>
 #include <chrono>
 #include <filesystem>
 #include <format>
@@ -54,7 +55,26 @@ std::string getISODateString() {
       "{:%Y-%m-%d}", std::chrono::floor<std::chrono::days>(tNow));
 }
 
-FileDirectory directoryFromFlag(uint8_t directoryFlag) {
+FileFormat formatFromFlag(size_t flags) {
+  uint8_t formatFlag = static_cast<uint8_t>(flags & 0xF);
+
+  switch (formatFlag) {
+    case 1:
+      return FileFormat::WAV;
+    case 2:
+      return FileFormat::CAF;
+    case 3:
+      return FileFormat::M4A;
+    case 4:
+      return FileFormat::FLAC;
+    default:
+      return FileFormat::WAV;
+  }
+}
+
+FileDirectory directoryFromFlags(size_t flags) {
+  uint8_t directoryFlag = static_cast<uint8_t>((flags >> 4) & 0xF);
+
   switch (directoryFlag) {
     case 1:
       return FileDirectory::FILES_DIR;
@@ -62,6 +82,21 @@ FileDirectory directoryFromFlag(uint8_t directoryFlag) {
       return FileDirectory::CACHE_DIR;
     default:
       return FileDirectory::CACHE_DIR;
+  }
+}
+
+BitDepth bitDepthFromFlags(size_t flags) {
+  uint8_t bitDepthFlag = static_cast<uint8_t>((flags >> 8) & 0xF);
+
+  switch (bitDepthFlag) {
+    case 1:
+      return BitDepth::BIT_16;
+    case 2:
+      return BitDepth::BIT_24;
+    case 3:
+      return BitDepth::BIT_32;
+    default:
+      return BitDepth::BIT_32;
   }
 }
 
