@@ -1,6 +1,7 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
+#include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
@@ -111,9 +112,12 @@ void AndroidAudioRecorder::enableFileOutput(
   if (format == 1) {
     fileWriter_ = std::make_shared<MiniAudioFileWriter>(
         sampleRate, channelCount, bitRate, androidFlags);
-    fileOutputEnabled_.store(true);
-    return;
+  } else {
+    fileWriter_ = std::make_shared<FFmpegAudioFileWriter>(
+        sampleRate, channelCount, bitRate, androidFlags);
   }
+
+  fileOutputEnabled_.store(true);
 }
 
 void AndroidAudioRecorder::disableFileOutput() {

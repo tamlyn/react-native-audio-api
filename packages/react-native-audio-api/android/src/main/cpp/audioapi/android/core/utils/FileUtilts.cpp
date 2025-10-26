@@ -55,7 +55,7 @@ std::string getISODateString() {
       "{:%Y-%m-%d}", std::chrono::floor<std::chrono::days>(tNow));
 }
 
-FileFormat formatFromFlag(size_t flags) {
+FileFormat formatFromFlags(size_t flags) {
   uint8_t formatFlag = static_cast<uint8_t>(flags & 0xF);
 
   switch (formatFlag) {
@@ -68,7 +68,7 @@ FileFormat formatFromFlag(size_t flags) {
     case 4:
       return FileFormat::FLAC;
     default:
-      return FileFormat::WAV;
+      return FileFormat::M4A;
   }
 }
 

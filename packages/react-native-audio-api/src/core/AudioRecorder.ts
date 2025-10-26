@@ -28,7 +28,7 @@ function withDefaultOptions(inOptions: AudioRecorderFileOptions) {
       ...(inOptions.ios ?? {}),
     },
     android: {
-      format: AndroidFormat.Wav,
+      format: AndroidFormat.M4A,
       ...(inOptions.android ?? {}),
     },
   };

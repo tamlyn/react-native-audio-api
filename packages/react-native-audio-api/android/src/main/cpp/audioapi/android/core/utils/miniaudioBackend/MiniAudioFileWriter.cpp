@@ -21,9 +21,8 @@ MiniAudioFileWriter::MiniAudioFileWriter(
 }
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
-  fileOptions_.reset();
-
   isFileOpen_.store(false);
+  fileOptions_.reset();
 
   if (encoder_ != nullptr) {
     ma_encoder_uninit(encoder_.get());

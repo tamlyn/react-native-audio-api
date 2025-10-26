@@ -43,7 +43,9 @@ const Record: FC = () => {
         format: IOSFormat.M4A,
         quality: IOSAudioQuality.Medium,
       },
-      android: {},
+      android: {
+        format: AndroidFormat.M4A,
+      },
     });
 
     return rec;
