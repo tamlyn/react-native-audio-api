@@ -69,7 +69,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioNodeManager;
   friend class NodeConnections;
 
-  explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs = 1);
+  explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs = DEFAULT_NUMBER_OF_INPUTS);
 
   // these are all forwarders to NodeConnections
   void connectNode(const std::shared_ptr<AudioNode> &destination, unsigned int outputIndex, unsigned int inputIndex);

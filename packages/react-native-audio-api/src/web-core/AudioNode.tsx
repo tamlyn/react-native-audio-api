@@ -27,6 +27,11 @@ export default class AudioNode {
     output = 0,
     input = 0
   ): AudioNode | void {
+    if (this.context !== destination.context) {
+      throw new Error(
+        'Source and destination are from different BaseAudioContexts'
+      );
+    }
     if (destination instanceof AudioParam) {
       this.node.connect(destination.param, output);
       return;

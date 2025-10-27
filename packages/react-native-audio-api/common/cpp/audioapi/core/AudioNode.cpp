@@ -20,9 +20,6 @@ AudioNode::AudioNode(BaseAudioContext *context, unsigned int numberOfInputs)
   }
 }
 
-// AudioNode::AudioNode(BaseAudioContext *context) : AudioNode(context,
-// DEFAULT_NUMBER_OF_INPUTS) {}
-
 AudioNode::~AudioNode() {
   if (isInitialized_) {
     cleanup();

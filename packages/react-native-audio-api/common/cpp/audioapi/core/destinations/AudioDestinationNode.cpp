@@ -22,16 +22,6 @@ double AudioDestinationNode::getCurrentTime() const {
   return static_cast<double>(currentSampleFrame_) / context_->getSampleRate();
 }
 
-void AudioDestinationNode::processNode(
-    const std::vector<std::shared_ptr<AudioBus>> &inputBuses,
-    int framesToProcess) {
-  if (inputBuses.empty() || !inputBuses[0]) {
-    return;
-  }
-
-  getOutputBus(0)->copy(inputBuses[0].get());
-}
-
 void AudioDestinationNode::renderAudio(
     const std::shared_ptr<AudioBus> &destinationBus,
     int numFrames) {
