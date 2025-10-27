@@ -53,8 +53,6 @@ class AudioAPIModule(
       if (BuildConfig.RN_AUDIO_API_ENABLE_WORKLETS) {
         try {
           workletsModule = reactContext.getNativeModule("WorkletsModule")
-          reanimatedModule = reactContext.getNativeModule("ReanimatedModule")
-          reanimatedModule
         } catch (ex: Exception) {
           throw RuntimeException("WorkletsModule not found - make sure react-native-worklets is properly installed")
         }
@@ -77,11 +75,11 @@ class AudioAPIModule(
   }
 
   override fun onHostPause() {
-    closeAllContexts()
+    // do nothing
   }
 
   override fun onHostDestroy() {
-    // do nothing
+    closeAllContexts()
   }
 
   override fun initialize() {
@@ -89,6 +87,8 @@ class AudioAPIModule(
   }
 
   override fun invalidate() {
+    closeAllContexts()
+    reactContext.get()?.removeLifecycleEventListener(this)
     // think about cleaning up resources, singletons etc.
   }
 
