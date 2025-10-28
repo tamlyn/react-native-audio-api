@@ -4,14 +4,14 @@ import {
   AudioContext,
   AudioBufferSourceNode,
   AudioBuffer,
-  OscillatorNode, 
+  OscillatorNode,
 } from 'react-native-audio-api';
 
 import { Container, Slider, Spacer, Button } from '../../components';
 
 // test url pointing to my public repo, to be changed / deleted
 const AUDIO_URL =
-  'https://github.com/miloszwielgus/test-files/raw/refs/heads/main/example-true-5-1.ogg';
+  'https://github.com/miloszwielgus/test-files/raw/refs/heads/main/output.m4a';
 
 const INITIAL_GAIN = 0.5;
 const labelWidth = 100;
@@ -27,11 +27,15 @@ const SplitterMerger: FC = () => {
   const [gain4, setGain4] = useState(INITIAL_GAIN);
   const [gain5, setGain5] = useState(INITIAL_GAIN);
   const [gain6, setGain6] = useState(INITIAL_GAIN);
-
+  /*
+    Uncomment all the merger lines and comment the gain connect to destintation lines to test the merger node. 
+    The changes you will notice are that the channels are panned out correctly (channel 1st is left etc) 
+    and that channel 4 is silent (effect of 6->2 downmixing)
+  */
   const {
     context,
     splitter,
-    merger,
+    // merger,
     gainNode1,
     gainNode2,
     gainNode3,
@@ -42,7 +46,7 @@ const SplitterMerger: FC = () => {
     const ctx = new AudioContext();
 
     const splitNode = ctx.createChannelSplitter(6);
-    const mergeNode = ctx.createChannelMerger(6);
+    // const mergeNode = ctx.createChannelMerger(6);
 
     const g1 = ctx.createGain();
     g1.gain.value = INITIAL_GAIN;
@@ -58,24 +62,30 @@ const SplitterMerger: FC = () => {
     g6.gain.value = INITIAL_GAIN;
 
     splitNode.connect(g1, 0, 0);
-    g1.connect(mergeNode, 0, 0);
+    // g1.connect(mergeNode, 0, 0);
+    g1.connect(ctx.destination);
     splitNode.connect(g2, 1, 0);
-    g2.connect(mergeNode, 0, 1);
+    // g2.connect(mergeNode, 0, 1);
+    g2.connect(ctx.destination);
     splitNode.connect(g3, 2, 0);
-    g3.connect(mergeNode, 0, 2);
+    // g3.connect(mergeNode, 0, 2);
+    g3.connect(ctx.destination);
     splitNode.connect(g4, 3, 0);
-    g4.connect(mergeNode, 0, 3);
+    // g4.connect(mergeNode, 0, 3);
+    g4.connect(ctx.destination);
     splitNode.connect(g5, 4, 0);
-    g5.connect(mergeNode, 0, 4);
+    // g5.connect(mergeNode, 0, 4);
+    g5.connect(ctx.destination);
     splitNode.connect(g6, 5, 0);
-    g6.connect(mergeNode, 0, 5);
+    g6.connect(ctx.destination);
+    // g6.connect(mergeNode, 0, 5);
 
-    mergeNode.connect(ctx.destination);
+    // mergeNode.connect(ctx.destination);
 
     return {
       context: ctx,
       splitter: splitNode,
-      merger: mergeNode,
+      // merger: mergeNode,
       gainNode1: g1,
       gainNode2: g2,
       gainNode3: g3,
@@ -88,7 +98,7 @@ const SplitterMerger: FC = () => {
   const [audioBuffer, setAudioBuffer] = useState<AudioBuffer | null>(null);
 
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
-  const oscNodeRef = useRef<OscillatorNode | null>(null); // New ref for osc
+  const oscNodeRef = useRef<OscillatorNode | null>(null);
 
   useEffect(() => {
     const fetchAndDecodeAudio = async () => {
@@ -112,7 +122,6 @@ const SplitterMerger: FC = () => {
     fetchAndDecodeAudio();
 
     return () => {
-      // Cleanup both sources
       if (sourceNodeRef.current) {
         sourceNodeRef.current.stop(0);
         sourceNodeRef.current.disconnect();
@@ -150,7 +159,6 @@ const SplitterMerger: FC = () => {
     }
   };
 
-  // New handler for the oscillator
   const handlePlayPauseOsc = () => {
     if (isPlayingOsc) {
       if (oscNodeRef.current) {
