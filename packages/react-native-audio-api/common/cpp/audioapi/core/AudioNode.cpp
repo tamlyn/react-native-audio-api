@@ -292,9 +292,22 @@ void AudioNode::processNode(
 
   if (!outputBuses_.empty()) {
     auto outBus = getOutputBus(0);
-    if (returnedBus && returnedBus != outBus) {
-      outBus->copy(returnedBus.get());
-    } else if (!returnedBus) {
+
+    if (returnedBus) {
+      unsigned int requiredChannels = returnedBus->getNumberOfChannels();
+
+      // Reallocate output bus if channel count doesn't match
+      if (outBus->getNumberOfChannels() != requiredChannels ||
+          outBus->getSampleRate() != context_->getSampleRate()) {
+        outputBuses_[0] = std::make_shared<AudioBus>(
+            RENDER_QUANTUM_SIZE, requiredChannels, context_->getSampleRate());
+        outBus = outputBuses_[0];
+      }
+
+      if (returnedBus != outBus) {
+        outBus->copy(returnedBus.get());
+      }
+    } else {
       outBus->zero();
     }
   }
