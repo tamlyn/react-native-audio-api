@@ -1,4 +1,4 @@
-import type { TurboModule } from 'react-native';
+import type { CodegenTypes, TurboModule } from 'react-native';
 import { TurboModuleRegistry } from 'react-native';
 
 export interface MIDIPortInfo {
@@ -11,14 +11,21 @@ export interface MIDIPortInfo {
   connection: 'open' | 'closed' | 'pending';
 }
 
+export interface MIDIMessage {
+  portId: string;
+  data: number[];
+  timestamp: number;
+}
+
 export interface Spec extends TurboModule {
-  test(): void;
   prepareMIDIClient(sysex: boolean): void;
   getSources(): MIDIPortInfo[];
   getDestinations(): MIDIPortInfo[];
 
   openPort(portId: string): boolean;
   closePort(portId: string): boolean;
+
+  readonly onMidiMessage: CodegenTypes.EventEmitter<MIDIMessage>;
 }
 
 export default TurboModuleRegistry.getEnforcing<Spec>('Medi');

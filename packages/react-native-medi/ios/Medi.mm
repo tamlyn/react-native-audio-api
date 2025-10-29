@@ -27,41 +27,31 @@ static void midiNotifyProc(const MIDINotification *message) {
   }
 }
 
-static void midiEvent(const MIDIEventList *eventList, void *srcConnRefCon) {
-    MIDIEndpointRef endpoint = (MIDIEndpointRef)(uintptr_t)srcConnRefCon;
+// Instance method version so that `self` is available inside the callback.
+- (void)midiEvent:(const MIDIEventList *)eventList srcConnRefCon:(void *)srcConnRefCon {
+  MIDIEndpointRef endpoint = (MIDIEndpointRef)(uintptr_t)srcConnRefCon;
 
-    SInt32 uniqueID = 0;
-    MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &uniqueID);
-    NSString *portId = [NSString stringWithFormat:@"input_%d", (int)uniqueID];
+  // Cached port and timestamp for performance
+  SInt32 uniqueID = 0;
+  MIDIObjectGetIntegerProperty(endpoint, kMIDIPropertyUniqueID, &uniqueID);
+  NSString *portId = [NSString stringWithFormat:@"input_%d", (int)uniqueID];
+  NSTimeInterval timestamp = [[NSDate date] timeIntervalSince1970] * 1000;  // timestamp in milliseconds
 
-    const MIDIEventPacket *packet = &eventList->packet[0];
-    for (UInt32 i = 0; i < eventList->numPackets; i++) {
-        UInt32 *words = (UInt32 *)&packet->words[0];
-        UInt8 status = (words[0] >> 16) & 0xFF;
-        UInt8 data1 = (words[0] >> 8) & 0xFF;
-        UInt8 data2 = words[0] & 0xFF;
+  const MIDIEventPacket *packet = &eventList->packet[0];
+  for (UInt32 i = 0; i < eventList->numPackets; i++) {
+    UInt32 *words = (UInt32 *)&packet->words[0];
+    UInt8 status = words[0] >> 16;
+    UInt8 data1 = words[0] >> 8;
+    UInt8 data2 = words[0];
 
-        // TODO: send these events to JS side
-        // for now just loging
-        NSLog(@"Port: %@, Status: 0x%02X, Data1: 0x%02X, Data2: 0x%02X", portId, status, data1, data2);
-
-        packet = MIDIEventPacketNext(packet);
-    }
-}
-
-RCT_EXPORT_METHOD(test)
-{
-  if (self.midiClient != 0) {
-    ItemCount sourceCount = MIDIGetNumberOfSources();
-    NSLog(@"Number of MIDI sources: %u", (unsigned)sourceCount);
-    return;
+    // Emit event to JS (generated emitter from the spec)
+    [self emitOnMidiMessage:@{
+      @"portId": portId,
+      @"data": @[@(status), @(data1), @(data2)],
+      @"timestamp": @(timestamp)
+    }];
+    packet = MIDIEventPacketNext(packet);
   }
-  dispatch_async(dispatch_get_main_queue(), ^{
-    OSStatus status = MIDIClientCreateWithBlock(CFSTR("MediClient"), &_midiClient, ^(const MIDINotification *message) {
-      midiNotifyProc(message);
-    });
-    NSLog(@"MIDIClientCreateWithBlock status: %d", status);
-  });
 }
 
 RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex)
@@ -81,6 +71,7 @@ RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex)
   ///
   /// Hours wasted: ~16
   ///
+  /// PS: Not actually wasted time cuz it works but brooo☠
   dispatch_async(dispatch_get_main_queue(), ^{
     OSStatus status = MIDIClientCreateWithBlock(CFSTR("MediClient"), &_midiClient, ^(const MIDINotification *message) {
       midiNotifyProc(message);
@@ -88,7 +79,7 @@ RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex)
     self.sysexEnabled = sysex;
     NSLog(@"MIDIClientCreateWithBlock status: %d, sysex: %d", status, sysex);
     OSStatus statusPort = MIDIInputPortCreateWithProtocol(self.midiClient, CFSTR("MediInputPort"), kMIDIProtocol_1_0, &_inputPort, ^(const MIDIEventList *eventList, void *srcConnRefCon) {
-      midiEvent(eventList, srcConnRefCon);
+      [self midiEvent:eventList srcConnRefCon:srcConnRefCon];
     });
     NSLog(@"MIDIInputPortCreateWithProtocol status: %d", statusPort);
 
@@ -130,28 +121,20 @@ RCT_EXPORT_SYNCHRONOUS_TYPED_METHOD(NSNumber *, openPort:(NSString *)portId)
 {
   NSString *type = [portId hasPrefix:@"input_"] ? @"input" : @"output";
   SInt32 uniqueID = [[portId substringFromIndex:[type length] + 1] intValue];
+  if ([type isEqualToString:@"output"]) {
+    // We do not need to open output ports so it is considered always successful
+    NSLog(@"Opened output port: %@", portId);
+    return @YES;
+  }
   MIDIEndpointRef endpoint = 0;
-  if ([type isEqualToString:@"input"]) {
-    ItemCount srcCount = MIDIGetNumberOfSources();
-    for (ItemCount i = 0; i < srcCount; ++i) {
-      MIDIEndpointRef src = MIDIGetSource(i);
-      SInt32 srcUniqueID = 0;
-      MIDIObjectGetIntegerProperty(src, kMIDIPropertyUniqueID, &srcUniqueID);
-      if (srcUniqueID == uniqueID) {
-        endpoint = src;
-        break;
-      }
-    }
-  } else {
-    ItemCount destCount = MIDIGetNumberOfDestinations();
-    for (ItemCount i = 0; i < destCount; ++i) {
-      MIDIEndpointRef dest = MIDIGetDestination(i);
-      SInt32 destUniqueID = 0;
-      MIDIObjectGetIntegerProperty(dest, kMIDIPropertyUniqueID, &destUniqueID);
-      if (destUniqueID == uniqueID) {
-        endpoint = dest;
-        break;
-      }
+  ItemCount srcCount = MIDIGetNumberOfSources();
+  for (ItemCount i = 0; i < srcCount; ++i) {
+    MIDIEndpointRef src = MIDIGetSource(i);
+    SInt32 srcUniqueID = 0;
+    MIDIObjectGetIntegerProperty(src, kMIDIPropertyUniqueID, &srcUniqueID);
+    if (srcUniqueID == uniqueID) {
+      endpoint = src;
+      break;
     }
   }
   if (endpoint == 0) {
@@ -159,12 +142,10 @@ RCT_EXPORT_SYNCHRONOUS_TYPED_METHOD(NSNumber *, openPort:(NSString *)portId)
     return @NO;
   }
 
-  if ([type isEqualToString:@"input"]) {
-    OSStatus status = MIDIPortConnectSource(self.inputPort, endpoint, (void *)(uintptr_t)endpoint);
-    if (status != noErr) {
-      NSLog(@"Failed to connect input port: %@, status: %d", portId, status);
-      return @NO;
-    }
+  OSStatus status = MIDIPortConnectSource(self.inputPort, endpoint, (void *)(uintptr_t)endpoint);
+  if (status != noErr) {
+    NSLog(@"Failed to connect input port: %@, status: %d", portId, status);
+    return @NO;
   }
 
   self.openPorts[portId] = @(endpoint);

@@ -1,17 +1,26 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { NativeMedi } from '../../../../../packages/react-native-medi/src';
-import { Button, View } from 'react-native';
+import { Button, EventSubscription, View } from 'react-native';
+import { MIDIMessage } from 'packages/react-native-medi/src/NativeMedi';
 
 const Medi: React.FC = () => {
   const [sourcePort, setSourcePort] = React.useState("");
-  const testCallback = () => {
-    console.log('Calling NativeMedi.test()');
-    NativeMedi.test();
-  };
+  const listenerSubscription = React.useRef<null | EventSubscription>(null);
+  useEffect(() => {
+    listenerSubscription.current = NativeMedi.onMidiMessage((message: MIDIMessage) => {
+      console.log('Received MIDI Message:', message);
+    });
+
+    return () => {
+      if (listenerSubscription.current) {
+        listenerSubscription.current.remove();
+      }
+    };
+  }, []);
+
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-      <Button title="Test" onPress={testCallback} />
       <Button title="Prepare MIDI Client" onPress={() => NativeMedi.prepareMIDIClient(false)} />
       <Button
         title="Get MIDI Sources"
