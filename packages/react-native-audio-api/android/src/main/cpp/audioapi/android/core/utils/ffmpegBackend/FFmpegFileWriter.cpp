@@ -1,12 +1,15 @@
 #include <android/log.h>
 #include <cmath>
+
 extern "C" {
-#include <libavutil/log.h>
+#include <libavformat/avio.h>
 }
 
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegAudioFileOptions.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
+
+constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
 
@@ -20,16 +23,6 @@ FFmpegAudioFileWriter::FFmpegAudioFileWriter(
           channelCount,
           bitRate,
           androidFlags) {
-  av_log_set_level(AV_LOG_DEBUG);
-
-  av_log_set_callback([](void *, int level, const char *fmt, va_list vl) {
-    if (level > av_log_get_level())
-      return;
-    char msg[1024];
-    vsnprintf(msg, sizeof(msg), fmt, vl);
-    __android_log_print(ANDROID_LOG_INFO, "FFmpeg", "%s", msg);
-  });
-
   fileOptions_ = std::make_shared<FFmpegAudioFileOptions>(
       sampleRate, channelCount, bitRate, androidFlags);
 }
@@ -48,6 +41,7 @@ std::string FFmpegAudioFileWriter::openFile(
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
+  framesWritten_.store(0);
   nextPts_ = 0;
 
   const AVCodec *codec = fileOptions_->getCodec();
@@ -202,9 +196,9 @@ std::string FFmpegAudioFileWriter::openFile(
   return filePath_;
 }
 
-void FFmpegAudioFileWriter::closeFile() {
+std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return;
+    return {0.0, 0.0};
   }
 
   isFileOpen_.store(false);
@@ -275,6 +269,9 @@ void FFmpegAudioFileWriter::closeFile() {
         filePath_.c_str());
   }
 
+  double fileSizeInMB = avio_size(formatCtx_->pb) / BYTES_TO_MB;
+  double durationInSeconds = getCurrentDuration();
+
   if (formatCtx_ && formatCtx_->pb) {
     avio_closep(&formatCtx_->pb);
   }
@@ -287,9 +284,16 @@ void FFmpegAudioFileWriter::closeFile() {
   audioFifo_.reset();
 
   filePath_ = "";
+  return {fileSizeInMB, durationInSeconds};
 }
 
 bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
+  __android_log_print(
+      ANDROID_LOG_DEBUG,
+      "FFmpegFileWriter",
+      "Writing %d frames to file",
+      numFrames);
+
   if (!isFileOpen()) {
     return false;
   }
@@ -408,6 +412,7 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
     av_frame_unref(frame_.get());
   }
 
+  framesWritten_.fetch_add(numFrames);
   return true;
 }
 

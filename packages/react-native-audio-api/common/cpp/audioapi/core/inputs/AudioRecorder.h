@@ -15,6 +15,7 @@ class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
+  enum RecorderState { Idle, Recording, Paused };
   explicit AudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry):
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
@@ -43,6 +44,8 @@ class AudioRecorder {
     uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
 
+  virtual double getCurrentDuration() const = 0;
+
   bool usesCallback() const {
     return callbackOutputEnabled_.load();
   }
@@ -56,13 +59,17 @@ class AudioRecorder {
   }
 
   bool isRecording() const {
-    return isRunning_.load();
+    return state_.load() == RecorderState::Recording;
+  }
+
+  bool isPaused() const {
+    return state_.load() == RecorderState::Paused;
   }
 
  protected:
   // size_t ringBufferSize_;
 
-  std::atomic<bool> isRunning_{false};
+  std::atomic<RecorderState> state_{ RecorderState::Idle };
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
   std::atomic<bool> isConnected_{false};

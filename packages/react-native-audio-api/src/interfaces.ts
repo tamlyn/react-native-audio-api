@@ -288,6 +288,7 @@ export interface IAudioRecorder {
   start: () => string | void;
   stop: () => FileInfo;
   isRecording: () => boolean;
+  isPaused: () => boolean;
 
   enableFileOutput: (options: IAudioRecorderFileOptions) => void;
   disableFileOutput: () => void;
@@ -302,6 +303,8 @@ export interface IAudioRecorder {
 
   setOnAudioReady: (options: IAudioRecorderCallbackOptions) => void;
   clearOnAudioReady: () => void;
+
+  getCurrentDuration: () => number;
 }
 
 export interface IAudioDecoder {

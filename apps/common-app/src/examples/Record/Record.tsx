@@ -56,7 +56,6 @@ recorder.enableFileOutput({
 const Record: FC = () => {
   const [state, setState] = useState<ExampleState>(ExampleState.Idle);
   const [lastOutput, setLastOutput] = useState<string | null>(null);
-  const [startedAt, setStartedAt] = useState<number | null>(null);
   const durationStringSV = useSharedValue('00:00:00:00');
 
   useEffect(() => {
@@ -85,8 +84,6 @@ const Record: FC = () => {
     if (filePath) {
       setLastOutput(filePath);
     }
-
-    setStartedAt(Date.now());
   }, []);
 
   const onStopRecording = useCallback(async () => {
@@ -135,19 +132,20 @@ const Record: FC = () => {
   }, [lastOutput, state]);
 
   useEffect(() => {
-    if (state !== ExampleState.Recording || !startedAt) {
+    if (state !== ExampleState.Recording) {
       return;
     }
 
     const interval = setInterval(() => {
-      const elapsed = Date.now() - startedAt;
-      const hours = Math.floor(elapsed / 3600000)
+      const elapsedSeconds = recorder.getCurrentDuration();
+      console.log('Elapsed seconds:', elapsedSeconds);
+      const hours = Math.floor(elapsedSeconds / 3600)
         .toString()
         .padStart(2, '0');
-      const minutes = Math.floor((elapsed % 3600000) / 60000)
+      const minutes = Math.floor((elapsedSeconds % 3600) / 60)
         .toString()
         .padStart(2, '0');
-      const seconds = Math.floor((elapsed % 60000) / 1000)
+      const seconds = Math.floor(elapsedSeconds % 60)
         .toString()
         .padStart(2, '0');
 
@@ -157,7 +155,7 @@ const Record: FC = () => {
     return () => {
       clearInterval(interval);
     };
-  }, [state, startedAt, durationStringSV]);
+  }, [state, durationStringSV]);
 
   const status = useMemo(() => {
     if (state === ExampleState.Recording) {

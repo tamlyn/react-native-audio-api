@@ -5,6 +5,7 @@
 
 #include <string>
 #include <memory>
+#include <tuple>
 
 namespace audioapi {
 
@@ -20,7 +21,7 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   ~MiniAudioFileWriter() override;
 
   std::string openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
-  void closeFile() override;
+  std::tuple<double, double> closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
 

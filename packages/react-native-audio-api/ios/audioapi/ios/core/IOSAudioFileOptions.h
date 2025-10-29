@@ -20,6 +20,7 @@ class IOSAudioFileOptions {
   NSString *getFileExtension() const;
   NSInteger getBitDepth() const;
   NSDictionary *getFileSettings();
+  float getSampleRate();
 
  private:
   uint8_t format_;

@@ -16,7 +16,7 @@
 namespace audioapi {
 
 // AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-//   if (isRunning_.load()) {
+//   if (isRunning()) {
 //     auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
 //     writeToBuffers(inputChannel, numFrames);
 //   }
@@ -52,7 +52,7 @@ std::string IOSAudioRecorder::start()
   }
 
   if (usesFileOutput()) {
-    filePath_ = fileWriter_->openFile([nativeRecorder_ getInputFormat]);
+    filePath_ = fileWriter_->openFile([nativeRecorder_ getInputFormat], maxInputBufferLength);
   }
 
   if (usesCallback()) {
@@ -64,7 +64,7 @@ std::string IOSAudioRecorder::start()
   }
 
   [nativeRecorder_ start];
-  isRunning_.store(true);
+  state_.store(RecorderState::Recording);
 
   return filePath_;
 }
@@ -80,7 +80,7 @@ std::tuple<std::string, double, double> IOSAudioRecorder::stop()
   }
 
   [nativeRecorder_ stop];
-  isRunning_.store(false);
+  state_.store(RecorderState::Idle);
 
   if (usesFileOutput()) {
     auto [size, duration] = fileWriter_->closeFile();
@@ -115,14 +115,22 @@ void IOSAudioRecorder::disableFileOutput()
 
 void IOSAudioRecorder::pause()
 {
+  if (!isRecording()) {
+    return;
+  }
+
   [nativeRecorder_ stop];
-  isRunning_.store(false);
+  state_.store(RecorderState::Paused);
 }
 
 void IOSAudioRecorder::resume()
 {
+  if (!isPaused()) {
+    return;
+  }
+
   [nativeRecorder_ start];
-  isRunning_.store(true);
+  state_.store(RecorderState::Recording);
 }
 
 void IOSAudioRecorder::setOnAudioReadyCallback(
@@ -140,6 +148,17 @@ void IOSAudioRecorder::clearOnAudioReadyCallback()
 {
   callbackOutputEnabled_.store(false);
   callback_ = nullptr;
+}
+
+double IOSAudioRecorder::getCurrentDuration() const
+{
+  double duration = 0.0;
+
+  if (usesFileOutput() && fileWriter_) {
+    duration = fileWriter_->getCurrentDuration();
+  }
+
+  return duration;
 }
 
 } // namespace audioapi

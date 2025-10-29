@@ -233,4 +233,12 @@ export default class AudioRecorder {
   isRecording(): boolean {
     return this.recorder.isRecording();
   }
+
+  isPaused(): boolean {
+    return this.recorder.isPaused();
+  }
+
+  getCurrentDuration(): number {
+    return this.recorder.getCurrentDuration();
+  }
 }

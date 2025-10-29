@@ -35,7 +35,8 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, connect),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnAudioReady),
-      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady));
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
@@ -58,6 +59,10 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {
   return jsi::Value(audioRecorder_->isRecording());
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
+  return jsi::Value(audioRecorder_->isPaused());
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
@@ -133,6 +138,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnAudioReady) {
   audioRecorder_->clearOnAudioReadyCallback();
   return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, getCurrentDuration) {
+  double duration = audioRecorder_->getCurrentDuration();
+  return jsi::Value(duration);
 }
 
 } // namespace audioapi

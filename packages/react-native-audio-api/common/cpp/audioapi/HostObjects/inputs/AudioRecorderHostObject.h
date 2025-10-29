@@ -22,6 +22,7 @@ class AudioRecorderHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(start);
   JSI_HOST_FUNCTION_DECL(stop);
   JSI_HOST_FUNCTION_DECL(isRecording);
+  JSI_HOST_FUNCTION_DECL(isPaused);
 
   JSI_HOST_FUNCTION_DECL(enableFileOutput);
   JSI_HOST_FUNCTION_DECL(disableFileOutput);
@@ -34,6 +35,8 @@ class AudioRecorderHostObject : public JsiHostObject {
 
   JSI_HOST_FUNCTION_DECL(setOnAudioReady);
   JSI_HOST_FUNCTION_DECL(clearOnAudioReady);
+
+  JSI_HOST_FUNCTION_DECL(getCurrentDuration);
 
  private:
   std::shared_ptr<AudioRecorder> audioRecorder_;

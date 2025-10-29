@@ -4,6 +4,8 @@
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
+
 namespace audioapi {
 
 MiniAudioFileWriter::MiniAudioFileWriter(
@@ -72,9 +74,9 @@ std::string MiniAudioFileWriter::openFile(
   return filePath_;
 }
 
-void MiniAudioFileWriter::closeFile() {
+std::tuple<double, double> MiniAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return;
+    return {0.0, 0.0};
   }
 
   isFileOpen_.store(false);
@@ -95,7 +97,36 @@ void MiniAudioFileWriter::closeFile() {
     processingBufferLength_ = 0;
   }
 
+  // Retrieve duration and file size
+  std::string filePath = filePath_;
+  double durationInSeconds = 0.0;
+  double fileSizeInMB = 0.0;
+
+  ma_decoder decoder;
+
+  if (ma_decoder_init_file(filePath_.c_str(), NULL, &decoder) == MA_SUCCESS) {
+    ma_uint64 frameCount = 0;
+
+    if (ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount) ==
+        MA_SUCCESS) {
+      durationInSeconds =
+          static_cast<double>(frameCount) / decoder.outputSampleRate;
+    }
+
+    ma_decoder_uninit(&decoder);
+  }
+
+  FILE *file = fopen(filePath_.c_str(), "rb");
+
+  if (file != nullptr) {
+    fseek(file, 0, SEEK_END);
+    long fileSizeInBytes = ftell(file);
+    fclose(file);
+    fileSizeInMB = static_cast<double>(fileSizeInBytes) / BYTES_TO_MB;
+  }
+
   filePath_ = "";
+  return {fileSizeInMB, durationInSeconds};
 }
 
 bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
@@ -125,6 +156,7 @@ bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
           filePath_.c_str());
     }
 
+    framesWritten_.fetch_add(numFrames);
     return result == MA_SUCCESS;
   }
 
@@ -141,6 +173,7 @@ bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
         filePath_.c_str());
   }
 
+  framesWritten_.fetch_add(numFrames);
   return result == MA_SUCCESS;
 }
 

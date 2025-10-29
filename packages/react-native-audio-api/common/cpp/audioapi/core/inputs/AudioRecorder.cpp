@@ -23,7 +23,7 @@
 //   ringBufferSize_ = std::max(2 * bufferLength, minRingBufferSize);
 
 //   circularBuffer_ = std::make_shared<CircularAudioArray>(ringBufferSize_);
-//   isRunning_.store(false);
+//   state_.store(RecorderState::Idle);
 // }
 
 // void AudioRecorder::writeToBuffers(const float *data, int numFrames) {

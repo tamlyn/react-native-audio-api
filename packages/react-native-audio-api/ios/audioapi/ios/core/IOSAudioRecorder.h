@@ -38,6 +38,8 @@ class IOSAudioRecorder : public AudioRecorder {
       override;
   void clearOnAudioReadyCallback() override;
 
+  double getCurrentDuration() const override;
+
  private:
   std::shared_ptr<IOSAudioFileWriter> fileWriter_;
   std::shared_ptr<IOSRecorderCallback> callback_;

@@ -22,12 +22,18 @@ class IOSAudioFileWriter {
   IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags);
   ~IOSAudioFileWriter();
 
-  std::string openFile(AVAudioFormat *bufferFormat);
+  std::string openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
   std::tuple<double, double> closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
 
+  double getCurrentDuration() const;
+
  private:
+  size_t converterInputBufferSize_;
+  size_t converterOutputBufferSize_;
+  std::atomic<size_t> framesWritten_{0};
+
   NSString *getISODateStringForDirectory();
   NSString *getTimestampForFilename();
   NSURL *getFileURL();
@@ -37,6 +43,9 @@ class IOSAudioFileWriter {
   AVAudioFormat *bufferFormat_;
   AVAudioConverter *converter_;
   NSURL *fileURL_;
+
+  AVAudioPCMBuffer *converterInputBuffer_;
+  AVAudioPCMBuffer *converterOutputBuffer_;
 };
 
 } // namespace audioapi

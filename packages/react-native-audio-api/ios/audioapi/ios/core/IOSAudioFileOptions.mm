@@ -132,4 +132,9 @@ NSDictionary *IOSAudioFileOptions::getFileSettings()
   return settings;
 }
 
+float IOSAudioFileOptions::getSampleRate()
+{
+  return sampleRate_;
+}
+
 } // namespace audioapi
