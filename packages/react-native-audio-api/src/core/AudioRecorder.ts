@@ -7,6 +7,7 @@ import {
   AudioRecorderFileOptions,
   BitDepth,
   FileDirectory,
+  FileInfo,
   IOSAudioQuality,
   IOSFormat,
 } from '../types';
@@ -62,6 +63,7 @@ export default class AudioRecorder {
   protected onAudioReadySubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
+  private isFileOutputEnabled: boolean = false;
 
   protected readonly audioEventEmitter = new AudioEventEmitter(
     global.AudioEventEmitter
@@ -82,6 +84,7 @@ export default class AudioRecorder {
 
     const parsedOptions = parseFileOptions(options);
     this.recorder.enableFileOutput(parsedOptions);
+    this.isFileOutputEnabled = true;
   }
 
   public get options(): AudioRecorderFileOptions | null {
@@ -91,25 +94,31 @@ export default class AudioRecorder {
   disableFileOutput(): void {
     this.options_ = null;
     this.recorder.disableFileOutput();
+    this.isFileOutputEnabled = false;
   }
 
   /** Starts the audio recording process with configured output options */
-  public start(): void {
-    this.recorder.start();
+  start(): string | void {
+    if (!this.isFileOutputEnabled) {
+      this.recorder.start();
+      return;
+    }
+
+    return this.recorder.start();
   }
 
   /** Stops the audio recording process and releases internal resources */
-  public stop(): void | string {
+  stop(): FileInfo {
     return this.recorder.stop();
   }
 
   /** Pauses the audio recording process without tearing down anything */
-  public pause(): void {
+  pause(): void {
     this.recorder.pause();
   }
 
   /** Resumes the audio recording process after being paused */
-  public resume(): void {
+  resume(): void {
     this.recorder.resume();
   }
 
@@ -122,7 +131,7 @@ export default class AudioRecorder {
    * @param node - The adapter node to connect to the recorder.
    * @throws If the node has already been connected.
    */
-  public connect(node: RecorderAdapterNode): void {
+  connect(node: RecorderAdapterNode): void {
     if (this.recorder.isRecording()) {
       throw new Error(
         'Cannot connect adapter node while recording is in progress. Please stop the recorder before connecting new nodes.'
@@ -144,7 +153,7 @@ export default class AudioRecorder {
    * After calling this method, any connected {@link RecorderAdapterNode} will no
    * longer receive audio data until reconnected.
    */
-  public disconnect(): void {
+  disconnect(): void {
     this.recorder.disconnect();
   }
 
@@ -164,7 +173,7 @@ export default class AudioRecorder {
    *   available. The callback receives an {@link OnAudioReadyEventType} object
    *   containing the audio data and associated metadata.
    */
-  public onAudioReady(
+  onAudioReady(
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
   ): void {
@@ -204,7 +213,7 @@ export default class AudioRecorder {
    * recording. Calling this method is safe even if no callback is currently
    * registered.
    */
-  public clearOnAudioReady(): void {
+  clearOnAudioReady(): void {
     if (this.recorder.isRecording()) {
       throw new Error(
         'Cannot clear onAudioReady callback while recording is in progress. Please stop the recorder before clearing the callback.'
@@ -221,7 +230,7 @@ export default class AudioRecorder {
     this.onAudioReadySubscription = null;
   }
 
-  public isRecording(): boolean {
+  isRecording(): boolean {
     return this.recorder.isRecording();
   }
 }

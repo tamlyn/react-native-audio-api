@@ -7,6 +7,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
+#include <audioapi/ios/core/IOSRecorderCallback.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -19,15 +20,6 @@ namespace audioapi {
 //     auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
 //     writeToBuffers(inputChannel, numFrames);
 //   }
-
-//   while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
-//     auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-//     auto *outputChannel = bus->getChannel(0)->getData();
-
-//     circularBuffer_->pop_front(outputChannel, bufferLength_);
-
-//     invokeOnAudioReadyCallback(bus, bufferLength_);
-//   }
 // };
 
 IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
@@ -36,6 +28,10 @@ IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegist
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (usesFileOutput()) {
       fileWriter_->writeAudioData(inputBuffer, numFrames);
+    }
+
+    if (usesCallback()) {
+      callback_->receiveAudioData(inputBuffer, numFrames);
     }
   };
 
@@ -47,19 +43,20 @@ IOSAudioRecorder::~IOSAudioRecorder()
   stop();
   [nativeRecorder_ cleanup];
 }
-
-void IOSAudioRecorder::start()
+std::string IOSAudioRecorder::start()
 {
+  size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
+
   if (isRecording()) {
-    return;
+    return filePath_;
   }
 
   if (usesFileOutput()) {
-    fileWriter_->openFile([nativeRecorder_ getInputFormat]);
+    filePath_ = fileWriter_->openFile([nativeRecorder_ getInputFormat]);
   }
 
   if (usesCallback()) {
-    // TODO: create circular buffer and converter?
+    callback_->prepare([nativeRecorder_ getInputFormat], maxInputBufferLength);
   }
 
   if (isConnected()) {
@@ -68,24 +65,35 @@ void IOSAudioRecorder::start()
 
   [nativeRecorder_ start];
   isRunning_.store(true);
+
+  return filePath_;
 }
 
-std::string IOSAudioRecorder::stop()
+std::tuple<std::string, double, double> IOSAudioRecorder::stop()
 {
+  std::string filePath = filePath_;
+  double outputFileSize = 0;
+  double outputDuration = 0;
+
   if (!isRecording()) {
-    return std::string("");
+    return {filePath, 0, 0};
   }
 
   [nativeRecorder_ stop];
   isRunning_.store(false);
 
-  // TODO: send remaining data?
-
   if (usesFileOutput()) {
-    return fileWriter_->closeFile();
+    auto [size, duration] = fileWriter_->closeFile();
+    outputFileSize = size;
+    outputDuration = duration;
   }
 
-  return std::string("");
+  if (usesCallback()) {
+    callback_->cleanup();
+  }
+
+  filePath_ = "";
+  return {filePath, outputFileSize, outputDuration};
 }
 
 void IOSAudioRecorder::enableFileOutput(
@@ -105,8 +113,33 @@ void IOSAudioRecorder::disableFileOutput()
   fileWriter_ = nullptr;
 }
 
-void IOSAudioRecorder::pause() {}
+void IOSAudioRecorder::pause()
+{
+  [nativeRecorder_ stop];
+  isRunning_.store(false);
+}
 
-void IOSAudioRecorder::resume() {}
+void IOSAudioRecorder::resume()
+{
+  [nativeRecorder_ start];
+  isRunning_.store(true);
+}
+
+void IOSAudioRecorder::setOnAudioReadyCallback(
+    float sampleRate,
+    size_t bufferLength,
+    size_t channelCount,
+    uint64_t callbackId)
+{
+  callback_ = std::make_shared<IOSRecorderCallback>(
+      audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
+  callbackOutputEnabled_.store(true);
+}
+
+void IOSAudioRecorder::clearOnAudioReadyCallback()
+{
+  callbackOutputEnabled_.store(false);
+  callback_ = nullptr;
+}
 
 } // namespace audioapi

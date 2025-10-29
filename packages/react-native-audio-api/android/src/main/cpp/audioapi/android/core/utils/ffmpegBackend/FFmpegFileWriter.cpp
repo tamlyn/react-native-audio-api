@@ -39,7 +39,7 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
   fileOptions_.reset();
 }
 
-void FFmpegAudioFileWriter::openFile(
+std::string FFmpegAudioFileWriter::openFile(
     int32_t streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
@@ -64,7 +64,7 @@ void FFmpegAudioFileWriter::openFile(
         "FFmpegFileWriter",
         "Failed to allocate FFmpeg format context for file: %s",
         filePath_.c_str());
-    return;
+    return "";
   }
 
   formatCtx_ = AVFormatContextPtr(rawFormatCtx);
@@ -77,7 +77,7 @@ void FFmpegAudioFileWriter::openFile(
         ANDROID_LOG_ERROR,
         "FFmpegFileWriter",
         "Failed to allocate FFmpeg codec context for file");
-    return;
+    return "";
   }
 
   AVDictionary *codecOptions = nullptr;
@@ -104,7 +104,7 @@ void FFmpegAudioFileWriter::openFile(
         "FFmpegFileWriter",
         "Failed to open FFmpeg codec for file");
     av_dict_free(&codecOptions);
-    return;
+    return "";
   }
 
   av_dict_free(&codecOptions);
@@ -115,7 +115,7 @@ void FFmpegAudioFileWriter::openFile(
         ANDROID_LOG_ERROR,
         "FFmpegFileWriter",
         "Failed to copy codec parameters to stream for file");
-    return;
+    return "";
   }
 
   if (!(formatCtx_->oformat->flags & AVFMT_NOFILE)) {
@@ -125,7 +125,7 @@ void FFmpegAudioFileWriter::openFile(
           "FFmpegFileWriter",
           "Failed to open output file: %s",
           filePath_.c_str());
-      return;
+      return "";
     }
   }
 
@@ -138,7 +138,7 @@ void FFmpegAudioFileWriter::openFile(
         "FFmpegFileWriter",
         "Failed to write header to file: %s",
         filePath_.c_str());
-    return;
+    return "";
   }
 
   frame_ = AVFramePtr(av_frame_alloc());
@@ -171,7 +171,7 @@ void FFmpegAudioFileWriter::openFile(
         "FFmpegFileWriter",
         "Failed to initialize resampler for file: %s",
         filePath_.c_str());
-    return;
+    return "";
   }
 
   int contextFrameRatio = 2;
@@ -198,11 +198,13 @@ void FFmpegAudioFileWriter::openFile(
       fifoSize);
 
   isFileOpen_.store(true);
+
+  return filePath_;
 }
 
-std::string FFmpegAudioFileWriter::closeFile() {
+void FFmpegAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return "";
+    return;
   }
 
   isFileOpen_.store(false);
@@ -284,10 +286,7 @@ std::string FFmpegAudioFileWriter::closeFile() {
   formatCtx_.reset();
   audioFifo_.reset();
 
-  std::string closedFilePath = filePath_;
   filePath_ = "";
-
-  return closedFilePath;
 }
 
 bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {

@@ -15,8 +15,8 @@ class AndroidFileWriterBackend {
 
   virtual ~AndroidFileWriterBackend() = default;
 
-  virtual void openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
-  virtual std::string closeFile() = 0;
+  virtual std::string openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
+  virtual void closeFile() = 0;
 
   virtual bool writeAudioData(void *data, int numFrames) = 0;
 

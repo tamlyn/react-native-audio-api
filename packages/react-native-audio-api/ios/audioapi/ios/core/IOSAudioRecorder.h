@@ -16,6 +16,7 @@ namespace audioapi {
 class AudioBus;
 class CircularAudioArray;
 class IOSAudioFileWriter;
+class IOSRecorderCallback;
 class AudioEventHandlerRegistry;
 
 class IOSAudioRecorder : public AudioRecorder {
@@ -23,8 +24,8 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
-  void start() override;
-  std::string stop() override;
+  std::string start() override;
+  std::tuple<std::string, double, double> stop() override;
 
   void enableFileOutput(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags, size_t androidFlags)
       override;
@@ -33,8 +34,14 @@ class IOSAudioRecorder : public AudioRecorder {
   void pause() override;
   void resume() override;
 
+  void setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
+      override;
+  void clearOnAudioReadyCallback() override;
+
  private:
   std::shared_ptr<IOSAudioFileWriter> fileWriter_;
+  std::shared_ptr<IOSRecorderCallback> callback_;
+  std::string filePath_{""};
   NativeAudioRecorder *nativeRecorder_;
 };
 

@@ -4,6 +4,7 @@ import type {
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  FileInfo,
   OscillatorType,
   WindowType,
 } from './types';
@@ -284,8 +285,8 @@ interface IAudioRecorderCallbackOptions {
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: () => void;
-  stop: () => string | void;
+  start: () => string | void;
+  stop: () => FileInfo;
   isRecording: () => boolean;
 
   enableFileOutput: (options: IAudioRecorderFileOptions) => void;

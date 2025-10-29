@@ -44,9 +44,11 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   }
 }
 
-void AndroidAudioRecorder::start() {
+std::string AndroidAudioRecorder::start() {
+  std::string filePath = "";
+
   if (isRecording()) {
-    return;
+    return filePath;
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
@@ -54,11 +56,11 @@ void AndroidAudioRecorder::start() {
         ANDROID_LOG_ERROR,
         "AndroidAudioRecorder",
         "Audio stream is not initialized.\n");
-    return;
+    return filePath;
   }
 
   if (usesFileOutput()) {
-    fileWriter_->openFile(
+    filePath = fileWriter_->openFile(
         streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
@@ -73,11 +75,13 @@ void AndroidAudioRecorder::start() {
   nativeAudioRecorder_->start();
   mStream_->requestStart();
   isRunning_.store(true);
+
+  return filePath;
 }
 
-std::string AndroidAudioRecorder::stop() {
+void AndroidAudioRecorder::stop() {
   if (!isRecording()) {
-    return "";
+    return;
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
@@ -85,7 +89,7 @@ std::string AndroidAudioRecorder::stop() {
         ANDROID_LOG_ERROR,
         "AndroidAudioRecorder",
         "Audio stream is not initialized.\n");
-    return "";
+    return;
   }
 
   nativeAudioRecorder_->stop();
@@ -95,10 +99,8 @@ std::string AndroidAudioRecorder::stop() {
   // TODO: sendRemainingData() ?
 
   if (usesFileOutput()) {
-    return fileWriter_->closeFile();
+    fileWriter_->closeFile();
   }
-
-  return "";
 }
 
 void AndroidAudioRecorder::enableFileOutput(

@@ -39,15 +39,21 @@ AudioRecorderHostObject::AudioRecorderHostObject(
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  audioRecorder_->start();
+  std::string filePath = audioRecorder_->start();
 
-  return jsi::Value::undefined();
+  return jsi::Value(runtime, jsi::String::createFromUtf8(runtime, filePath));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
-  std::string filePath = audioRecorder_->stop();
+  auto [path, size, duration] = audioRecorder_->stop();
+  auto result = jsi::Object(runtime);
 
-  return jsi::Value(runtime, jsi::String::createFromUtf8(runtime, filePath));
+  result.setProperty(
+      runtime, "path", jsi::String::createFromUtf8(runtime, path));
+  result.setProperty(runtime, "size", size);
+  result.setProperty(runtime, "duration", duration);
+
+  return result;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {
@@ -115,8 +121,9 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
       options.getProperty(runtime, "bufferLength").getNumber());
   auto channelCount = static_cast<size_t>(
       options.getProperty(runtime, "channelCount").getNumber());
-  auto callbackId = static_cast<uint64_t>(
-      options.getProperty(runtime, "callbackId").getNumber());
+  uint64_t callbackId = std::stoull(options.getProperty(runtime, "callbackId")
+                                        .getString(runtime)
+                                        .utf8(runtime));
 
   audioRecorder_->setOnAudioReadyCallback(
       sampleRate, bufferLength, channelCount, callbackId);

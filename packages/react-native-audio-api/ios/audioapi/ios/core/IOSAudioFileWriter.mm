@@ -4,6 +4,8 @@
 #include <audioapi/ios/core/IOSAudioFileOptions.h>
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
 
+constexpr double BYTES_TO_MB = 1024 * 1024;
+
 namespace audioapi {
 IOSAudioFileWriter::IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags)
 {
@@ -18,12 +20,12 @@ IOSAudioFileWriter::~IOSAudioFileWriter()
   bufferFormat_ = nil;
 }
 
-void IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat)
+std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
       NSLog(@"⚠️ createFileForWriting: currentAudioFile_ already exists");
-      return;
+      return "";
     }
 
     bufferFormat_ = bufferFormat;
@@ -49,23 +51,47 @@ void IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat)
     if (error != nil || audioFile_ == nil) {
       NSLog(@"Error creating audio file for writing: %@", [error debugDescription]);
       audioFile_ = nil;
+
+      return "";
     }
+
+    return [[fileURL_ path] UTF8String];
   }
 }
 
-std::string IOSAudioFileWriter::closeFile()
+std::tuple<double, double> IOSAudioFileWriter::closeFile()
 {
   @autoreleasepool {
+    NSError *error;
     std::string filePath = [[fileURL_ path] UTF8String];
 
     if (audioFile_ == nil) {
-      return "";
+      return {0, 0};
     }
 
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
+
+    double fileDuration = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL_ options:nil] duration]);
+    double fileSizeBytesMb =
+        static_cast<double>([[[NSFileManager defaultManager] attributesOfItemAtPath:fileURL_.path
+                                                                              error:&error] fileSize]) /
+        BYTES_TO_MB;
+
+    NSLog(
+        @"ℹ️ Closed audio file at path: %s, duration: %.2f sec, size: %.2f MB",
+        filePath.c_str(),
+        fileDuration,
+        fileSizeBytesMb);
+
+    if (error != nil) {
+      NSLog(@"⚠️ closeFile: error while retrieving file size");
+      fileSizeBytesMb = 0;
+    }
+
     fileURL_ = nil;
-    return filePath;
+
+    return {fileSizeBytesMb, fileDuration};
   }
 }
 

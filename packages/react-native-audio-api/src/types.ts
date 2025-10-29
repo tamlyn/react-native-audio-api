@@ -132,3 +132,9 @@ export interface AudioRecorderCallbackOptions {
    */
   channelCount: number;
 }
+
+export interface FileInfo {
+  path: string;
+  size: number;
+  duration: number;
+}

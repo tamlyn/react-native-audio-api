@@ -41,7 +41,7 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
   }
 }
 
-void MiniAudioFileWriter::openFile(
+std::string MiniAudioFileWriter::openFile(
     int32_t streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
@@ -58,21 +58,23 @@ void MiniAudioFileWriter::openFile(
   success = initializeConverterIfNeeded();
 
   if (!success) {
-    return;
+    return "";
   }
 
   success = initializeEncoder();
 
   if (!success) {
-    return;
+    return "";
   }
 
   isFileOpen_.store(true);
+
+  return filePath_;
 }
 
-std::string MiniAudioFileWriter::closeFile() {
+void MiniAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return "";
+    return;
   }
 
   isFileOpen_.store(false);
@@ -93,10 +95,7 @@ std::string MiniAudioFileWriter::closeFile() {
     processingBufferLength_ = 0;
   }
 
-  std::string closedFilePath = filePath_;
   filePath_ = "";
-
-  return closedFilePath;
 }
 
 bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {

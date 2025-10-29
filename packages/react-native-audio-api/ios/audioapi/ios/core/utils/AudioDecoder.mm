@@ -59,6 +59,7 @@ std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(
       channelData[i] = buffer[i * outputChannels + ch];
     }
   }
+
   return std::make_shared<AudioBuffer>(audioBus);
 }
 
