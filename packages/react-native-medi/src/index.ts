@@ -36,12 +36,12 @@ export class MIDIPort {
     this.connection = info.connection;
   }
 
-  open(): boolean {
-    return NativeMedi.openPort(this.id);
+  open(): Promise<boolean> {
+    return Promise.resolve(NativeMedi.openPort(this.id));
   }
 
-  close(): boolean {
-    return NativeMedi.closePort(this.id);
+  close(): Promise<boolean> {
+    return Promise.resolve(NativeMedi.closePort(this.id));
   }
 }
 
@@ -77,12 +77,18 @@ export class MIDIAccess {
     return NativeMedi.getDestinations().map((info) => new MIDIOutput(info));
   }
 
-  constructor(sysex: boolean) {
-    NativeMedi.prepareMIDIClient(sysex);
+  private constructor(sysex: boolean) {
     this.sysexEnabled = sysex;
+  }
+
+  static async create(sysex: boolean): Promise<MIDIAccess> {
+    await NativeMedi.prepareMIDIClient(sysex);
+    return new MIDIAccess(sysex);
   }
 }
 
-export function requestMIDIAccess(sysex: boolean = false): Promise<MIDIAccess> {
-  return Promise.resolve(new MIDIAccess(sysex));
+export async function requestMIDIAccess(
+  sysex: boolean = false
+): Promise<MIDIAccess> {
+  return await MIDIAccess.create(sysex);
 }

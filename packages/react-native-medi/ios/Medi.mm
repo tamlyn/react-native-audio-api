@@ -54,9 +54,12 @@ static void midiNotifyProc(const MIDINotification *message) {
   }
 }
 
-RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex)
+RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex
+                  resolve:(RCTPromiseResolveBlock)resolve
+                  reject:(RCTPromiseRejectBlock)reject)
 {
   if (self.midiClient != 0) {
+    resolve(nil);
     return;
   }
 
@@ -76,13 +79,27 @@ RCT_EXPORT_METHOD(prepareMIDIClient:(BOOL)sysex)
     OSStatus status = MIDIClientCreateWithBlock(CFSTR("MediClient"), &_midiClient, ^(const MIDINotification *message) {
       midiNotifyProc(message);
     });
+
+    if (status != noErr) {
+      reject(@"MIDI_ERROR", [NSString stringWithFormat:@"Failed to create MIDI client: %d", status], nil);
+      return;
+    }
+
     self.sysexEnabled = sysex;
     NSLog(@"MIDIClientCreateWithBlock status: %d, sysex: %d", status, sysex);
     OSStatus statusPort = MIDIInputPortCreateWithProtocol(self.midiClient, CFSTR("MediInputPort"), kMIDIProtocol_1_0, &_inputPort, ^(const MIDIEventList *eventList, void *srcConnRefCon) {
       [self midiEvent:eventList srcConnRefCon:srcConnRefCon];
     });
+
+    if (statusPort != noErr) {
+      reject(@"MIDI_ERROR", [NSString stringWithFormat:@"Failed to create MIDI input port: %d", statusPort], nil);
+      return;
+    }
+
     NSLog(@"MIDIInputPortCreateWithProtocol status: %d", statusPort);
 
+    // Resolve the promise after MIDI client is fully initialized
+    resolve(nil);
   });
 }
 

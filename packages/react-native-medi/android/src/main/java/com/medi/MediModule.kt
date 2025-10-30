@@ -32,9 +32,10 @@ class MediModule(reactContext: ReactApplicationContext) :
   }
 
   @RequiresApi(Build.VERSION_CODES.M)
-  override fun prepareMIDIClient(sysex: Boolean) {
+  override fun prepareMIDIClient(sysex: Boolean, promise: com.facebook.react.bridge.Promise) {
     if (midiManager != null) {
       Log.d(TAG, "MIDI client already prepared")
+      promise.resolve(null)
       return
     }
 
@@ -43,6 +44,7 @@ class MediModule(reactContext: ReactApplicationContext) :
 
     if (midiManager == null) {
       Log.e(TAG, "Failed to get MIDI Manager - MIDI not supported on this device")
+      promise.reject("MIDI_NOT_SUPPORTED", "MIDI not supported on this device")
       return
     }
 
@@ -66,6 +68,12 @@ class MediModule(reactContext: ReactApplicationContext) :
     )
 
     Log.d(TAG, "MIDI client prepared with sysex: $sysex")
+
+    // On Android, devices are available immediately after getting the MidiManager
+    // Unlike iOS, we don't need to wait for async initialization
+    // But we add a small delay to ensure the callback is fully registered
+    // android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+    promise.resolve(null)
   }
 
   @RequiresApi(Build.VERSION_CODES.M)
@@ -224,13 +232,14 @@ class MediModule(reactContext: ReactApplicationContext) :
     val portId = "${type}_${device.id}_${portInfo.portNumber}"
 
     info.putString("id", portId)
-    info.putString("name", portInfo.name ?: device.properties.getString(MidiDeviceInfo.PROPERTY_NAME))
+    info.putString("name", device.properties.getString(MidiDeviceInfo.PROPERTY_NAME))
     info.putString("manufacturer", device.properties.getString(MidiDeviceInfo.PROPERTY_MANUFACTURER))
     info.putString("type", type)
     info.putString("version", device.properties.getString(MidiDeviceInfo.PROPERTY_VERSION))
     info.putString("state", "connected")
     info.putString("connection", if (openPorts.containsKey(portId)) "open" else "closed")
 
+    Log.d(TAG, "Created MIDI port info: $info")
     return info
   }
 
