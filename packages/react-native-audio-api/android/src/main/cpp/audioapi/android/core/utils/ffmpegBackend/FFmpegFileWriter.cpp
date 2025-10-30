@@ -288,12 +288,6 @@ std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
 }
 
 bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
-  __android_log_print(
-      ANDROID_LOG_DEBUG,
-      "FFmpegFileWriter",
-      "Writing %d frames to file",
-      numFrames);
-
   if (!isFileOpen()) {
     return false;
   }

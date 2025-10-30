@@ -1,6 +1,7 @@
 #include <android/log.h>
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
+#include <audioapi/android/core/utils/AndroidRecorderCallback.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
@@ -63,6 +64,8 @@ std::string AndroidAudioRecorder::start() {
 
   if (usesCallback()) {
     // TODO: create circular buffer and converter?
+    callback_->prepare(
+        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   if (isConnected()) {
@@ -97,12 +100,14 @@ std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
   mStream_->requestStop();
   state_.store(RecorderState::Idle);
 
-  // TODO: sendRemainingData() ?
-
   if (usesFileOutput()) {
     auto [size, duration] = fileWriter_->closeFile();
     outputFileSize = size;
     outputDuration = duration;
+  }
+
+  if (usesCallback()) {
+    callback_->cleanup();
   }
 
   filePath_ = "";
@@ -155,9 +160,20 @@ void AndroidAudioRecorder::setOnAudioReadyCallback(
     float sampleRate,
     size_t bufferLength,
     size_t channelCount,
-    uint64_t callbackId) {}
+    uint64_t callbackId) {
+  callback_ = std::make_shared<AndroidRecorderCallback>(
+      audioEventHandlerRegistry_,
+      sampleRate,
+      bufferLength,
+      channelCount,
+      callbackId);
+  callbackOutputEnabled_.store(true);
+}
 
-void AndroidAudioRecorder::clearOnAudioReadyCallback() {}
+void AndroidAudioRecorder::clearOnAudioReadyCallback() {
+  callbackOutputEnabled_.store(false);
+  callback_ = nullptr;
+}
 
 DataCallbackResult AndroidAudioRecorder::onAudioReady(
     oboe::AudioStream *oboeStream,
@@ -169,6 +185,10 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (usesFileOutput()) {
     fileWriter_->writeAudioData(audioData, numFrames);
+  }
+
+  if (usesCallback()) {
+    callback_->receiveAudioData(audioData, numFrames);
   }
 
   return DataCallbackResult::Continue;
@@ -183,17 +203,3 @@ double AndroidAudioRecorder::getCurrentDuration() const {
 }
 
 } // namespace audioapi
-
-// if (isRunning())) {
-//   auto *inputChannel = static_cast<float *>(audioData);
-//   writeToBuffers(inputChannel, numFrames);
-// }
-
-// while (circularBuffer_->getNumberOfAvailableFrames() >= bufferLength_) {
-//   auto bus = std::make_shared<AudioBus>(bufferLength_, 1, sampleRate_);
-//   auto *outputChannel = bus->getChannel(0)->getData();
-
-//   circularBuffer_->pop_front(outputChannel, bufferLength_);
-
-//   invokeOnAudioReadyCallback(bus, bufferLength_);
-// }

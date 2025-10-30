@@ -15,13 +15,6 @@
 
 namespace audioapi {
 
-// AudioReceiverBlock audioReceiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
-//   if (isRunning()) {
-//     auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[0].mData);
-//     writeToBuffers(inputChannel, numFrames);
-//   }
-// };
-
 IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr)
 {

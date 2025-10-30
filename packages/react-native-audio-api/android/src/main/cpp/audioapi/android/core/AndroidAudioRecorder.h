@@ -16,6 +16,7 @@ using namespace oboe;
 
 class AudioBus;
 class CircularAudioArray;
+class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
@@ -44,7 +45,6 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
 
   double getCurrentDuration() const override;
 
-
   DataCallbackResult onAudioReady(
           AudioStream *oboeStream,
           void *audioData,
@@ -52,8 +52,10 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
 
  private:
   std::string filePath_;
-  std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
   std::shared_ptr<AudioStream> mStream_;
+
+  std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
+  std::shared_ptr<AndroidRecorderCallback> callback_;
 
   int32_t streamSampleRate_;
   int32_t streamChannelCount_;
