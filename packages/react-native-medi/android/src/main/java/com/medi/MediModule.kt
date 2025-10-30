@@ -170,17 +170,48 @@ class MediModule(reactContext: ReactApplicationContext) :
         // Set up MIDI receiver to emit messages to JS
         outputPort.connect(object : MidiReceiver() {
           override fun onSend(msg: ByteArray, offset: Int, count: Int, timestamp: Long) {
-            val data = Arguments.createArray()
-            for (i in 0 until count) {
-              data.pushInt(msg[offset + i].toInt() and 0xFF)
-            }
+            var i = 0
+            while (i < count) {
+              val statusByte = msg[offset + i].toInt() and 0xFF
 
-            val event = Arguments.createMap().apply {
-              putString("portId", portId)
-              putArray("data", data)
-              putDouble("timestamp", System.currentTimeMillis().toDouble())
+              // Determine message length based on status byte
+              val messageLength = when {
+                statusByte >= 0xF0 -> {
+                  // System messages
+                  when (statusByte) {
+                    0xF0 -> { // SysEx start
+                      // Find SysEx end (0xF7)
+                      var sysexEnd = i + 1
+                      while (sysexEnd < count && (msg[offset + sysexEnd].toInt() and 0xFF) != 0xF7) {
+                        sysexEnd++
+                      }
+                      if (sysexEnd < count) sysexEnd + 1 - i else count - i
+                    }
+                    0xF1, 0xF3 -> 2 // MTC Quarter Frame, Song Select
+                    0xF2 -> 3 // Song Position Pointer
+                    else -> 1 // 0xF6 Tune Request, 0xF7 SysEx end, 0xF8-0xFF Real-time
+                  }
+                }
+                statusByte >= 0xC0 && statusByte < 0xE0 -> 2 // Program Change, Channel Pressure
+                statusByte >= 0x80 -> 3 // Note Off, Note On, Poly Pressure, Control Change, Pitch Bend
+                else -> 1 // Running status or invalid
+              }
+
+              // Extract the message
+              val data = Arguments.createArray()
+              for (j in 0 until minOf(messageLength, count - i)) {
+                data.pushInt(msg[offset + i + j].toInt() and 0xFF)
+              }
+
+              val event = Arguments.createMap().apply {
+                putString("portId", portId)
+                putArray("data", data)
+                putDouble("timestamp", System.currentTimeMillis().toDouble())
+              }
+              emitOnMidiMessage(event)
+
+              i += messageLength
             }
-            emitOnMidiMessage(event)
           }
         })
 

@@ -39,17 +39,78 @@ static void midiNotifyProc(const MIDINotification *message) {
 
   const MIDIEventPacket *packet = &eventList->packet[0];
   for (UInt32 i = 0; i < eventList->numPackets; i++) {
+    // MIDI 1.0 Protocol packets contain raw MIDI bytes in words
+    UInt32 wordCount = packet->wordCount;
     UInt32 *words = (UInt32 *)&packet->words[0];
-    UInt8 status = words[0] >> 16;
-    UInt8 data1 = words[0] >> 8;
-    UInt8 data2 = words[0];
 
-    // Emit event to JS (generated emitter from the spec)
-    [self emitOnMidiMessage:@{
-      @"portId": portId,
-      @"data": @[@(status), @(data1), @(data2)],
-      @"timestamp": @(timestamp)
-    }];
+    // Extract bytes from words (little-endian)
+    NSMutableArray *bytes = [NSMutableArray array];
+    for (UInt32 w = 0; w < wordCount; w++) {
+      UInt32 word = words[w];
+      // Each word contains up to 4 bytes
+      for (int b = 0; b < 4; b++) {
+        UInt8 byte = (word >> (b * 8)) & 0xFF;
+        if (bytes.count < packet->wordCount * 4) {
+          [bytes addObject:@(byte)];
+        }
+      }
+    }
+
+    // Parse and emit individual MIDI messages
+    NSUInteger idx = 0;
+    while (idx < bytes.count) {
+      UInt8 statusByte = [bytes[idx] unsignedCharValue];
+      NSUInteger messageLength = 1;
+
+      // Determine message length based on status byte
+      if (statusByte >= 0xF0) {
+        // System messages
+        switch (statusByte) {
+          case 0xF0: { // SysEx start
+            messageLength = 1;
+            while (idx + messageLength < bytes.count && [bytes[idx + messageLength] unsignedCharValue] != 0xF7) {
+              messageLength++;
+            }
+            if (idx + messageLength < bytes.count) {
+              messageLength++; // Include 0xF7
+            }
+            break;
+          }
+          case 0xF1: // MTC Quarter Frame
+          case 0xF3: // Song Select
+            messageLength = 2;
+            break;
+          case 0xF2: // Song Position Pointer
+            messageLength = 3;
+            break;
+          default: // Real-time messages, etc.
+            messageLength = 1;
+            break;
+        }
+      } else if (statusByte >= 0xC0 && statusByte < 0xE0) {
+        // Program Change, Channel Pressure
+        messageLength = 2;
+      } else if (statusByte >= 0x80) {
+        // Note Off, Note On, Poly Pressure, Control Change, Pitch Bend
+        messageLength = 3;
+      }
+
+      // Extract message bytes
+      NSMutableArray *messageData = [NSMutableArray array];
+      for (NSUInteger j = 0; j < messageLength && (idx + j) < bytes.count; j++) {
+        [messageData addObject:bytes[idx + j]];
+      }
+
+      // Emit event to JS
+      [self emitOnMidiMessage:@{
+        @"portId": portId,
+        @"data": messageData,
+        @"timestamp": @(timestamp)
+      }];
+
+      idx += messageLength;
+    }
+
     packet = MIDIEventPacketNext(packet);
   }
 }
