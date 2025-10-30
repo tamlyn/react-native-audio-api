@@ -257,8 +257,7 @@ void AudioParam::cancelAndHoldAtTime(double cancelTime) {
 void AudioParam::addInputNode(
     AudioNode *node,
     unsigned int outputIndexFromSource) {
-  inputConnections_.emplace_back(
-      ParamInputConnection{node, outputIndexFromSource});
+  inputConnections_.emplace_back(InputConnection{node, outputIndexFromSource});
 }
 
 void AudioParam::removeInputNode(

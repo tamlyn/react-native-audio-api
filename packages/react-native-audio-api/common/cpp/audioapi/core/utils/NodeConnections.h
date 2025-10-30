@@ -1,6 +1,8 @@
 
 #pragma once
 
+#include <audioapi/core/utils/ConnectionTypes.h>
+
 #include <map>
 #include <memory>
 #include <vector>
@@ -11,16 +13,6 @@ class AudioNode;
 class AudioBus;
 class AudioParam;
 class BaseAudioContext;
-
-struct InputConnection {
-  AudioNode *sourceNode;
-  unsigned int outputIndexFromSource;
-};
-
-struct OutputConnection {
-  std::shared_ptr<AudioNode> destinationNode;
-  unsigned int inputIndexAtDestination;
-};
 
 class NodeConnections {
  public:

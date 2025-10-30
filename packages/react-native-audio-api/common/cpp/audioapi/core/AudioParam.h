@@ -1,24 +1,20 @@
 #pragma once
 
+#include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/ParamChangeEventType.h>
+#include <audioapi/core/utils/AudioParamEventQueue.h>
+#include <audioapi/core/utils/ConnectionTypes.h>
 #include <audioapi/core/utils/ParamChangeEvent.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/core/AudioNode.h>
-#include <audioapi/core/utils/AudioParamEventQueue.h>
 
 #include <cstddef>
-#include <utility>
 #include <memory>
-#include <vector>
 #include <unordered_set>
+#include <utility>
+#include <vector>
 #include <audioapi/utils/CrossThreadEventScheduler.hpp>
 
 namespace audioapi {
-
-struct ParamInputConnection {
-  AudioNode *sourceNode;
-  unsigned int outputIndexFromSource;
-};
 
 class AudioParam {
  public:
@@ -65,11 +61,8 @@ class AudioParam {
   void setTargetAtTime(float target, double startTime, double timeConstant);
 
   // JS-Thread only
-  void setValueCurveAtTime(
-      std::shared_ptr<std::vector<float>> values,
-      size_t length,
-      double startTime,
-      double duration);
+  void
+  setValueCurveAtTime(std::shared_ptr<std::vector<float>> values, size_t length, double startTime, double duration);
 
   // JS-Thread only
   void cancelScheduledValues(double cancelTime);
@@ -77,15 +70,14 @@ class AudioParam {
   // JS-Thread only
   void cancelAndHoldAtTime(double cancelTime);
 
-
   /// Audio-Thread only methods
   /// These methods are called only from the Audio rendering thread.
 
   // Audio-Thread only (indirectly through AudioNode::connectParam by AudioNodeManager)
-  void addInputNode(AudioNode* node, unsigned int outputIndexFromSource);
+  void addInputNode(AudioNode *node, unsigned int outputIndexFromSource);
 
   // Audio-Thread only (indirectly through AudioNode::disconnectParam by AudioNodeManager)
-  void removeInputNode(AudioNode* node, unsigned int outputIndexFromSource);
+  void removeInputNode(AudioNode *node, unsigned int outputIndexFromSource);
 
   // Audio-Thread only
   std::shared_ptr<AudioBus> processARateParam(int framesToProcess, double time);
@@ -112,7 +104,7 @@ class AudioParam {
   std::function<float(double, double, float, float, double)> calculateValue_;
 
   // Input modulation system
-  std::vector<ParamInputConnection> inputConnections_;
+  std::vector<InputConnection> inputConnections_;
   std::shared_ptr<AudioBus> audioBus_;
   std::vector<std::shared_ptr<AudioBus>> inputBuses_;
 
@@ -146,9 +138,9 @@ class AudioParam {
     eventsQueue_.pushBack(std::move(event));
   }
   float getValueAtTime(double time);
-  void processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
-  void mixInputsBuses(const std::shared_ptr<AudioBus>& processingBus);
-  std::shared_ptr<AudioBus> calculateInputs(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess);
+  void processInputs(const std::shared_ptr<AudioBus> &outputBus, int framesToProcess, bool checkIsAlreadyProcessed);
+  void mixInputsBuses(const std::shared_ptr<AudioBus> &processingBus);
+  std::shared_ptr<AudioBus> calculateInputs(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess);
 };
 
 } // namespace audioapi
