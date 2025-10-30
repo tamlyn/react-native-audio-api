@@ -206,9 +206,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelSplitter) {
-  unsigned numberOfOutputs = 6;
+  unsigned int numberOfOutputs = 6;
   if (count > 0 && args[0].isNumber()) {
-    numberOfOutputs = static_cast<unsigned>(args[0].asNumber());
+    numberOfOutputs = static_cast<unsigned int>(args[0].asNumber());
   }
 
   auto channelSplitter = context_->createChannelSplitter(numberOfOutputs);
@@ -220,9 +220,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelSplitter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createChannelMerger) {
-  unsigned numberOfInputs = 6;
+  unsigned int numberOfInputs = 6;
   if (count > 0 && args[0].isNumber()) {
-    numberOfInputs = static_cast<unsigned>(args[0].asNumber());
+    numberOfInputs = static_cast<unsigned int>(args[0].asNumber());
   }
 
   auto channelMerger = context_->createChannelMerger(numberOfInputs);
