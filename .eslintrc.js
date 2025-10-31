@@ -68,7 +68,7 @@ module.exports = {
     requireConfigFile: false,
   },
   extends: [
-    'standard',
+    '@react-native',
     'prettier',
     'plugin:import/typescript',
     'plugin:react-hooks/recommended',

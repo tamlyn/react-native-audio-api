@@ -1,4 +1,4 @@
-const { getDefaultConfig, mergeConfig } = require('@react-native/metro-config');
+const { getDefaultConfig } = require('expo/metro-config');
 const {
   wrapWithAudioAPIMetroConfig,
 } = require('react-native-audio-api/metro-config');
@@ -9,7 +9,6 @@ const monorepoRoot = path.resolve(projectRoot, '../..');
 
 const config = getDefaultConfig(projectRoot);
 
-// Configure for monorepo
 config.watchFolders = [monorepoRoot];
 
 // Important: Tell Metro where to find node_modules - prioritize local first
