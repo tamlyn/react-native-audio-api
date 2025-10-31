@@ -4,7 +4,7 @@ project(rnaudioapi_test)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(ROOT ${CMAKE_SOURCE_DIR}/../../../../..)
-set(REACT_NATIVE_DIR "${ROOT}/node_modules/react-native")
+set(REACT_NATIVE_DIR "${ROOT}/packages/react-native-audio-api/node_modules/react-native")
 set(JSI_DIR "${REACT_NATIVE_DIR}/ReactCommon/jsi")
 
 include(FetchContent)
@@ -19,7 +19,8 @@ FetchContent_MakeAvailable(googletest)
 
 enable_testing()
 
-set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/node_modules/react-native-audio-api")
+# Use the actual package directory, not node_modules
+set(REACT_NATIVE_AUDIO_API_DIR "${ROOT}/packages/react-native-audio-api")
 
 file(GLOB_RECURSE RNAUDIOAPI_SRC
   CONFIGURE_DEPENDS
