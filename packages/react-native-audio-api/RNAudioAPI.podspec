@@ -9,7 +9,22 @@ folly_flags = "-DFOLLY_MOBILE=1 -DFOLLY_USE_LIBCPP=1 -Wno-comma -Wno-shorten-64-
 fabric_flags = $new_arch_enabled ? '-DRCT_NEW_ARCH_ENABLED' : ''
 version_flag = "-DAUDIOAPI_VERSION=#{package_json['version']}"
 
-worklets_preprocessor_flag = check_if_worklets_enabled() ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
+# Determine the app's node_modules path
+# Try to get it from Pod::Config if available, otherwise use the podspec directory
+# Note: This should be done here because check_if_worklets_enabled cant access Pod::Config and __dir__ is also not reliable
+begin
+  # Pod::Config.instance.project_pods_root gives us the ios/Pods directory
+  # Go up one level to ios/, then up again to the app root
+  ios_dir = File.join(Pod::Config.instance.project_pods_root, '..')
+  app_root = File.expand_path('..', ios_dir)
+  app_node_modules = File.join(app_root, 'node_modules')
+rescue
+  # Fallback if Pod::Config is not available yet (shouldn't happen but just in case)
+  parent_dir = File.dirname(File.expand_path(__dir__))
+  app_node_modules = File.basename(parent_dir) == 'node_modules' ? parent_dir : File.join(parent_dir, 'node_modules')
+end
+
+worklets_preprocessor_flag = check_if_worklets_enabled(app_node_modules) ? '-DRN_AUDIO_API_ENABLE_WORKLETS=1' : ''
 
 Pod::Spec.new do |s|
   s.name         = "RNAudioAPI"

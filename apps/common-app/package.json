@@ -3,7 +3,20 @@
   "version": "0.0.1",
   "private": true,
   "peerDependencies": {
+    "@react-navigation/native": "*",
+    "@react-navigation/native-stack": "*",
+    "@react-navigation/stack": "*",
+    "@shopify/react-native-skia": "*",
+    "buffer": "*",
     "react": "*",
-    "react-native": "*"
+    "react-native": "*",
+    "react-native-audio-api": "*",
+    "react-native-background-timer": "*",
+    "react-native-gesture-handler": "*",
+    "react-native-reanimated": "*",
+    "react-native-safe-area-context": "*",
+    "react-native-screens": "*",
+    "react-native-svg": "*",
+    "react-native-worklets": "*"
   }
 }
