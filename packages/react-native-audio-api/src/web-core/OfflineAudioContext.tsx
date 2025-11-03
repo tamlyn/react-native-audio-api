@@ -4,7 +4,11 @@ import {
   OfflineAudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
 } from '../types';
-import { InvalidAccessError, NotSupportedError, IndexSizeError } from '../errors';
+import {
+  InvalidAccessError,
+  NotSupportedError,
+  IndexSizeError,
+} from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';

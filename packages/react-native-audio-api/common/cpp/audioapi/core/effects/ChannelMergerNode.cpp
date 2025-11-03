@@ -26,7 +26,8 @@ void ChannelMergerNode::processNode(
     int framesToProcess) {
   auto outputBus = getOutputBus(0);
 
-  size_t count_ = std::min(static_cast<size_t>(numberOfInputs_), inputBuses.size()); // cache size
+  size_t count_ = std::min(
+      static_cast<size_t>(numberOfInputs_), inputBuses.size()); // cache size
   for (size_t i = 0; i < count_; ++i) {
     bool isInputConnected = inputBuses[i] != nullptr;
     if (isInputConnected) {
