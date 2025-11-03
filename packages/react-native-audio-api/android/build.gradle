@@ -65,6 +65,22 @@ def resolveReactNativeDirectory() {
   )
 }
 
+def resolveAppNodeModulesDirectory() {
+  // Find the app's node_modules directory from the app project
+  // This is analogous to the iOS approach using Pod::Config.instance.project_pods_root
+  def appProject = rootProject.allprojects.find { it.plugins.hasPlugin('com.android.application') }
+  
+  if (appProject != null) {
+    // App project directory is android/app, go up twice to get to app root: android/app -> android -> app_root
+    def appNodeModules = file("${appProject.projectDir}/../../node_modules")
+    if (appNodeModules.exists()) {
+      return appNodeModules
+    }
+  }
+  
+  return null
+}
+
 def resolveReactNativeWorkletsDirectory() {
   def rnWorklets = rootProject.subprojects.find { it.name == 'react-native-worklets' }
   if (rnWorklets != null) {
@@ -74,7 +90,7 @@ def resolveReactNativeWorkletsDirectory() {
   return null;
 }
 
-def validateWorkletsVersion() {
+def validateWorkletsVersion(appNodeModulesPath) {
   def validationScript = file("${projectDir}/../scripts/validate-worklets-version.js")
   if (!validationScript.exists()) {
     logger.error("[AudioAPI] Worklets validation script not found at ${validationScript.absolutePath}")
@@ -82,7 +98,8 @@ def validateWorkletsVersion() {
   }
 
   try {
-    def process = ["node", validationScript.absolutePath].execute()
+    def env = ["NODE_PATH=${appNodeModulesPath}"]
+    def process = ["node", validationScript.absolutePath].execute(env, null)
     process.waitForProcessOutput(System.out, System.err)
     def exitCode = process.exitValue()
 
@@ -115,8 +132,9 @@ static def supportsNamespace() {
 }
 
 def reactNativeRootDir = resolveReactNativeDirectory()
+def appNodeModulesDir = resolveAppNodeModulesDirectory()
 def reactNativeWorkletsRootDir = resolveReactNativeWorkletsDirectory()
-def isWorkletsAvailable = reactNativeWorkletsRootDir != null && validateWorkletsVersion()
+def isWorkletsAvailable = reactNativeWorkletsRootDir != null && appNodeModulesDir != null && validateWorkletsVersion(appNodeModulesDir.absolutePath)
 
 def reactProperties = new Properties()
 file("$reactNativeRootDir/ReactAndroid/gradle.properties").withInputStream { reactProperties.load(it) }
