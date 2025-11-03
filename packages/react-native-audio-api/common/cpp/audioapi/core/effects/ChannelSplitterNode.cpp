@@ -18,7 +18,7 @@ ChannelSplitterNode::ChannelSplitterNode(
 
   outputBuses_.clear();
   for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
-    outputBuses_.push_back(
+    outputBuses_.emplace_back(
         std::make_shared<AudioBus>(
             RENDER_QUANTUM_SIZE, 1, context->getSampleRate()));
   }
@@ -29,7 +29,7 @@ ChannelSplitterNode::ChannelSplitterNode(
 void ChannelSplitterNode::processNode(
     const std::vector<std::shared_ptr<AudioBus>> &inputBuses,
     int framesToProcess) {
-  if (inputBuses.empty() || !inputBuses[0]) {
+  if (inputBuses.empty() || inputBuses[0] == nullptr) {
     for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
       getOutputBus(i)->zero();
     }

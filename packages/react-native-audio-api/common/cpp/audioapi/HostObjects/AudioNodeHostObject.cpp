@@ -45,8 +45,8 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
 
   if (obj.isHostObject<AudioNodeHostObject>(runtime)) {
     auto node = obj.getHostObject<AudioNodeHostObject>(runtime);
-    unsigned int outputIndex = args[1].asNumber();
-    unsigned int inputIndex = args[2].asNumber();
+    size_t outputIndex = args[1].asNumber();
+    size_t inputIndex = args[2].asNumber();
     node_->connect(
         std::shared_ptr<AudioNodeHostObject>(node)->node_,
         outputIndex,
@@ -54,7 +54,7 @@ JSI_HOST_FUNCTION_IMPL(AudioNodeHostObject, connect) {
   }
   if (obj.isHostObject<AudioParamHostObject>(runtime)) {
     auto param = obj.getHostObject<AudioParamHostObject>(runtime);
-    unsigned int outputIndex = args[1].asNumber();
+    size_t outputIndex = args[1].asNumber();
     node_->connect(
         std::shared_ptr<AudioParamHostObject>(param)->param_, outputIndex);
   }

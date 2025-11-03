@@ -1,4 +1,8 @@
-import { InvalidAccessError, NotSupportedError } from '../errors';
+import {
+  InvalidAccessError,
+  NotSupportedError,
+  IndexSizeError,
+} from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,
@@ -205,6 +209,11 @@ export default class BaseAudioContext {
   }
 
   createChannelSplitter(numberOfOutputs: number = 6): ChannelSplitterNode {
+    if (numberOfOutputs < 1 || numberOfOutputs > 32) {
+      throw new IndexSizeError(
+        `The number of outputs provided (${numberOfOutputs}) is outside the range [1, 32]`
+      );
+    }
     return new ChannelSplitterNode(
       this,
       this.context.createChannelSplitter(numberOfOutputs)
@@ -212,6 +221,11 @@ export default class BaseAudioContext {
   }
 
   createChannelMerger(numberOfInputs: number = 6): ChannelSplitterNode {
+    if (numberOfInputs < 1 || numberOfInputs > 32) {
+      throw new IndexSizeError(
+        `The number of inputs provided (${numberOfInputs}) is outside the range [1, 32]`
+      );
+    }
     return new ChannelMergerNode(
       this,
       this.context.createChannelMerger(numberOfInputs)

@@ -90,20 +90,22 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   // called by an upstream node when it becomes disabled. Decrements the active input counter.
   void onInputDisabled();
 
+  std::vector<std::shared_ptr<AudioBus>> outputBuses_;
+
   BaseAudioContext *context_;
+  std::unique_ptr<NodeConnections> connections_;
+  std::size_t lastRenderedFrame_{SIZE_MAX};
+
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
   int channelCount_ = 2;
+  int numberOfEnabledInputNodes_ = 0;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ = ChannelInterpretation::SPEAKERS;
 
-  std::vector<std::shared_ptr<AudioBus>> outputBuses_;
-  std::unique_ptr<NodeConnections> connections_;
 
-  int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;
   bool isEnabled_ = true;
-  std::size_t lastRenderedFrame_{SIZE_MAX};
 
  private:
   bool isAlreadyProcessed();

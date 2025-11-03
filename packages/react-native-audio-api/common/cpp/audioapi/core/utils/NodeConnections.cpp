@@ -19,14 +19,10 @@ NodeConnections::NodeConnections(AudioNode *owner, BaseAudioContext *context)
 
 void NodeConnections::disconnect() {
   // Disconnect from all nodes
-  for (std::map<unsigned int, std::vector<OutputConnection>>::iterator it =
-           indexedOutputs_.begin();
-       it != indexedOutputs_.end();
-       ++it) {
+  for (auto it = indexedOutputs_.begin(); it != indexedOutputs_.end(); ++it) {
     unsigned int outputIndex = it->first;
     std::vector<OutputConnection> &connections = it->second;
-    for (std::vector<OutputConnection>::iterator conn_it = connections.begin();
-         conn_it != connections.end();
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       context_->getNodeManager()->addPendingNodeConnection(
           owner_->shared_from_this(),
@@ -37,16 +33,11 @@ void NodeConnections::disconnect() {
     }
   }
   // Disconnect from all params
-  for (std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>>::
-           iterator it = indexedOutputParams_.begin();
-       it != indexedOutputParams_.end();
+  for (auto it = indexedOutputParams_.begin(); it != indexedOutputParams_.end();
        ++it) {
     unsigned int outputIndex = it->first;
     std::vector<std::shared_ptr<AudioParam>> &params = it->second;
-    for (std::vector<std::shared_ptr<AudioParam>>::iterator param_it =
-             params.begin();
-         param_it != params.end();
-         ++param_it) {
+    for (auto param_it = params.begin(); param_it != params.end(); ++param_it) {
       context_->getNodeManager()->addPendingParamConnection(
           owner_->shared_from_this(),
           *param_it,
@@ -58,11 +49,10 @@ void NodeConnections::disconnect() {
 
 void NodeConnections::disconnect(unsigned int outputIndex) {
   // Disconnect all nodes from a specific output
-  if (indexedOutputs_.count(outputIndex)) {
-    std::vector<OutputConnection> &connections =
-        indexedOutputs_.at(outputIndex);
-    for (std::vector<OutputConnection>::iterator conn_it = connections.begin();
-         conn_it != connections.end();
+  auto it = indexedOutputs_.find(outputIndex);
+  if (it != indexedOutputs_.end()) {
+    std::vector<OutputConnection> &connections = it->second;
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       context_->getNodeManager()->addPendingNodeConnection(
           owner_->shared_from_this(),
@@ -74,13 +64,10 @@ void NodeConnections::disconnect(unsigned int outputIndex) {
   }
 
   // Disconnect all params from a specific output
-  if (indexedOutputParams_.count(outputIndex)) {
-    std::vector<std::shared_ptr<AudioParam>> &params =
-        indexedOutputParams_.at(outputIndex);
-    for (std::vector<std::shared_ptr<AudioParam>>::iterator param_it =
-             params.begin();
-         param_it != params.end();
-         ++param_it) {
+  auto output_it = indexedOutputParams_.find(outputIndex);
+  if (output_it != indexedOutputParams_.end()) {
+    std::vector<std::shared_ptr<AudioParam>> &params = output_it->second;
+    for (auto param_it = params.begin(); param_it != params.end(); ++param_it) {
       context_->getNodeManager()->addPendingParamConnection(
           owner_->shared_from_this(),
           *param_it,
@@ -92,14 +79,10 @@ void NodeConnections::disconnect(unsigned int outputIndex) {
 
 bool NodeConnections::disconnect(const std::shared_ptr<AudioNode> &node) {
   bool disconnected = false;
-  for (std::map<unsigned int, std::vector<OutputConnection>>::iterator it =
-           indexedOutputs_.begin();
-       it != indexedOutputs_.end();
-       ++it) {
+  for (auto it = indexedOutputs_.begin(); it != indexedOutputs_.end(); ++it) {
     unsigned int outputIndex = it->first;
     std::vector<OutputConnection> &connections = it->second;
-    for (std::vector<OutputConnection>::iterator conn_it = connections.begin();
-         conn_it != connections.end();
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       if (conn_it->destinationNode == node) {
         context_->getNodeManager()->addPendingNodeConnection(
@@ -119,11 +102,10 @@ bool NodeConnections::disconnect(
     const std::shared_ptr<AudioNode> &node,
     unsigned int outputIndex) {
   bool disconnected = false;
-  if (indexedOutputs_.count(outputIndex)) {
-    std::vector<OutputConnection> &connections =
-        indexedOutputs_.at(outputIndex);
-    for (std::vector<OutputConnection>::iterator conn_it = connections.begin();
-         conn_it != connections.end();
+  auto it = indexedOutputs_.find(outputIndex);
+  if (it != indexedOutputs_.end()) {
+    std::vector<OutputConnection> &connections = it->second;
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       if (conn_it->destinationNode == node) {
         context_->getNodeManager()->addPendingNodeConnection(
@@ -144,8 +126,9 @@ bool NodeConnections::disconnect(
     unsigned int output,
     unsigned int input) {
   bool connectionFound = false;
-  if (indexedOutputs_.count(output)) {
-    auto &connections = indexedOutputs_.at(output);
+  auto it = indexedOutputs_.find(output);
+  if (it != indexedOutputs_.end()) {
+    auto &connections = it->second;
     for (const auto &conn : connections) {
       if (conn.destinationNode == node &&
           conn.inputIndexAtDestination == input) {
@@ -166,16 +149,11 @@ bool NodeConnections::disconnect(
 
 bool NodeConnections::disconnect(const std::shared_ptr<AudioParam> &param) {
   bool disconnected = false;
-  for (std::map<unsigned int, std::vector<std::shared_ptr<AudioParam>>>::
-           iterator it = indexedOutputParams_.begin();
-       it != indexedOutputParams_.end();
+  for (auto it = indexedOutputParams_.begin(); it != indexedOutputParams_.end();
        ++it) {
     unsigned int outputIndex = it->first;
     std::vector<std::shared_ptr<AudioParam>> &params = it->second;
-    for (std::vector<std::shared_ptr<AudioParam>>::iterator param_it =
-             params.begin();
-         param_it != params.end();
-         ++param_it) {
+    for (auto param_it = params.begin(); param_it != params.end(); ++param_it) {
       if (*param_it == param) {
         context_->getNodeManager()->addPendingParamConnection(
             owner_->shared_from_this(),
@@ -193,8 +171,9 @@ bool NodeConnections::disconnect(
     const std::shared_ptr<AudioParam> &param,
     unsigned int output) {
   bool connectionFound = false;
-  if (indexedOutputParams_.count(output)) {
-    auto &params = indexedOutputParams_.at(output);
+  auto it = indexedOutputParams_.find(output);
+  if (it != indexedOutputParams_.end()) {
+    auto &params = it->second;
     for (const auto &p : params) {
       if (p == param) {
         connectionFound = true;
@@ -217,7 +196,7 @@ void NodeConnections::connectNode(
     unsigned int outputIndex,
     unsigned int inputIndex) {
   OutputConnection newConnection{destination, inputIndex};
-  indexedOutputs_[outputIndex].push_back(newConnection);
+  indexedOutputs_[outputIndex].emplace_back(newConnection);
   destination->onInputConnected(owner_, outputIndex, inputIndex);
 }
 
@@ -226,17 +205,18 @@ void NodeConnections::onInputConnected(
     unsigned int outputIndexFromSource,
     unsigned int inputIndex) {
   InputConnection newConnection{sourceNode, outputIndexFromSource};
-  indexedInputs_[inputIndex].push_back(newConnection);
+  indexedInputs_[inputIndex].emplace_back(newConnection);
 }
 
 void NodeConnections::disconnectNode(
     const std::shared_ptr<AudioNode> &destination,
     unsigned int outputIndex,
     unsigned int inputIndex) {
-  if (!indexedOutputs_.count(outputIndex)) {
+  auto output_it = indexedOutputs_.find(outputIndex);
+  if (output_it == indexedOutputs_.end()) {
     return;
   }
-  auto &connections = indexedOutputs_.at(outputIndex);
+  auto &connections = output_it->second;
   auto it = std::remove_if(
       connections.begin(),
       connections.end(),
@@ -254,18 +234,17 @@ void NodeConnections::onInputDisconnected(
     AudioNode *sourceNode,
     unsigned int outputIndexFromSource,
     unsigned int inputIndex) {
-  if (!indexedInputs_.count(inputIndex)) {
+  auto output_it = indexedInputs_.find(inputIndex);
+  if (output_it == indexedInputs_.end()) {
     return;
   }
-  auto &connections = indexedInputs_.at(inputIndex);
+  auto &connections = output_it->second;
   auto it = std::remove_if(
       connections.begin(), connections.end(), [&](const InputConnection &conn) {
         return conn.sourceNode == sourceNode &&
             conn.outputIndexFromSource == outputIndexFromSource;
       });
-  if (it != connections.end()) {
-    connections.erase(it, connections.end());
-  }
+  connections.erase(it, connections.end());
 }
 
 void NodeConnections::connectParam(
@@ -278,9 +257,10 @@ void NodeConnections::connectParam(
 void NodeConnections::disconnectParam(
     const std::shared_ptr<AudioParam> &param,
     unsigned int outputIndex) {
-  if (!indexedOutputParams_.count(outputIndex))
+  auto output_it = indexedOutputParams_.find(outputIndex);
+  if (output_it == indexedOutputParams_.end())
     return;
-  auto &params = indexedOutputParams_.at(outputIndex);
+  auto &params = output_it->second;
   auto it = std::remove(params.begin(), params.end(), param);
   if (it != params.end()) {
     param->removeInputNode(owner_, outputIndex);
@@ -295,8 +275,7 @@ void NodeConnections::cleanup() {
        ++map_it) {
     unsigned int outputIndex = map_it->first;
     std::vector<OutputConnection> &connections = map_it->second;
-    for (std::vector<OutputConnection>::iterator conn_it = connections.begin();
-         conn_it != connections.end();
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       const std::shared_ptr<AudioNode> &destinationNode =
           conn_it->destinationNode;
@@ -314,10 +293,7 @@ void NodeConnections::cleanup() {
        ++map_it) {
     unsigned int outputIndex = map_it->first;
     std::vector<std::shared_ptr<AudioParam>> &params = map_it->second;
-    for (std::vector<std::shared_ptr<AudioParam>>::iterator param_it =
-             params.begin();
-         param_it != params.end();
-         ++param_it) {
+    for (auto param_it = params.begin(); param_it != params.end(); ++param_it) {
       const std::shared_ptr<AudioParam> &destinationParam = *param_it;
       if (destinationParam) {
         destinationParam->removeInputNode(owner_, outputIndex);
@@ -331,14 +307,9 @@ void NodeConnections::cleanup() {
 }
 
 void NodeConnections::propagateEnable() {
-  for (std::map<unsigned int, std::vector<OutputConnection>>::const_iterator
-           it = indexedOutputs_.begin();
-       it != indexedOutputs_.end();
-       ++it) {
+  for (auto it = indexedOutputs_.begin(); it != indexedOutputs_.end(); ++it) {
     const std::vector<OutputConnection> &connections = it->second;
-    for (std::vector<OutputConnection>::const_iterator conn_it =
-             connections.begin();
-         conn_it != connections.end();
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       conn_it->destinationNode->onInputEnabled();
     }
@@ -346,14 +317,9 @@ void NodeConnections::propagateEnable() {
 }
 
 void NodeConnections::propagateDisable() {
-  for (std::map<unsigned int, std::vector<OutputConnection>>::const_iterator
-           it = indexedOutputs_.begin();
-       it != indexedOutputs_.end();
-       ++it) {
+  for (auto it = indexedOutputs_.begin(); it != indexedOutputs_.end(); ++it) {
     const std::vector<OutputConnection> &connections = it->second;
-    for (std::vector<OutputConnection>::const_iterator conn_it =
-             connections.begin();
-         conn_it != connections.end();
+    for (auto conn_it = connections.begin(); conn_it != connections.end();
          ++conn_it) {
       conn_it->destinationNode->onInputDisabled();
     }
@@ -369,8 +335,9 @@ unsigned int NodeConnections::computeNumberOfChannelsForInput(
   }
 
   unsigned int maxInputChannels = 0;
-  if (indexedInputs_.count(index)) {
-    const std::vector<InputConnection> &connections = indexedInputs_.at(index);
+  auto it = indexedInputs_.find(index);
+  if (it != indexedInputs_.end()) {
+    const std::vector<InputConnection> &connections = it->second;
     for (const InputConnection &ic : connections) {
       if (ic.sourceNode) {
         auto sourceBus = ic.sourceNode->getOutputBus(ic.outputIndexFromSource);
@@ -429,7 +396,8 @@ std::shared_ptr<AudioBus> NodeConnections::processInputAtIndex(
 }
 
 bool NodeConnections::hasSilentInput(unsigned int index) const {
-  return !indexedInputs_.count(index) || indexedInputs_.at(index).empty();
+  auto it = indexedInputs_.find(index);
+  return (it == indexedInputs_.end()) || it->second.empty();
 }
 
 std::shared_ptr<AudioBus> NodeConnections::createSilentBus(
@@ -504,9 +472,12 @@ unsigned int NodeConnections::findMaxSourceChannels(
 std::shared_ptr<AudioBus> NodeConnections::getSourceBusSafely(
     AudioNode *sourceNode,
     unsigned int outputIndex) const {
+  if (sourceNode == nullptr) {
+    return nullptr;
+  }
   try {
     return sourceNode->getOutputBus(outputIndex);
-  } catch (...) {
+  } catch (const std::out_of_range &e) {
     return nullptr;
   }
 }
@@ -534,7 +505,7 @@ void NodeConnections::sumAllConnections(
     int framesToProcess,
     bool checkIsAlreadyProcessed) {
   for (const InputConnection &ic : connections) {
-    if (!ic.sourceNode)
+    if (ic.sourceNode == nullptr)
       continue;
 
     ic.sourceNode->processAudio(framesToProcess, checkIsAlreadyProcessed);

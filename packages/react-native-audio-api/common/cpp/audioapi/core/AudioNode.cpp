@@ -314,7 +314,7 @@ void AudioNode::processNode(
 }
 
 std::shared_ptr<AudioBus> AudioNode::getOutputBus(unsigned int index) {
-  return outputBuses_[index];
+  return outputBuses_.at(index);
 }
 
 } // namespace audioapi
