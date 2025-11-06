@@ -17,12 +17,16 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 namespace audioapi {
 
 using namespace facebook;
 
 class AudioAPIModuleInstaller {
+ private:
+  inline static std::vector<std::weak_ptr<AudioContext>> contexts_ = {};
+
  public:
   static void injectJSIBindings(
       jsi::Runtime *jsiRuntime,
@@ -62,6 +66,19 @@ class AudioAPIModuleInstaller {
             *jsiRuntime, audioEventHandlerRegistryHostObject));
   }
 
+  static void closeAllContexts() {
+    for (auto it = contexts_.begin(); it != contexts_.end(); ++it) {
+      auto weakContext = *it;
+
+      if (auto context = weakContext.lock()) {
+        context->close();
+      }
+
+      it = contexts_.erase(it);
+    --it;
+    }
+  }
+
  private:
   static jsi::Function getCreateAudioContextFunction(
       jsi::Runtime *jsiRuntime,
@@ -96,6 +113,8 @@ class AudioAPIModuleInstaller {
               initSuspended,
               audioEventHandlerRegistry,
               runtimeRegistry);
+          AudioAPIModuleInstaller::contexts_.push_back(audioContext);
+
           auto audioContextHostObject =
               std::make_shared<AudioContextHostObject>(
                   audioContext, &runtime, jsCallInvoker);
@@ -139,6 +158,7 @@ class AudioAPIModuleInstaller {
               sampleRate,
               audioEventHandlerRegistry,
               runtimeRegistry);
+
             auto audioContextHostObject =
               std::make_shared<OfflineAudioContextHostObject>(
                     offlineAudioContext, &runtime, jsCallInvoker);

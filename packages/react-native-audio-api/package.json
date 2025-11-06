@@ -35,6 +35,9 @@
     "!**/.*",
     "!**/node_modules",
     "scripts/setup-rn-audio-api-web.js",
+    "scripts/rnaa_utils.rb",
+    "scripts/validate-worklets-version.js",
+    "scripts/download-prebuilt-binaries.sh",
     "app.plugin.js"
   ],
   "scripts": {
@@ -81,7 +84,12 @@
   "peerDependencies": {
     "react": "*",
     "react-native": "*",
-    "react-native-worklets": "~0.6.0"
+    "react-native-worklets": ">= 0.6.0"
+  },
+  "peerDependenciesMeta": {
+    "react-native-worklets": {
+      "optional": true
+    }
   },
   "devDependencies": {
     "@babel/cli": "^7.20.0",
@@ -104,6 +112,7 @@
     "@types/node": "^18.0.0",
     "@types/react": "^19.1.1",
     "@types/react-test-renderer": "^19.1.0",
+    "@types/semver": "7.7.1",
     "babel-plugin-module-resolver": "^4.1.0",
     "commitlint": "17.0.2",
     "del-cli": "^5.1.0",

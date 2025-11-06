@@ -44,6 +44,10 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   }
 }
 
+// jni::ThreadScope::WithClassLoader(
+//     [this]() { nativeAudioRecorder_->start(); });
+// mStream_->requestStart();
+
 std::string AndroidAudioRecorder::start() {
   if (isRecording()) {
     return filePath_;
@@ -73,7 +77,10 @@ std::string AndroidAudioRecorder::start() {
   }
 
   nativeAudioRecorder_->start();
-  mStream_->requestStart();
+
+  jni::ThreadScope::WithClassLoader(
+      [this]() { nativeAudioRecorder_->start(); });
+
   state_.store(RecorderState::Recording);
 
   return filePath_;
@@ -96,7 +103,9 @@ std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
     return {filePath_, 0.0, 0.0};
   }
 
-  nativeAudioRecorder_->stop();
+  jni::ThreadScope::WithClassLoader(
+    [this]() { nativeAudioRecorder_->stop(); });
+
   mStream_->requestStop();
   state_.store(RecorderState::Idle);
 

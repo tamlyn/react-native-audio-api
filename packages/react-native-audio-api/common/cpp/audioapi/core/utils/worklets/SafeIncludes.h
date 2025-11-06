@@ -5,14 +5,8 @@
 #include <string>
 #include <memory>
 
-#ifdef __APPLE__
-  /// We cannot make any conditional logic inside podspec but it should automatically compile those files
-  /// they should be accessible if someone has react-native-worklets in node_modules
-  #if __has_include(<worklets/WorkletRuntime/WorkletRuntime.h>)
-    #define RN_AUDIO_API_ENABLE_WORKLETS 1
-  #else
-    #define RN_AUDIO_API_ENABLE_WORKLETS 0
-  #endif
+#if ANDROID
+  #include <fbjni/detail/Environment.h>
 #endif
 
 #ifndef RN_AUDIO_API_TEST
@@ -78,4 +72,14 @@ class SerializableWorklet {
 struct RuntimeRegistry {
   std::weak_ptr<worklets::WorkletRuntime> uiRuntime;
   std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
+
+#if ANDROID
+    ~RuntimeRegistry() {
+        facebook::jni::ThreadScope::WithClassLoader(
+            [this]() {
+                uiRuntime.reset();
+                audioRuntime.reset();
+            });
+    }
+#endif
 };

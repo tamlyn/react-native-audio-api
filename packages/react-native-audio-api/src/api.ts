@@ -66,6 +66,7 @@ export { default as changePlaybackSpeed } from './core/AudioStretcher';
 export { default as BaseAudioContext } from './core/BaseAudioContext';
 export { default as BiquadFilterNode } from './core/BiquadFilterNode';
 export { default as ConstantSourceNode } from './core/ConstantSourceNode';
+export { default as ConvolverNode } from './core/ConvolverNode';
 export { default as GainNode } from './core/GainNode';
 export { default as OfflineAudioContext } from './core/OfflineAudioContext';
 export { default as OscillatorNode } from './core/OscillatorNode';
@@ -75,6 +76,7 @@ export { default as StreamerNode } from './core/StreamerNode';
 export { default as WorkletNode } from './core/WorkletNode';
 export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as WorkletSourceNode } from './core/WorkletSourceNode';
+
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { default as AudioManager } from './system';
 

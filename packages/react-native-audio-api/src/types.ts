@@ -1,3 +1,5 @@
+import AudioBuffer from './core/AudioBuffer';
+
 export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
 export type ChannelInterpretation = 'speakers' | 'discrete';
@@ -110,6 +112,11 @@ export interface AudioBufferBaseSourceNodeOptions {
 }
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';
+
+export interface ConvolverNodeOptions {
+  buffer?: AudioBuffer | null;
+  disableNormalization?: boolean;
+}
 
 export interface AudioRecorderCallbackOptions {
   /**
