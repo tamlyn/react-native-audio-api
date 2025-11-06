@@ -103,8 +103,7 @@ std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
     return {filePath_, 0.0, 0.0};
   }
 
-  jni::ThreadScope::WithClassLoader(
-    [this]() { nativeAudioRecorder_->stop(); });
+  jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->stop(); });
 
   mStream_->requestStop();
   state_.store(RecorderState::Idle);
