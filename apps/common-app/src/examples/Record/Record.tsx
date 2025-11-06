@@ -6,6 +6,7 @@ import {
   RecorderAdapterNode,
   AudioBufferSourceNode,
   AudioBuffer,
+  UiMode,
 } from 'react-native-audio-api';
 
 import { Container, Button } from '../../components';
@@ -21,6 +22,7 @@ const Record: FC = () => {
   const audioBuffersRef = useRef<AudioBuffer[]>([]);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
   const isRecordingRef = useRef<boolean>(false);
+  const isPausedRef = useRef<boolean>(false);
 
   useEffect(() => {
     const setup = async () => {
@@ -51,28 +53,51 @@ const Record: FC = () => {
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
 
-    // Set UI mode to recording
-    AudioManager.setUiMode('RECORDING');
+    AudioManager.setUiMode(UiMode.RECORDING);
 
-    // Set recording lock screen info
+    const pauseResumeSubscription =
+      AudioManager.addRecordingNotificationButtonListener(
+        'pause_resume',
+        (buttonId: string) => {
+          console.log('Pause/Resume button clicked:', buttonId);
+          // dummy
+        }
+      );
+
+    const stopSubscription =
+      AudioManager.addRecordingNotificationButtonListener(
+        'stop',
+        (buttonId: string) => {
+          console.log('Stop button clicked:', buttonId);
+          stopRecorder();
+        }
+      );
+
     AudioManager.setRecordingLockScreenInfo({
       title: 'Recording Audio',
       description: 'Recording in progress...',
+      notificationColor: '#FF6B35',
     });
+
+    setupRecording.subscriptions = [pauseResumeSubscription, stopSubscription];
   };
 
   const stopRecorder = () => {
     if (recorderRef.current) {
       recorderRef.current.stop();
       console.log('Recording stopped');
+      isRecordingRef.current = false;
+      isPausedRef.current = false;
 
-      // Reset recording lock screen info
+      const subscriptions = setupRecording.subscriptions || [];
+      subscriptions.forEach((subscriptionId: string) => {
+        AudioManager.removeRecordingNotificationButtonListener(subscriptionId);
+      });
+
       AudioManager.resetRecordingLockScreenInfo();
 
-      // Set UI mode back to playback
-      AudioManager.setUiMode('PLAYBACK');
+      AudioManager.setUiMode(UiMode.PLAYBACK);
 
-      // advised, but not required
       AudioManager.setAudioSessionOptions({
         iosCategory: 'playback',
         iosMode: 'default',
@@ -175,19 +200,6 @@ const Record: FC = () => {
       <Text style={{ color: colors.gray, fontSize: 18, textAlign: 'center' }}>
         Sample rate: {SAMPLE_RATE}
       </Text>
-
-      <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
-        <Text style={{ color: colors.white, fontSize: 16 }}>
-          Recording Status:{' '}
-          {isRecordingRef.current ? '🔴 Recording' : '⏹️ Stopped'}
-        </Text>
-        <Text style={{ color: colors.gray, fontSize: 14, textAlign: 'center' }}>
-          {isRecordingRef.current
-            ? 'Recording lock screen info is active'
-            : 'Recording lock screen info is cleared'}
-        </Text>
-      </View>
-
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
         <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>
         <Button title="Start Recording" onPress={startEcho} />

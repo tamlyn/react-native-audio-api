@@ -42,6 +42,13 @@ class MediaReceiver(
         ?.controller
         ?.transportControls
         ?.pause()
+    } else if (action == "com.swmansion.audioapi.RECORDING_BUTTON_CLICK") {
+      if (!checkApp(intent)) return
+
+      val buttonId = intent.getStringExtra("buttonId")
+      if (buttonId != null) {
+        MediaSessionManager.getRecordingLockScreenManager().onButtonClicked(buttonId)
+      }
     }
   }
 

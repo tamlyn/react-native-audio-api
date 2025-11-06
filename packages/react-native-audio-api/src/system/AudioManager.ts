@@ -75,6 +75,22 @@ class AudioManager {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
 
+  addRecordingNotificationButtonListener(
+    buttonId: string,
+    callback: (buttonId: string) => void
+  ): string {
+    return NativeAudioAPIModule!.addRecordingNotificationButtonListener(
+      buttonId,
+      callback
+    );
+  }
+
+  removeRecordingNotificationButtonListener(subscriptionId: string): void {
+    NativeAudioAPIModule!.removeRecordingNotificationButtonListener(
+      subscriptionId
+    );
+  }
+
   /**
    * @param enabled - Whether to actively reclaim the session or not
    * @experimental more aggressively try to reactivate the audio session during interruptions.

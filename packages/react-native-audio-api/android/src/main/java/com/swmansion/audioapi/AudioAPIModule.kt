@@ -165,4 +165,13 @@ class AudioAPIModule(
   override fun getDevicesInfo(promise: Promise) {
     promise.resolve(MediaSessionManager.getDevicesInfo())
   }
+
+  override fun addRecordingNotificationButtonListener(
+    buttonId: String?,
+    callback: com.facebook.react.bridge.Callback?,
+  ): String = MediaSessionManager.addRecordingNotificationButtonListener(buttonId!!, callback!!)
+
+  override fun removeRecordingNotificationButtonListener(subscriptionId: String?) {
+    MediaSessionManager.removeRecordingNotificationButtonListener(subscriptionId!!)
+  }
 }

@@ -61,6 +61,7 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
 export interface RecordingLockScreenInfo {
   title?: string;
   description?: string;
+  notificationColor?: string; // Hex color like "#FF0000" or named color like "red"
 }
 
 export enum ForegroundAction {

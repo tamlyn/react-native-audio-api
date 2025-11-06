@@ -59,6 +59,7 @@ object MediaSessionManager {
   private val serviceStateLock = Any()
   private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
   private val nativeAudioRecorders = mutableMapOf<String, NativeAudioRecorder>()
+  private val buttonListeners = mutableMapOf<String, com.facebook.react.bridge.Callback>()
 
   private lateinit var currentUi: SessionUiManager
   private var uiMode: UiMode = UiMode.PLAYBACK
@@ -91,6 +92,7 @@ object MediaSessionManager {
     filter.addAction(MediaNotificationManager.MEDIA_BUTTON)
     filter.addAction(Intent.ACTION_MEDIA_BUTTON)
     filter.addAction(AudioManager.ACTION_AUDIO_BECOMING_NOISY)
+    filter.addAction("com.swmansion.audioapi.RECORDING_BUTTON_CLICK")
 
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
       this.reactContext.get()!!.registerReceiver(mediaReceiver, filter, Context.RECEIVER_EXPORTED)
@@ -341,4 +343,22 @@ object MediaSessionManager {
       AudioDeviceInfo.TYPE_BLUETOOTH_SCO -> "Bluetooth SCO"
       else -> "Other (${device.type})"
     }
+
+  fun addRecordingNotificationButtonListener(
+    buttonId: String,
+    callback: com.facebook.react.bridge.Callback,
+  ): String {
+    val subscriptionId = UUID.randomUUID().toString()
+    buttonListeners[subscriptionId] = callback
+    recordingLockScreenManager.addButtonListener(buttonId) { clickedButtonId ->
+      callback.invoke(clickedButtonId)
+    }
+    return subscriptionId
+  }
+
+  fun removeRecordingNotificationButtonListener(subscriptionId: String) {
+    buttonListeners.remove(subscriptionId)
+  }
+
+  fun getRecordingLockScreenManager(): RecordingLockScreenManager = recordingLockScreenManager
 }

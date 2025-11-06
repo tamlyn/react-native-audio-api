@@ -31,9 +31,17 @@ interface Spec extends TurboModule {
   setRecordingLockScreenInfo(info: {
     title?: string;
     description?: string;
+    notificationColor?: string; // Hex color like "#FF0000" or named color like "red"
   }): void;
   resetRecordingLockScreenInfo(): void;
   setUiMode(mode: string): void; // 'PLAYBACK' | 'RECORDING'
+
+  // Recording notification button callbacks
+  addRecordingNotificationButtonListener(
+    buttonId: string,
+    callback: (buttonId: string) => void
+  ): string;
+  removeRecordingNotificationButtonListener(subscriptionId: string): void;
 
   // Remote commands, system events and interruptions
   enableRemoteCommand(name: string, enabled: boolean): void;
