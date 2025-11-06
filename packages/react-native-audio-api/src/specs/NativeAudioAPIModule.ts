@@ -1,7 +1,11 @@
 'use strict';
 import { TurboModuleRegistry } from 'react-native';
 import type { TurboModule } from 'react-native';
-import { PermissionStatus, AudioDevicesInfo } from '../system/types';
+import {
+  PermissionStatus,
+  AudioDevicesInfo,
+  RecordingLockScreenInfo,
+} from '../system/types';
 
 interface Spec extends TurboModule {
   install(): boolean;
@@ -22,6 +26,14 @@ interface Spec extends TurboModule {
     [key: string]: string | boolean | number | undefined;
   }): void;
   resetLockScreenInfo(): void;
+
+  // Recording Lock Screen Info
+  setRecordingLockScreenInfo(info: {
+    title?: string;
+    description?: string;
+  }): void;
+  resetRecordingLockScreenInfo(): void;
+  setUiMode(mode: string): void; // 'PLAYBACK' | 'RECORDING'
 
   // Remote commands, system events and interruptions
   enableRemoteCommand(name: string, enabled: boolean): void;

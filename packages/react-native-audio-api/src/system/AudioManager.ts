@@ -1,8 +1,10 @@
 import {
   SessionOptions,
   LockScreenInfo,
+  RecordingLockScreenInfo,
   PermissionStatus,
   AudioDevicesInfo,
+  UiMode,
 } from './types';
 import {
   SystemEventName,
@@ -55,6 +57,18 @@ class AudioManager {
 
   resetLockScreenInfo() {
     NativeAudioAPIModule!.resetLockScreenInfo();
+  }
+
+  setRecordingLockScreenInfo(info: RecordingLockScreenInfo) {
+    NativeAudioAPIModule!.setRecordingLockScreenInfo(info);
+  }
+
+  resetRecordingLockScreenInfo() {
+    NativeAudioAPIModule!.resetRecordingLockScreenInfo();
+  }
+
+  setUiMode(mode: UiMode) {
+    NativeAudioAPIModule!.setUiMode(mode);
   }
 
   observeAudioInterruptions(enabled: boolean) {

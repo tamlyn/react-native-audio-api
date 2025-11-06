@@ -20,6 +20,7 @@ const Record: FC = () => {
   const recorderAdapterRef = useRef<RecorderAdapterNode | null>(null);
   const audioBuffersRef = useRef<AudioBuffer[]>([]);
   const sourcesRef = useRef<AudioBufferSourceNode[]>([]);
+  const isRecordingRef = useRef<boolean>(false);
 
   useEffect(() => {
     const setup = async () => {
@@ -49,12 +50,28 @@ const Record: FC = () => {
       iosMode: 'spokenAudio',
       iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
     });
+
+    // Set UI mode to recording
+    AudioManager.setUiMode('RECORDING');
+
+    // Set recording lock screen info
+    AudioManager.setRecordingLockScreenInfo({
+      title: 'Recording Audio',
+      description: 'Recording in progress...',
+    });
   };
 
   const stopRecorder = () => {
     if (recorderRef.current) {
       recorderRef.current.stop();
       console.log('Recording stopped');
+
+      // Reset recording lock screen info
+      AudioManager.resetRecordingLockScreenInfo();
+
+      // Set UI mode back to playback
+      AudioManager.setUiMode('PLAYBACK');
+
       // advised, but not required
       AudioManager.setAudioSessionOptions({
         iosCategory: 'playback',
@@ -78,6 +95,7 @@ const Record: FC = () => {
     recorderRef.current.connect(recorderAdapterRef.current);
 
     recorderRef.current.start();
+    isRecordingRef.current = true;
     console.log('Recording started');
     console.log('Audio context state:', aCtxRef.current.state);
     if (aCtxRef.current.state === 'suspended') {
@@ -91,6 +109,7 @@ const Record: FC = () => {
     stopRecorder();
     aCtxRef.current = null;
     recorderAdapterRef.current = null;
+    isRecordingRef.current = false;
   };
 
   const startRecordReplay = () => {
@@ -109,6 +128,7 @@ const Record: FC = () => {
     });
 
     recorderRef.current.start();
+    isRecordingRef.current = true;
 
     setTimeout(() => {
       stopRecorder();
@@ -155,6 +175,19 @@ const Record: FC = () => {
       <Text style={{ color: colors.gray, fontSize: 18, textAlign: 'center' }}>
         Sample rate: {SAMPLE_RATE}
       </Text>
+
+      <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
+        <Text style={{ color: colors.white, fontSize: 16 }}>
+          Recording Status:{' '}
+          {isRecordingRef.current ? '🔴 Recording' : '⏹️ Stopped'}
+        </Text>
+        <Text style={{ color: colors.gray, fontSize: 14, textAlign: 'center' }}>
+          {isRecordingRef.current
+            ? 'Recording lock screen info is active'
+            : 'Recording lock screen info is cleared'}
+        </Text>
+      </View>
+
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
         <Text style={{ color: colors.white, fontSize: 16 }}>Echo</Text>
         <Button title="Start Recording" onPress={startEcho} />

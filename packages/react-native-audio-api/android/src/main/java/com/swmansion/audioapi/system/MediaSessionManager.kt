@@ -26,7 +26,20 @@ import com.swmansion.audioapi.system.PermissionRequestListener.Companion.RECORDI
 import java.lang.ref.WeakReference
 import java.util.UUID
 
+enum class UiMode { PLAYBACK, RECORDING }
+
 object MediaSessionManager {
+  private interface SessionUiManager {
+    fun setInfo(info: ReadableMap?)
+
+    fun resetInfo()
+
+    fun enableRemoteCommand(
+      name: String,
+      enabled: Boolean,
+    )
+  }
+
   private lateinit var audioAPIModule: WeakReference<AudioAPIModule>
   private lateinit var reactContext: WeakReference<ReactApplicationContext>
   const val NOTIFICATION_ID = 100
@@ -36,6 +49,8 @@ object MediaSessionManager {
   private lateinit var mediaSession: MediaSessionCompat
   lateinit var mediaNotificationManager: MediaNotificationManager
   private lateinit var lockScreenManager: LockScreenManager
+
+  private lateinit var recordingLockScreenManager: RecordingLockScreenManager
   private lateinit var audioFocusListener: AudioFocusListener
   private lateinit var volumeChangeListener: VolumeChangeListener
   private lateinit var mediaReceiver: MediaReceiver
@@ -44,6 +59,9 @@ object MediaSessionManager {
   private val serviceStateLock = Any()
   private val nativeAudioPlayers = mutableMapOf<String, NativeAudioPlayer>()
   private val nativeAudioRecorders = mutableMapOf<String, NativeAudioRecorder>()
+
+  private lateinit var currentUi: SessionUiManager
+  private var uiMode: UiMode = UiMode.PLAYBACK
 
   fun initialize(
     audioAPIModule: WeakReference<AudioAPIModule>,
@@ -54,15 +72,19 @@ object MediaSessionManager {
     this.audioManager = reactContext.get()?.getSystemService(Context.AUDIO_SERVICE) as AudioManager
     this.mediaSession = MediaSessionCompat(reactContext.get()!!, "MediaSessionManager")
 
-    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-      createChannel()
-    }
+    createChannel()
 
     this.mediaNotificationManager = MediaNotificationManager(this.reactContext)
     this.lockScreenManager = LockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(mediaNotificationManager))
+    this.recordingLockScreenManager =
+      RecordingLockScreenManager(this.reactContext, WeakReference(this.mediaSession), WeakReference(this.mediaNotificationManager))
     this.mediaReceiver =
       MediaReceiver(this.reactContext, WeakReference(this.mediaSession), WeakReference(this.mediaNotificationManager), this.audioAPIModule)
     this.mediaSession.setCallback(MediaSessionCallback(this.audioAPIModule, WeakReference(this.mediaNotificationManager)))
+
+    this.currentUi = lockScreenUi()
+    this.uiMode = UiMode.PLAYBACK
+    mediaNotificationManager.setRecordingStyle(false)
 
     val filter = IntentFilter()
     filter.addAction(MediaNotificationManager.REMOVE_NOTIFICATION)
@@ -81,10 +103,45 @@ object MediaSessionManager {
       )
     }
 
-    this.audioFocusListener =
-      AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule, WeakReference(this.lockScreenManager))
+    this.audioFocusListener = AudioFocusListener(WeakReference(this.audioManager), this.audioAPIModule)
     this.volumeChangeListener = VolumeChangeListener(WeakReference(this.audioManager), this.audioAPIModule)
   }
+
+  private fun lockScreenUi(): SessionUiManager =
+    object : SessionUiManager {
+      override fun setInfo(info: ReadableMap?) {
+        lockScreenManager.setLockScreenInfo(info)
+      }
+
+      override fun resetInfo() {
+        lockScreenManager.resetLockScreenInfo()
+      }
+
+      override fun enableRemoteCommand(
+        name: String,
+        enabled: Boolean,
+      ) {
+        lockScreenManager.enableRemoteCommand(name, enabled)
+      }
+    }
+
+  private fun recordingUi(): SessionUiManager =
+    object : SessionUiManager {
+      override fun setInfo(info: ReadableMap?) {
+        recordingLockScreenManager.setRecordingInfo(info)
+      }
+
+      override fun resetInfo() {
+        recordingLockScreenManager.resetRecordingInfo()
+      }
+
+      override fun enableRemoteCommand(
+        name: String,
+        enabled: Boolean,
+      ) {
+        recordingLockScreenManager.enableRemoteCommand(name, enabled)
+      }
+    }
 
   fun attachAudioPlayer(player: NativeAudioPlayer): String {
     val uuid = UUID.randomUUID().toString()
@@ -129,11 +186,7 @@ object MediaSessionManager {
       val intent = Intent(reactContext.get(), MediaNotificationManager.AudioForegroundService::class.java)
       intent.action = MediaNotificationManager.ForegroundAction.START_FOREGROUND.name
 
-      if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-        ContextCompat.startForegroundService(reactContext.get()!!, intent)
-      } else {
-        reactContext.get()!!.startService(intent)
-      }
+      ContextCompat.startForegroundService(reactContext.get()!!, intent)
       isServiceRunning = true
     }
   }
@@ -152,18 +205,41 @@ object MediaSessionManager {
   }
 
   fun setLockScreenInfo(info: ReadableMap?) {
-    lockScreenManager.setLockScreenInfo(info)
+    currentUi.setInfo(info)
   }
 
   fun resetLockScreenInfo() {
-    lockScreenManager.resetLockScreenInfo()
+    currentUi.resetInfo()
+  }
+
+  fun setRecordingLockScreenInfo(info: ReadableMap?) {
+    recordingLockScreenManager.setRecordingInfo(info)
+  }
+
+  fun resetRecordingLockScreenInfo() {
+    recordingLockScreenManager.resetRecordingInfo()
+  }
+
+  fun setUiMode(mode: String) {
+    when (mode) {
+      "PLAYBACK" -> {
+        currentUi = lockScreenUi()
+        uiMode = UiMode.PLAYBACK
+        mediaNotificationManager.setRecordingStyle(false)
+      }
+      "RECORDING" -> {
+        currentUi = recordingUi()
+        uiMode = UiMode.RECORDING
+        mediaNotificationManager.setRecordingStyle(true)
+      }
+    }
   }
 
   fun enableRemoteCommand(
     name: String,
     enabled: Boolean,
   ) {
-    lockScreenManager.enableRemoteCommand(name, enabled)
+    currentUi.enableRemoteCommand(name, enabled)
   }
 
   fun getDevicePreferredSampleRate(): Double {
@@ -211,20 +287,19 @@ object MediaSessionManager {
       "Denied"
     }
 
-  @RequiresApi(Build.VERSION_CODES.O)
   private fun createChannel() {
     val notificationManager =
       reactContext.get()?.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
 
     val mChannel =
-      NotificationChannel(CHANNEL_ID, "Audio manager", NotificationManager.IMPORTANCE_LOW)
-    mChannel.description = "Audio manager"
+      NotificationChannel(CHANNEL_ID, "Recording", NotificationManager.IMPORTANCE_HIGH)
+    mChannel.description = "Shows notifications about ongoing recording"
     mChannel.setShowBadge(false)
+    mChannel.enableVibration(true)
     mChannel.lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
     notificationManager.createNotificationChannel(mChannel)
   }
 
-  @RequiresApi(Build.VERSION_CODES.O)
   fun getDevicesInfo(): ReadableMap {
     val availableInputs = Arguments.createArray()
     val availableOutputs = Arguments.createArray()
@@ -255,7 +330,6 @@ object MediaSessionManager {
     return devicesInfo
   }
 
-  @RequiresApi(Build.VERSION_CODES.O)
   fun parseDeviceType(device: AudioDeviceInfo): String =
     when (device.type) {
       AudioDeviceInfo.TYPE_BUILTIN_MIC -> "Built-in Mic"

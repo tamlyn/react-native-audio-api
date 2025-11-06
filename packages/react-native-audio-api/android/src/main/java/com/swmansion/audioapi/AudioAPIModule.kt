@@ -122,6 +122,18 @@ class AudioAPIModule(
     MediaSessionManager.resetLockScreenInfo()
   }
 
+  override fun setRecordingLockScreenInfo(info: ReadableMap?) {
+    MediaSessionManager.setRecordingLockScreenInfo(info)
+  }
+
+  override fun resetRecordingLockScreenInfo() {
+    MediaSessionManager.resetRecordingLockScreenInfo()
+  }
+
+  override fun setUiMode(mode: String?) {
+    MediaSessionManager.setUiMode(mode!!)
+  }
+
   override fun enableRemoteCommand(
     name: String?,
     enabled: Boolean,

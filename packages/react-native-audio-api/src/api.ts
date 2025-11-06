@@ -98,6 +98,9 @@ export {
   SessionOptions,
   MediaState,
   LockScreenInfo,
+  RecordingLockScreenInfo,
+  UiMode,
+  ForegroundAction,
   PermissionStatus,
 } from './system/types';
 

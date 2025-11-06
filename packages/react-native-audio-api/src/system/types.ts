@@ -36,6 +36,12 @@ export interface SessionOptions {
 
 export type MediaState = 'state_playing' | 'state_paused';
 
+// eslint-disable-next-line @typescript-eslint/no-duplicate-enum-values
+export enum UiMode {
+  PLAYBACK = 'PLAYBACK',
+  RECORDING = 'RECORDING',
+}
+
 interface BaseLockScreenInfo {
   [key: string]: string | boolean | number | undefined;
 }
@@ -50,6 +56,16 @@ export interface LockScreenInfo extends BaseLockScreenInfo {
   state?: MediaState;
   speed?: number;
   elapsedTime?: number;
+}
+
+export interface RecordingLockScreenInfo {
+  title?: string;
+  description?: string;
+}
+
+export enum ForegroundAction {
+  START_FOREGROUND = 'START_FOREGROUND',
+  STOP_FOREGROUND = 'STOP_FOREGROUND',
 }
 
 export type PermissionStatus = 'Undetermined' | 'Denied' | 'Granted';

@@ -24,6 +24,8 @@ import java.lang.ref.WeakReference
 class MediaNotificationManager(
   private val reactContext: WeakReference<ReactApplicationContext>,
 ) {
+  private var currentNotification: Notification? = null
+  private var isRecordingStyle: Boolean = true
   private var smallIcon: Int = R.drawable.logo
   private var customIcon: Int = 0
 
@@ -39,6 +41,9 @@ class MediaNotificationManager(
     const val REMOVE_NOTIFICATION: String = "audio_manager_remove_notification"
     const val PACKAGE_NAME: String = "com.swmansion.audioapi.system"
     const val MEDIA_BUTTON: String = "audio_manager_media_button"
+
+    const val CUSTOM_ACTION: String = "audio_manager_custom_action"
+    const val EXTRA_CUSTOM_ACTION_ID: String = "extra_custom_action_id"
   }
 
   enum class ForegroundAction {
@@ -57,37 +62,39 @@ class MediaNotificationManager(
     builder: NotificationCompat.Builder,
     isPlaying: Boolean,
   ): Notification {
-    builder.mActions.clear()
+    if (!isRecordingStyle) {
+      builder.mActions.clear()
 
-    if (previous != null) {
-      builder.addAction(previous)
+      if (previous != null) {
+        builder.addAction(previous)
+      }
+
+      if (skipBackward != null) {
+        builder.addAction(skipBackward)
+      }
+
+      if (play != null && !isPlaying) {
+        builder.addAction(play)
+      }
+
+      if (pause != null && isPlaying) {
+        builder.addAction(pause)
+      }
+
+      if (stop != null) {
+        builder.addAction(stop)
+      }
+
+      if (next != null) {
+        builder.addAction(next)
+      }
+
+      if (skipForward != null) {
+        builder.addAction(skipForward)
+      }
+
+      builder.setSmallIcon(if (customIcon != 0) customIcon else smallIcon)
     }
-
-    if (skipBackward != null) {
-      builder.addAction(skipBackward)
-    }
-
-    if (play != null && !isPlaying) {
-      builder.addAction(play)
-    }
-
-    if (pause != null && isPlaying) {
-      builder.addAction(pause)
-    }
-
-    if (stop != null) {
-      builder.addAction(stop)
-    }
-
-    if (next != null) {
-      builder.addAction(next)
-    }
-
-    if (skipForward != null) {
-      builder.addAction(skipForward)
-    }
-
-    builder.setSmallIcon(if (customIcon != 0) customIcon else smallIcon)
 
     val packageName: String? = reactContext.get()?.packageName
     val openApp: Intent? = reactContext.get()?.packageManager?.getLaunchIntentForPackage(packageName!!)
@@ -114,8 +121,13 @@ class MediaNotificationManager(
         PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
       ),
     )
+    currentNotification = builder.build()
+    return currentNotification!!
+  }
 
-    return builder.build()
+  @Synchronized
+  fun setRecordingStyle(isRecording: Boolean) {
+    this.isRecordingStyle = isRecording
   }
 
   @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -132,6 +144,7 @@ class MediaNotificationManager(
 
   fun cancelNotification() {
     NotificationManagerCompat.from(reactContext.get()!!).cancel(MediaSessionManager.NOTIFICATION_ID)
+    currentNotification = null
   }
 
   @Synchronized
@@ -143,6 +156,19 @@ class MediaNotificationManager(
     previous = createAction("previous", "Previous", mask, PlaybackStateCompat.ACTION_SKIP_TO_PREVIOUS, previous)
     skipForward = createAction("skip_forward_15", "Skip Forward", mask, PlaybackStateCompat.ACTION_FAST_FORWARD, skipForward)
     skipBackward = createAction("skip_backward_15", "Skip Backward", mask, PlaybackStateCompat.ACTION_REWIND, skipBackward)
+  }
+
+  fun pendingIntentForAction(actionId: String): PendingIntent {
+    val intent = Intent(CUSTOM_ACTION)
+    intent.putExtra(EXTRA_CUSTOM_ACTION_ID, actionId)
+    intent.putExtra(ContactsContract.Directory.PACKAGE_NAME, reactContext.get()?.packageName)
+    val requestCode = actionId.hashCode()
+    return PendingIntent.getBroadcast(
+      reactContext.get(),
+      requestCode,
+      intent,
+      PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT,
+    )
   }
 
   private fun createAction(
@@ -190,23 +216,28 @@ class MediaNotificationManager(
       synchronized(serviceLock) {
         if (!isServiceStarted) {
           try {
-            notification =
-              MediaSessionManager.mediaNotificationManager
-                .prepareNotification(
-                  NotificationCompat.Builder(this, MediaSessionManager.CHANNEL_ID),
-                  false,
-                )
+            val notificationToStartWith = MediaSessionManager.mediaNotificationManager.currentNotification
+
+            val finalNotification =
+              notificationToStartWith ?: run {
+                val fallbackBuilder =
+                  NotificationCompat
+                    .Builder(this, MediaSessionManager.CHANNEL_ID)
+                    .setSmallIcon(MediaSessionManager.mediaNotificationManager.smallIcon)
+                    .setContentTitle("Audio Service")
+                MediaSessionManager.mediaNotificationManager.prepareNotification(fallbackBuilder, false)
+              }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
               startForeground(
                 MediaSessionManager.NOTIFICATION_ID,
-                notification!!,
+                finalNotification,
                 ServiceInfo.FOREGROUND_SERVICE_TYPE_MANIFEST,
               )
             } else {
               startForeground(
                 MediaSessionManager.NOTIFICATION_ID,
-                notification,
+                finalNotification,
               )
             }
             isServiceStarted = true
@@ -253,21 +284,10 @@ class MediaNotificationManager(
 
     override fun onDestroy() {
       synchronized(serviceLock) {
-        notification = null
+        // notification = null
         isServiceStarted = false
       }
       super.onDestroy()
-    }
-
-    override fun onTimeout(startId: Int) {
-      stopForegroundService()
-    }
-
-    override fun onTimeout(
-      startId: Int,
-      fgsType: Int,
-    ) {
-      stopForegroundService()
     }
   }
 }

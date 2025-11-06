@@ -42,11 +42,13 @@ class LockScreenManager(
   private var playbackState: Int = PlaybackStateCompat.STATE_PAUSED
 
   init {
-    pb.setActions(controls)
-    nb.setPriority(NotificationCompat.PRIORITY_HIGH)
-    nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+    this.pb.setActions(controls)
+
+    this.nb.setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+    this.nb.setPriority(NotificationCompat.PRIORITY_HIGH)
 
     updateNotificationMediaStyle()
+
     mediaNotificationManager.get()?.updateActions(controls)
   }
 
@@ -172,31 +174,8 @@ class LockScreenManager(
     if (artworkThread != null && artworkThread!!.isAlive) artworkThread!!.interrupt()
     artworkThread = null
 
-    title = null
-    artist = null
-    album = null
-    description = null
-    duration = 0L
-    speed = 1.0F
-    elapsedTime = 0L
-    artwork = null
-    playbackState = PlaybackStateCompat.STATE_PAUSED
-    isPlaying = false
-
-    val emptyMetadata = MediaMetadataCompat.Builder().build()
-    mediaSession.get()?.setMetadata(emptyMetadata)
-
-    pb.setState(PlaybackStateCompat.STATE_NONE, 0, 0f)
-    pb.setActions(controls)
-    state = pb.build()
-    mediaSession.get()?.setPlaybackState(state)
+    mediaNotificationManager.get()?.cancelNotification()
     mediaSession.get()?.setActive(false)
-
-    nb.setContentTitle("")
-    nb.setContentText("")
-    nb.setContentInfo("")
-
-    mediaNotificationManager.get()?.updateNotification(nb, isPlaying)
   }
 
   fun enableRemoteCommand(
