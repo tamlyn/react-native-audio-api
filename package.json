@@ -8,7 +8,8 @@
       "packages/react-native-audio-api",
       "packages/react-native-medi",
       "apps/common-app",
-      "apps/fabric-example"
+      "apps/fabric-example",
+      "apps/medi-expo-example"
     ]
   },
   "scripts": {
