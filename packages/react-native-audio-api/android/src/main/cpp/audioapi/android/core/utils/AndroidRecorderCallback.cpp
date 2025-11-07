@@ -92,7 +92,7 @@ void AndroidRecorderCallback::cleanup() {
   }
 
   for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i].reset();
+    circularBus_[i]->zero();
   }
 }
 

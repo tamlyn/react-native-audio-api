@@ -6,6 +6,7 @@
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/Locker.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -65,10 +66,12 @@ bool AndroidAudioRecorder::openAudioStream() {
 }
 
 std::string AndroidAudioRecorder::start() {
+  Locker callbackLock(callbackMutex_);
+  Locker fileWriterLock(fileWriterMutex_);
+
   if (isRecording()) {
     return "";
   }
-
 
   if (!mStream_ || !nativeAudioRecorder_) {
     __android_log_print(
@@ -102,6 +105,9 @@ std::string AndroidAudioRecorder::start() {
 }
 
 std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
+  Locker callbackLock(callbackMutex_);
+  Locker fileWriterLock(fileWriterMutex_);
+
   std::string filePath = std::format("file://{}", filePath_);
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
@@ -142,6 +148,8 @@ void AndroidAudioRecorder::enableFileOutput(
     size_t bitRate,
     size_t iosFlags,
     size_t androidFlags) {
+  Locker fileWriterLock(fileWriterMutex_);
+
   uint8_t format = static_cast<uint8_t>(androidFlags & 0xF);
 
   if (format == 1) {
@@ -161,6 +169,7 @@ void AndroidAudioRecorder::enableFileOutput(
 }
 
 void AndroidAudioRecorder::disableFileOutput() {
+  Locker fileWriterLock(fileWriterMutex_);
   fileOutputEnabled_.store(false);
   fileWriter_ = nullptr;
 }
@@ -188,6 +197,7 @@ void AndroidAudioRecorder::setOnAudioReadyCallback(
     size_t bufferLength,
     size_t channelCount,
     uint64_t callbackId) {
+  Locker callbackLock(callbackMutex_);
   callback_ = std::make_shared<AndroidRecorderCallback>(
       audioEventHandlerRegistry_,
       sampleRate,
@@ -204,6 +214,7 @@ void AndroidAudioRecorder::setOnAudioReadyCallback(
 }
 
 void AndroidAudioRecorder::clearOnAudioReadyCallback() {
+  Locker callbackLock(callbackMutex_);
   callbackOutputEnabled_.store(false);
   callback_ = nullptr;
 }
@@ -217,11 +228,15 @@ DataCallbackResult AndroidAudioRecorder::onAudioReady(
   }
 
   if (usesFileOutput()) {
-    fileWriter_->writeAudioData(audioData, numFrames);
+    if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
+      fileWriter_->writeAudioData(audioData, numFrames);
+    }
   }
 
   if (usesCallback()) {
-    callback_->receiveAudioData(audioData, numFrames);
+    if (auto callbackLock = Locker::tryLock(callbackMutex_)) {
+      callback_->receiveAudioData(audioData, numFrames);
+    }
   }
 
   return DataCallbackResult::Continue;

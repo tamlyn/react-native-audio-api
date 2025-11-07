@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <tuple>
+#include <mutex>
 
 #include <audioapi/android/core/NativeAudioRecorder.hpp>
 
@@ -59,6 +60,9 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
  private:
   std::string filePath_;
   std::shared_ptr<AudioStream> mStream_;
+
+  std::mutex callbackMutex_;
+  std::mutex fileWriterMutex_;
 
   std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
   std::shared_ptr<AndroidRecorderCallback> callback_;
