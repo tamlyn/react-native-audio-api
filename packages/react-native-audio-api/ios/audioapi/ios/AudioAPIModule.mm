@@ -59,6 +59,11 @@ RCT_EXPORT_MODULE(AudioAPIModule);
   [super invalidate];
 }
 
+- (dispatch_queue_t)methodQueue
+{
+  return dispatch_queue_create("com.swmansion.audioapi.MainModuleQueue", DISPATCH_QUEUE_SERIAL);
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
@@ -118,15 +123,11 @@ RCT_EXPORT_METHOD(
     setAudioSessionActivity : (BOOL)enabled resolve : (RCTPromiseResolveBlock)resolve reject : (RCTPromiseRejectBlock)
         reject)
 {
-  if (!self.audioSessionManager.shouldManageSession) {
-    [self.audioSessionManager setShouldManageSession:true];
-  }
-  if ([self.audioSessionManager setActive:enabled]) {
-    resolve(@"true");
-    return;
-  }
+  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
+    auto success = [self.audioSessionManager setActive:enabled];
 
-  resolve(@"false");
+    resolve(@(success));
+  });
 }
 
 RCT_EXPORT_METHOD(

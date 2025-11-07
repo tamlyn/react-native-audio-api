@@ -88,7 +88,7 @@ bool IOSAudioPlayer::isRunning() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
 
-  return isRunning_.load() && [audioEngine isRunning];
+  return isRunning_.load() && [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
 void IOSAudioPlayer::cleanup()

@@ -27,6 +27,7 @@ std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat, size_t max
       NSLog(@"⚠️ createFileForWriting: currentAudioFile_ already exists");
       return "";
     }
+
     framesWritten_.store(0);
 
     bufferFormat_ = bufferFormat;
@@ -34,8 +35,6 @@ std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat, size_t max
     NSError *error = nil;
     NSDictionary *settings = fileOptions_->getFileSettings();
     fileURL_ = getFileURL();
-
-    NSLog(@"ℹ️ Creating audio file at URL: %@", [fileURL_ absoluteString]);
 
     audioFile_ = [[AVAudioFile alloc] initForWriting:fileURL_
                                             settings:settings
@@ -54,7 +53,7 @@ std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat, size_t max
     converterInputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat
                                                           frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
     converterOutputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile_ processingFormat]
-                                                           frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
+                                                           frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
 
     if (error != nil || audioFile_ == nil) {
       NSLog(@"Error creating audio file for writing: %@", [error debugDescription]);
@@ -98,6 +97,7 @@ std::tuple<double, double> IOSAudioFileWriter::closeFile()
     }
 
     fileURL_ = nil;
+    framesWritten_.store(0);
 
     return {fileSizeBytesMb, fileDuration};
   }
@@ -116,12 +116,16 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
 
     if (bufferFormat_.sampleRate == fileFormat.sampleRate && bufferFormat_.channelCount == fileFormat.channelCount &&
         bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
-      AVAudioPCMBuffer *processingBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:fileFormat
-                                                                      bufferListNoCopy:audioBufferList
-                                                                           deallocator:NULL];
-      processingBuffer.frameLength = (AVAudioFrameCount)numFrames;
+      // We can use the converter input buffer as a "transport" layer to the file
+      for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
+        memcpy(
+            converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
+            audioBufferList->mBuffers[i].mData,
+            audioBufferList->mBuffers[i].mDataByteSize);
+      }
+      converterInputBuffer_.frameLength = numFrames;
 
-      [audioFile_ writeFromBuffer:processingBuffer error:&error];
+      [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
 
       if (error != nil) {
         NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
@@ -143,16 +147,22 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
 
     converterInputBuffer_.frameLength = numFrames;
 
+    __block BOOL handedOff = false;
     AVAudioConverterInputBlock inputBlock =
         ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
     {
-      // this line is probably an delusion, but for my sanity lets keep it
-      inNumberOfPackets = numFrames;
+      if (handedOff) {
+        *outStatus = AVAudioConverterInputStatus_NoDataNow;
+        return nil;
+      }
+
+      handedOff = true;
       *outStatus = AVAudioConverterInputStatus_HaveData;
       return converterInputBuffer_;
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
+    converterOutputBuffer_.frameLength = fileOptions_->getSampleRate() / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       NSLog(@"Error during audio conversion: %@", [error debugDescription]);

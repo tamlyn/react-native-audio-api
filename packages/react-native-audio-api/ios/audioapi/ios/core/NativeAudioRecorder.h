@@ -21,6 +21,10 @@ typedef void (^AudioReceiverBlock)(const AudioBufferList *inputBuffer, int numFr
 
 - (void)stop;
 
+- (void)pause;
+
+- (void)resume;
+
 - (void)cleanup;
 
 @end

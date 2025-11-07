@@ -34,8 +34,6 @@
 
 - (bool)start
 {
-  NSLog(@"[AudioPlayer] start");
-
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
@@ -46,17 +44,16 @@
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop player very frequently
-  [audioEngine stopEngine];
+  [audioEngine stopIfNecessary];
   self.sourceNodeId = [audioEngine attachSourceNode:self.sourceNode format:self.format];
   return [audioEngine startIfNecessary];
 }
 
 - (void)stop
 {
-  NSLog(@"[AudioPlayer] stop");
-
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
+
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
   [audioEngine stopIfNecessary];
   self.sourceNodeId = nil;
@@ -64,7 +61,6 @@
 
 - (bool)resume
 {
-  NSLog(@"[AudioPlayer] resume");
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
 
@@ -75,7 +71,8 @@
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
-  [audioEngine pauseEngine:self.sourceNodeId];
+
+  [audioEngine pauseIfNecessary];
 }
 
 - (void)cleanup

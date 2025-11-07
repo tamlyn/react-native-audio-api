@@ -32,10 +32,12 @@ IOSRecorderCallback::IOSRecorderCallback(
     auto busAudioArray = std::make_shared<CircularAudioArray>(ringBufferSize_);
     circularBus_[i] = busAudioArray;
   }
+  isInitialized_.store(true);
 }
 
 IOSRecorderCallback::~IOSRecorderCallback()
 {
+  isInitialized_.store(false);
   @autoreleasepool {
     converter_ = nil;
     bufferFormat_ = nil;
@@ -94,6 +96,10 @@ void IOSRecorderCallback::cleanup()
 
 void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int numFrames)
 {
+  if (!isInitialized_.load()) {
+    return;
+  }
+
   @autoreleasepool {
     NSError *error = nil;
 
@@ -120,16 +126,22 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
 
     converterInputBuffer_.frameLength = numFrames;
 
+    __block BOOL handedOff = false;
     AVAudioConverterInputBlock inputBlock =
         ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
     {
-      // this line is probably an delusion, but for my sanity lets keep it
-      inNumberOfPackets = numFrames;
+      if (handedOff) {
+        *outStatus = AVAudioConverterInputStatus_NoDataNow;
+        return nil;
+      }
+
+      handedOff = true;
       *outStatus = AVAudioConverterInputStatus_HaveData;
       return converterInputBuffer_;
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
+    converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       NSLog(@"Error during audio conversion: %@", [error debugDescription]);

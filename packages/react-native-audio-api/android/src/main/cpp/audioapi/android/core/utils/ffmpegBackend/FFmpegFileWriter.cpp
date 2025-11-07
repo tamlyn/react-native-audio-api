@@ -400,6 +400,7 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
         return false;
       }
 
+      avio_flush(formatCtx_.get()->pb);
       av_packet_unref(packet_.get());
     }
 

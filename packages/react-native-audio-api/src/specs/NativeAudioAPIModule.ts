@@ -1,7 +1,7 @@
 'use strict';
-import { TurboModuleRegistry } from 'react-native';
 import type { TurboModule } from 'react-native';
-import { PermissionStatus, AudioDevicesInfo } from '../system/types';
+import { TurboModuleRegistry } from 'react-native';
+import { AudioDevicesInfo, PermissionStatus } from '../system/types';
 
 interface Spec extends TurboModule {
   install(): boolean;

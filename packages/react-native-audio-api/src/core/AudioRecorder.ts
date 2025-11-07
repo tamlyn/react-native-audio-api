@@ -74,12 +74,6 @@ export default class AudioRecorder {
   }
 
   enableFileOutput(options: AudioRecorderFileOptions): void {
-    if (this.recorder.isRecording()) {
-      throw new Error(
-        'Cannot enable file output while recording is in progress. Please stop the recorder before changing output options.'
-      );
-    }
-
     this.options_ = options;
 
     const parsedOptions = parseFileOptions(options);
@@ -132,17 +126,12 @@ export default class AudioRecorder {
    * @throws If the node has already been connected.
    */
   connect(node: RecorderAdapterNode): void {
-    if (this.recorder.isRecording()) {
-      throw new Error(
-        'Cannot connect adapter node while recording is in progress. Please stop the recorder before connecting new nodes.'
-      );
-    }
-
     if (node.wasConnected) {
       throw new Error(
         'RecorderAdapterNode cannot be connected more than once. Refer to the documentation for more details.'
       );
     }
+
     node.wasConnected = true;
     this.recorder.connect(node.getNode());
   }
@@ -177,12 +166,6 @@ export default class AudioRecorder {
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
   ): void {
-    if (this.recorder.isRecording()) {
-      throw new Error(
-        'Cannot set onAudioReady callback while recording is in progress. Please stop the recorder before setting a new callback.'
-      );
-    }
-
     if (this.onAudioReadySubscription) {
       this.recorder.clearOnAudioReady();
       this.onAudioReadySubscription.remove();
@@ -214,12 +197,6 @@ export default class AudioRecorder {
    * registered.
    */
   clearOnAudioReady(): void {
-    if (this.recorder.isRecording()) {
-      throw new Error(
-        'Cannot clear onAudioReady callback while recording is in progress. Please stop the recorder before clearing the callback.'
-      );
-    }
-
     if (!this.onAudioReadySubscription) {
       return;
     }

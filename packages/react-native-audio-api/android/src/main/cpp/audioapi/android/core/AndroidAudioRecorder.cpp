@@ -17,21 +17,7 @@ namespace audioapi {
 AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry) {
-  AudioStreamBuilder builder;
-
-  builder.setSharingMode(SharingMode::Exclusive)
-      ->setDirection(Direction::Input)
-      ->setFormat(AudioFormat::Float)
-      ->setFormatConversionAllowed(true)
-      ->setPerformanceMode(PerformanceMode::None)
-      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
-      ->setDataCallback(this)
-      ->openStream(mStream_);
-
-  streamSampleRate_ = mStream_->getSampleRate();
-  streamChannelCount_ = mStream_->getChannelCount();
-  streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
-  nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
+  openAudioStream();
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
@@ -44,13 +30,38 @@ AndroidAudioRecorder::~AndroidAudioRecorder() {
   }
 }
 
-// jni::ThreadScope::WithClassLoader(
-//     [this]() { nativeAudioRecorder_->start(); });
-// mStream_->requestStart();
+bool AndroidAudioRecorder::openAudioStream() {
+  if (mStream_) {
+    return true;
+  }
+
+  AudioStreamBuilder builder;
+  builder.setSharingMode(SharingMode::Exclusive)
+      ->setDirection(Direction::Input)
+      ->setFormat(AudioFormat::Float)
+      ->setFormatConversionAllowed(true)
+      ->setPerformanceMode(PerformanceMode::None)
+      ->setSampleRateConversionQuality(SampleRateConversionQuality::Medium)
+      ->setDataCallback(this)
+      ->setErrorCallback(this);
+
+  auto result = builder.openStream(mStream_);
+
+  if (result != oboe::Result::OK || mStream_ == nullptr) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Failed to open stream: %s",
+        oboe::convertToText(result));
+    return false;
+  }
+
+  return true;
+}
 
 std::string AndroidAudioRecorder::start() {
   if (isRecording()) {
-    return filePath_;
+    return "";
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
@@ -58,7 +69,7 @@ std::string AndroidAudioRecorder::start() {
         ANDROID_LOG_ERROR,
         "AndroidAudioRecorder",
         "Audio stream is not initialized.\n");
-    return filePath_;
+    return "";
   }
 
   if (usesFileOutput()) {
@@ -67,7 +78,6 @@ std::string AndroidAudioRecorder::start() {
   }
 
   if (usesCallback()) {
-    // TODO: create circular buffer and converter?
     callback_->prepare(
         streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
@@ -83,16 +93,16 @@ std::string AndroidAudioRecorder::start() {
 
   state_.store(RecorderState::Recording);
 
-  return filePath_;
+  return std::format("file://{}", filePath_);
 }
 
 std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
-  std::string filePath = filePath_;
+  std::string filePath = std::format("file://{}", filePath_);
   double outputFileSize = 0.0;
   double outputDuration = 0.0;
 
   if (!isRecording()) {
-    return {filePath_, 0.0, 0.0};
+    return {filePath, 0.0, 0.0};
   }
 
   if (!mStream_ || !nativeAudioRecorder_) {
@@ -100,13 +110,11 @@ std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
         ANDROID_LOG_ERROR,
         "AndroidAudioRecorder",
         "Audio stream is not initialized.\n");
-    return {filePath_, 0.0, 0.0};
+    return {filePath, 0.0, 0.0};
   }
 
   jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->stop(); });
-
   mStream_->requestStop();
-  state_.store(RecorderState::Idle);
 
   if (usesFileOutput()) {
     auto [size, duration] = fileWriter_->closeFile();
@@ -119,6 +127,7 @@ std::tuple<std::string, double, double> AndroidAudioRecorder::stop() {
   }
 
   filePath_ = "";
+  state_.store(RecorderState::Idle);
   return {filePath, outputFileSize, outputDuration};
 }
 
@@ -136,6 +145,11 @@ void AndroidAudioRecorder::enableFileOutput(
   } else {
     fileWriter_ = std::make_shared<FFmpegAudioFileWriter>(
         sampleRate, channelCount, bitRate, androidFlags);
+  }
+
+  if (!isIdle()) {
+    fileWriter_->openFile(
+        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   fileOutputEnabled_.store(true);
@@ -175,6 +189,12 @@ void AndroidAudioRecorder::setOnAudioReadyCallback(
       bufferLength,
       channelCount,
       callbackId);
+
+  if (!isIdle()) {
+    callback_->prepare(
+        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+  }
+
   callbackOutputEnabled_.store(true);
 }
 
@@ -208,6 +228,40 @@ double AndroidAudioRecorder::getCurrentDuration() const {
   }
 
   return 0.0;
+}
+
+bool AndroidAudioRecorder::isRecording() const {
+  return state_.load() == RecorderState::Recording &&
+      mStream_->getState() == oboe::StreamState::Started;
+}
+
+bool AndroidAudioRecorder::isPaused() const {
+  return state_.load() == RecorderState::Paused;
+}
+
+bool AndroidAudioRecorder::isIdle() const {
+  return state_.load() == RecorderState::Idle;
+}
+
+void AndroidAudioRecorder::cleanup() {
+  state_.store(RecorderState::Idle);
+
+  if (mStream_) {
+    mStream_->close();
+    mStream_.reset();
+  }
+}
+
+void AndroidAudioRecorder::onErrorAfterClose(
+    oboe::AudioStream *stream,
+    oboe::Result error) {
+  if (error == oboe::Result::ErrorDisconnected) {
+    cleanup();
+    if (openAudioStream()) {
+      mStream_->requestStart();
+      state_.store(RecorderState::Recording);
+    }
+  }
 }
 
 } // namespace audioapi

@@ -100,7 +100,7 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;
 
-  if ((float)streamSampleRate_ == sampleRate_ ||
+  if ((float)streamSampleRate_ == sampleRate_ &&
       streamChannelCount_ == channelCount_) {
     deinterleaveAndWriteAudioData(data, numFrames);
     emitAudioData();
@@ -131,7 +131,7 @@ void AndroidRecorderCallback::deinterleaveAndWriteAudioData(
     float *channelData = deinterleavingArray_->getData();
 
     for (int frame = 0; frame < numFrames; ++frame) {
-      channelData[frame] = inputData[frame * streamChannelCount_ + channel];
+      channelData[frame] = inputData[frame * channelCount_ + channel];
     }
 
     circularBus_[channel]->push_back(channelData, numFrames);

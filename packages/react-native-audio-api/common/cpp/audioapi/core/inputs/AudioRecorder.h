@@ -58,22 +58,15 @@ class AudioRecorder {
     return isConnected_.load();
   }
 
-  bool isRecording() const {
-    return state_.load() == RecorderState::Recording;
-  }
-
-  bool isPaused() const {
-    return state_.load() == RecorderState::Paused;
-  }
+  bool isRecording() const = 0;
+  bool isPaused() const = 0;
+  bool isIdle() const = 0;
 
  protected:
-  // size_t ringBufferSize_;
-
   std::atomic<RecorderState> state_{ RecorderState::Idle };
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
   std::atomic<bool> isConnected_{false};
-  // std::shared_ptr<CircularAudioArray> circularBuffer_;
 
   mutable std::mutex adapterNodeLock_;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;

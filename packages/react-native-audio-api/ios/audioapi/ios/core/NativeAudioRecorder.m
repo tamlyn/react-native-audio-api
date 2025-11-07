@@ -51,8 +51,14 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 {
   // NOTE: this method should be called only after the session is activated
   AVAudioSession *audioSession = [AVAudioSession sharedInstance];
-  float bufferDuration = audioSession.IOBufferDuration > 0 ? audioSession.IOBufferDuration : 0.02;
 
+  // TMPfix: it seems that buffer duration in some cases (background/device change) can switch
+  // to longer values, exceeding buffer size predicted after session start
+  // since it is just a couple of buffers we can set min value of 200ms
+  // to enforce we always have enough frames allocated to pass further down the pipeline
+  float bufferDuration = MAX(audioSession.IOBufferDuration, 0.2);
+
+  // IOS returns buffer duration rounded, but expects the buffer size to be power of two in runtime
   return nextPowerOfTwo(ceil(bufferDuration * audioSession.sampleRate));
 }
 
@@ -68,7 +74,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   //
   // Currently we are restarting because we do not see any significant performance issue and case when
   // you will need to start and stop recorder very frequently
-  [audioEngine stopEngine];
+  [audioEngine stopIfNecessary];
   [audioEngine attachInputNode:self.sinkNode];
   [audioEngine startIfNecessary];
 }
@@ -79,6 +85,22 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   assert(audioEngine != nil);
   [audioEngine detachInputNode];
   [audioEngine stopIfNecessary];
+}
+
+- (void)pause
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+
+  [audioEngine pauseIfNecessary];
+}
+
+- (void)resume
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+
+  [audioEngine startIfNecessary];
 }
 
 - (void)cleanup

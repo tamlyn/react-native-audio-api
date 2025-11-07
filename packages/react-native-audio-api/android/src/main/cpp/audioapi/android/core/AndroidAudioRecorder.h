@@ -20,11 +20,13 @@ class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
-class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorder {
+class AndroidAudioRecorder : public AudioStreamDataCallback, AudiStreamErrorCallback, AudioRecorder {
  public:
   explicit AndroidAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
+  void cleanup();
 
+  bool openAudioStream();
   std::string start() override;
   std::tuple<std::string, double, double> stop() override;
 
@@ -38,6 +40,9 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
 
   void pause() override;
   void resume() override;
+  bool isRecording() const override;
+  bool isPaused() const override;
+  bool isIdle() const override;
 
   void setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
       override;
@@ -49,6 +54,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
           AudioStream *oboeStream,
           void *audioData,
           int32_t numFrames) override;
+  void onErrorAfterClose(AudioStream *oboeStream, Result error) override;
 
  private:
   std::string filePath_;
@@ -62,6 +68,8 @@ class AndroidAudioRecorder : public AudioStreamDataCallback, public AudioRecorde
   int32_t streamMaxBufferSizeInFrames_;
 
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
+
+  bool openAudioStream();
 };
 
 } // namespace audioapi

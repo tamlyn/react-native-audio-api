@@ -35,6 +35,8 @@ class IOSRecorderCallback {
   void sendRemainingData();
 
  private:
+  std::atomic<bool> isInitialized_{false};
+
   float sampleRate_;
   size_t bufferLength_;
   size_t channelCount_;

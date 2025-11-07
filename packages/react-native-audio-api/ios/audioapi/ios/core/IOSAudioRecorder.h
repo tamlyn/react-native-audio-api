@@ -10,6 +10,7 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
+#include <mutex>
 
 namespace audioapi {
 
@@ -34,6 +35,10 @@ class IOSAudioRecorder : public AudioRecorder {
   void pause() override;
   void resume() override;
 
+  bool isRecording() const override;
+  bool isPaused() const override;
+  bool isIdle() const override;
+
   void setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
       override;
   void clearOnAudioReadyCallback() override;
@@ -44,6 +49,9 @@ class IOSAudioRecorder : public AudioRecorder {
   std::shared_ptr<IOSAudioFileWriter> fileWriter_;
   std::shared_ptr<IOSRecorderCallback> callback_;
   std::string filePath_{""};
+  std::mutex callbackMutex_;
+  std::mutex fileWriterMutex_;
+
   NativeAudioRecorder *nativeRecorder_;
 };
 

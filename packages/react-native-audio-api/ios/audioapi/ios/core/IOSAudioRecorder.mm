@@ -3,11 +3,13 @@
 #include <unordered_map>
 
 #include <audioapi/core/utils/Constants.h>
+#include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioFileWriter.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #include <audioapi/ios/core/IOSRecorderCallback.h>
+#include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -20,11 +22,15 @@ IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegist
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (usesFileOutput()) {
-      fileWriter_->writeAudioData(inputBuffer, numFrames);
+      if (auto lock = Locker::tryLock(fileWriterMutex_)) {
+        fileWriter_->writeAudioData(inputBuffer, numFrames);
+      }
     }
 
     if (usesCallback()) {
-      callback_->receiveAudioData(inputBuffer, numFrames);
+      if (auto lock = Locker::tryLock(callbackMutex_)) {
+        callback_->receiveAudioData(inputBuffer, numFrames);
+      }
     }
   };
 
@@ -38,6 +44,9 @@ IOSAudioRecorder::~IOSAudioRecorder()
 }
 std::string IOSAudioRecorder::start()
 {
+  Locker callbackLock(callbackMutex_);
+  Locker fileWriterLock(fileWriterMutex_);
+
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
 
   if (isRecording()) {
@@ -64,6 +73,9 @@ std::string IOSAudioRecorder::start()
 
 std::tuple<std::string, double, double> IOSAudioRecorder::stop()
 {
+  Locker callbackLock(callbackMutex_);
+  Locker fileWriterLock(fileWriterMutex_);
+
   std::string filePath = filePath_;
   double outputFileSize = 0;
   double outputDuration = 0;
@@ -96,12 +108,15 @@ void IOSAudioRecorder::enableFileOutput(
     size_t iosFlags,
     size_t androidFlags)
 {
+  Locker lock(fileWriterMutex_);
+
   fileOutputEnabled_.store(true);
   fileWriter_ = std::make_shared<IOSAudioFileWriter>(sampleRate, channelCount, bitRate, iosFlags);
 }
 
 void IOSAudioRecorder::disableFileOutput()
 {
+  Locker lock(fileWriterMutex_);
   fileOutputEnabled_.store(false);
   fileWriter_ = nullptr;
 }
@@ -112,7 +127,7 @@ void IOSAudioRecorder::pause()
     return;
   }
 
-  [nativeRecorder_ stop];
+  [nativeRecorder_ pause];
   state_.store(RecorderState::Paused);
 }
 
@@ -122,8 +137,32 @@ void IOSAudioRecorder::resume()
     return;
   }
 
-  [nativeRecorder_ start];
+  [nativeRecorder_ resume];
   state_.store(RecorderState::Recording);
+}
+
+bool IOSAudioRecorder::isRecording() const
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  return state_.load() == RecorderState::Recording &&
+      [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
+}
+
+bool IOSAudioRecorder::isPaused() const
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  auto currentState = state_.load();
+
+  if (currentState == RecorderState::Idle) {
+    return false;
+  }
+
+  return currentState == RecorderState::Paused && [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
+}
+
+bool IOSAudioRecorder::isIdle() const
+{
+  return state_.load() == RecorderState::Idle;
 }
 
 void IOSAudioRecorder::setOnAudioReadyCallback(
@@ -132,13 +171,21 @@ void IOSAudioRecorder::setOnAudioReadyCallback(
     size_t channelCount,
     uint64_t callbackId)
 {
+  Locker lock(callbackMutex_);
+
   callback_ = std::make_shared<IOSRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
+
+  if (!isIdle()) {
+    callback_->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+  }
+
   callbackOutputEnabled_.store(true);
 }
 
 void IOSAudioRecorder::clearOnAudioReadyCallback()
 {
+  Locker lock(callbackMutex_);
   callbackOutputEnabled_.store(false);
   callback_ = nullptr;
 }

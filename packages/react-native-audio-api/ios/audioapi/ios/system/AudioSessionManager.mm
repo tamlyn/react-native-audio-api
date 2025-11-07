@@ -7,13 +7,13 @@
   if (self = [super init]) {
     self.audioSession = [AVAudioSession sharedInstance];
 
-    self.sessionCategory = AVAudioSessionCategoryPlayback;
-    self.sessionMode = AVAudioSessionModeDefault;
-    self.sessionOptions = 0;
-    self.allowHapticsAndSystemSoundsDuringRecording = false;
-    self.hasDirtySettings = true;
     self.isActive = false;
     self.shouldManageSession = true;
+
+    self.desiredCategory = AVAudioSessionCategoryPlayback;
+    self.desiredMode = AVAudioSessionModeDefault;
+    self.desiredOptions = 0;
+    self.allowHapticsAndSounds = false;
   }
 
   return self;
@@ -21,14 +21,42 @@
 
 - (void)cleanup
 {
-  NSLog(@"[AudioSessionManager] cleanup");
-
   self.audioSession = nil;
 }
 
-- (NSNumber *)getDevicePreferredSampleRate
+- (bool)areDesiredOptionsSet
 {
-  return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
+  return (
+      self.audioSession.category == self.desiredCategory && self.audioSession.mode == self.desiredMode &&
+      self.audioSession.categoryOptions == self.desiredOptions &&
+      self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
+}
+
+- (bool)configureAudioSession
+{
+  NSError *error = nil;
+
+  if (!self.shouldManageSession || [self areDesiredOptionsSet]) {
+    return true;
+  }
+
+  [self.audioSession setCategory:self.desiredCategory mode:self.desiredMode options:self.desiredOptions error:&error];
+
+  if (error != nil) {
+    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
+    return false;
+  }
+
+  if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording != self.allowHapticsAndSounds) {
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds error:&error];
+
+    if (error != nil) {
+      NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
+      return false;
+    }
+  }
+
+  return true;
 }
 
 - (void)setAudioSessionOptions:(NSString *)category
@@ -36,100 +64,22 @@
                        options:(NSArray *)options
                   allowHaptics:(BOOL)allowHaptics
 {
-  AVAudioSessionCategory sessionCategory = self.sessionCategory;
-  AVAudioSessionMode sessionMode = self.sessionMode;
-  AVAudioSessionCategoryOptions sessionOptions = 0;
-  bool allowHapticsAndSystemSoundsDuringRecording = allowHaptics;
+  AVAudioSessionCategory category = [self categoryFromString:categoryStr];
+  AVAudioSessionMode mode = [self modeFromString:modeStr];
+  AVAudioSessionCategoryOptions options = [self optionsFromArray:optionsArray];
+  bool configChanged = false;
 
-  if ([category isEqualToString:@"record"]) {
-    sessionCategory = AVAudioSessionCategoryRecord;
-  } else if ([category isEqualToString:@"ambient"]) {
-    sessionCategory = AVAudioSessionCategoryAmbient;
-  } else if ([category isEqualToString:@"playback"]) {
-    sessionCategory = AVAudioSessionCategoryPlayback;
-  } else if ([category isEqualToString:@"multiRoute"]) {
-    sessionCategory = AVAudioSessionCategoryMultiRoute;
-  } else if ([category isEqualToString:@"soloAmbient"]) {
-    sessionCategory = AVAudioSessionCategorySoloAmbient;
-  } else if ([category isEqualToString:@"playAndRecord"]) {
-    sessionCategory = AVAudioSessionCategoryPlayAndRecord;
+  if (category != self.desiredCategory || mode != self.desiredMode || options != self.desiredOptions ||
+      allowHaptics != self.allowHapticsAndSounds) {
+    configChanged = true;
   }
 
-  if ([mode isEqualToString:@"default"]) {
-    sessionMode = AVAudioSessionModeDefault;
-  } else if ([mode isEqualToString:@"gameChat"]) {
-    sessionMode = AVAudioSessionModeGameChat;
-  } else if ([mode isEqualToString:@"videoChat"]) {
-    sessionMode = AVAudioSessionModeVideoChat;
-  } else if ([mode isEqualToString:@"voiceChat"]) {
-    sessionMode = AVAudioSessionModeVoiceChat;
-  } else if ([mode isEqualToString:@"measurement"]) {
-    sessionMode = AVAudioSessionModeMeasurement;
-  } else if ([mode isEqualToString:@"voicePrompt"]) {
-    sessionMode = AVAudioSessionModeVoicePrompt;
-  } else if ([mode isEqualToString:@"spokenAudio"]) {
-    sessionMode = AVAudioSessionModeSpokenAudio;
-  } else if ([mode isEqualToString:@"moviePlayback"]) {
-    sessionMode = AVAudioSessionModeMoviePlayback;
-  } else if ([mode isEqualToString:@"videoRecording"]) {
-    sessionMode = AVAudioSessionModeVideoRecording;
-  }
+  self.desiredCategory = category;
+  self.desiredMode = mode;
+  self.desiredOptions = options;
+  self.allowHapticsAndSounds = allowHaptics;
 
-  for (NSString *option in options) {
-    if ([option isEqualToString:@"duckOthers"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionDuckOthers;
-    }
-
-    if ([option isEqualToString:@"allowAirPlay"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionAllowAirPlay;
-    }
-
-    if ([option isEqualToString:@"mixWithOthers"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionMixWithOthers;
-    }
-
-    if ([option isEqualToString:@"allowBluetooth"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetooth;
-    }
-
-    if ([option isEqualToString:@"defaultToSpeaker"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionDefaultToSpeaker;
-    }
-
-    if ([option isEqualToString:@"allowBluetoothA2DP"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
-    }
-
-    if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
-    }
-
-    if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
-      sessionOptions |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
-    }
-  }
-
-  if (self.sessionCategory != sessionCategory) {
-    self.hasDirtySettings = true;
-    self.sessionCategory = sessionCategory;
-  }
-
-  if (self.sessionMode != sessionMode) {
-    self.hasDirtySettings = true;
-    self.sessionMode = sessionMode;
-  }
-
-  if (self.sessionOptions != sessionOptions) {
-    self.hasDirtySettings = true;
-    self.sessionOptions = sessionOptions;
-  }
-
-  if (self.allowHapticsAndSystemSoundsDuringRecording != allowHapticsAndSystemSoundsDuringRecording) {
-    self.hasDirtySettings = true;
-    self.allowHapticsAndSystemSoundsDuringRecording = allowHapticsAndSystemSoundsDuringRecording;
-  }
-
-  if (self.isActive) {
+  if (configChanged && self.isActive) {
     [self configureAudioSession];
   }
 }
@@ -139,17 +89,23 @@
   if (!self.shouldManageSession) {
     return true;
   }
-  if (active == self.isActive) {
+
+  NSError *error = nil;
+  bool success = false;
+
+  if (self.isActive == active) {
     return true;
   }
 
   if (active) {
-    [self configureAudioSession];
+    success = [self configureAudioSession];
+
+    if (!success) {
+      return false;
+    }
   }
 
-  NSError *error = nil;
-
-  bool success = [self.audioSession setActive:active error:&error];
+  success = [self.audioSession setActive:active error:&error];
 
   if (success) {
     self.isActive = active;
@@ -164,59 +120,11 @@
   return success;
 }
 
-- (bool)configureAudioSession
+- (void)markInactive
 {
-  if (!self.shouldManageSession) {
-    NSLog(@"[AudioSessionManager] Skipping AVAudioSession configuration, shouldManageSession is false");
-    return true;
-  }
-
-  if (![self hasDirtySettings]) {
-    return true;
-  }
-
-  NSLog(
-      @"[AudioSessionManager] configureAudioSession, category: %@, mode: %@, options: %lu, allowHaptics: %@",
-      self.sessionCategory,
-      self.sessionMode,
-      (unsigned long)self.sessionOptions,
-      self.allowHapticsAndSystemSoundsDuringRecording ? @"YES" : @"NO");
-
-  NSError *error = nil;
-
-  [self.audioSession setCategory:self.sessionCategory mode:self.sessionMode options:self.sessionOptions error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
-    return false;
-  }
-
-  if (@available(iOS 13.0, *)) {
-    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSystemSoundsDuringRecording
-                                                               error:&error];
-
-    if (error != nil) {
-      NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
-    }
-  }
-
-  self.hasDirtySettings = false;
-  return true;
-}
-
-- (bool)reconfigureAudioSession
-{
-  self.hasDirtySettings = true;
-  if (self.isActive) {
-    self.isActive = false;
-    return [self setActive:true];
-  }
-  return true;
-}
-
-- (void)markSettingsAsDirty
-{
-  self.hasDirtySettings = true;
+  // Mark as inactive no matter the state reported by AVAudioSession,
+  // this is used during interruptions to "force" going through configure&activate flow
+  // which is necessary after some of the interruptions (f.e. when the other app re-configures the hardware)
   self.isActive = false;
 }
 
@@ -224,6 +132,11 @@
 {
   self.shouldManageSession = false;
   self.hasDirtySettings = false;
+}
+
+- (NSNumber *)getDevicePreferredSampleRate
+{
+  return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
@@ -346,6 +259,95 @@
   }
 
   return deviceList;
+}
+
+- (AVAudioSessionCategory)categoryFromString:(NSString *)categorySTR
+{
+  AVAudioSessionCategory category = 0;
+
+  if ([categorySTR isEqualToString:@"record"]) {
+    category = AVAudioSessionCategoryRecord;
+  } else if ([categorySTR isEqualToString:@"ambient"]) {
+    category = AVAudioSessionCategoryAmbient;
+  } else if ([categorySTR isEqualToString:@"playback"]) {
+    category = AVAudioSessionCategoryPlayback;
+  } else if ([categorySTR isEqualToString:@"multiRoute"]) {
+    category = AVAudioSessionCategoryMultiRoute;
+  } else if ([categorySTR isEqualToString:@"soloAmbient"]) {
+    category = AVAudioSessionCategorySoloAmbient;
+  } else if ([categorySTR isEqualToString:@"playAndRecord"]) {
+    category = AVAudioSessionCategoryPlayAndRecord;
+  }
+
+  return category;
+}
+
+- (AVAudioSessionMode)modeFromString:(NSString *)modeSTR
+{
+  AVAudioSessionMode mode = 0;
+
+  if ([modeSTR isEqualToString:@"default"]) {
+    mode = AVAudioSessionModeDefault;
+  } else if ([modeSTR isEqualToString:@"gameChat"]) {
+    mode = AVAudioSessionModeGameChat;
+  } else if ([modeSTR isEqualToString:@"videoChat"]) {
+    mode = AVAudioSessionModeVideoChat;
+  } else if ([modeSTR isEqualToString:@"voiceChat"]) {
+    mode = AVAudioSessionModeVoiceChat;
+  } else if ([modeSTR isEqualToString:@"measurement"]) {
+    mode = AVAudioSessionModeMeasurement;
+  } else if ([modeSTR isEqualToString:@"voicePrompt"]) {
+    mode = AVAudioSessionModeVoicePrompt;
+  } else if ([modeSTR isEqualToString:@"spokenAudio"]) {
+    mode = AVAudioSessionModeSpokenAudio;
+  } else if ([modeSTR isEqualToString:@"moviePlayback"]) {
+    mode = AVAudioSessionModeMoviePlayback;
+  } else if ([modeSTR isEqualToString:@"videoRecording"]) {
+    mode = AVAudioSessionModeVideoRecording;
+  }
+
+  return mode;
+}
+
+- (AVAudioSessionCategoryOptions)optionsFromArray:(NSArray *)optionsArray
+{
+  AVAudioSessionCategoryOptions options = 0;
+
+  for (NSString *option in optionsArray) {
+    if ([option isEqualToString:@"duckOthers"]) {
+      options |= AVAudioSessionCategoryOptionDuckOthers;
+    }
+
+    if ([option isEqualToString:@"allowAirPlay"]) {
+      options |= AVAudioSessionCategoryOptionAllowAirPlay;
+    }
+
+    if ([option isEqualToString:@"mixWithOthers"]) {
+      options |= AVAudioSessionCategoryOptionMixWithOthers;
+    }
+
+    if ([option isEqualToString:@"allowBluetooth"]) {
+      options |= AVAudioSessionCategoryOptionAllowBluetooth;
+    }
+
+    if ([option isEqualToString:@"defaultToSpeaker"]) {
+      options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+    }
+
+    if ([option isEqualToString:@"allowBluetoothA2DP"]) {
+      options |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+    }
+
+    if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
+      options |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
+    }
+
+    if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
+      options |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+    }
+  }
+
+  return options;
 }
 
 @end
