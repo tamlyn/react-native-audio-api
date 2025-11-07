@@ -89,7 +89,7 @@ void IOSRecorderCallback::cleanup()
     converterOutputBuffer_ = nil;
 
     for (size_t i = 0; i < channelCount_; ++i) {
-      circularBus_[i].reset();
+      circularBus_[i]->zero();
     }
   }
 }

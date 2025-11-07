@@ -103,7 +103,7 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)onInterruptionEnd:(bool)shouldResume
 {
-  if (self.state != AudioEngineState::AudioEngineInterrupted) {
+  if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
     return;
   }
 
@@ -143,7 +143,7 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if (self.state == AudioEngineState::AudioEngineInterrupted) {
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
     NSLog(@"[AudioEngine] rebuilding after interruption");
     [self.audioEngine stop];
     [self.audioEngine reset];

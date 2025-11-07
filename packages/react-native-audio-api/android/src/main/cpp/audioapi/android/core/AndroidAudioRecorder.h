@@ -20,13 +20,13 @@ class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
-class AndroidAudioRecorder : public AudioStreamDataCallback, AudiStreamErrorCallback, AudioRecorder {
+class AndroidAudioRecorder : public AudioStreamDataCallback,
+                             public AudioStreamErrorCallback, public AudioRecorder {
  public:
   explicit AndroidAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
 
-  bool openAudioStream();
   std::string start() override;
   std::tuple<std::string, double, double> stop() override;
 

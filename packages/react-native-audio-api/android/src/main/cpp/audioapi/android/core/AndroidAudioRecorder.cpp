@@ -18,6 +18,11 @@ AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry) {
   openAudioStream();
+
+  streamSampleRate_ = mStream_->getSampleRate();
+  streamChannelCount_ = mStream_->getChannelCount();
+  streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
+  nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
@@ -64,6 +69,7 @@ std::string AndroidAudioRecorder::start() {
     return "";
   }
 
+
   if (!mStream_ || !nativeAudioRecorder_) {
     __android_log_print(
         ANDROID_LOG_ERROR,
@@ -86,13 +92,12 @@ std::string AndroidAudioRecorder::start() {
     // TODO: set adapter node properties?
   }
 
-  nativeAudioRecorder_->start();
+  mStream_->requestStart();
 
   jni::ThreadScope::WithClassLoader(
       [this]() { nativeAudioRecorder_->start(); });
 
   state_.store(RecorderState::Recording);
-
   return std::format("file://{}", filePath_);
 }
 

@@ -58,9 +58,9 @@ class AudioRecorder {
     return isConnected_.load();
   }
 
-  bool isRecording() const = 0;
-  bool isPaused() const = 0;
-  bool isIdle() const = 0;
+  virtual bool isRecording() const = 0;
+  virtual bool isPaused() const = 0;
+  virtual bool isIdle() const = 0;
 
  protected:
   std::atomic<RecorderState> state_{ RecorderState::Idle };

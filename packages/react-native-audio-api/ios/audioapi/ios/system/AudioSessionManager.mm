@@ -59,9 +59,9 @@
   return true;
 }
 
-- (void)setAudioSessionOptions:(NSString *)category
-                          mode:(NSString *)mode
-                       options:(NSArray *)options
+- (void)setAudioSessionOptions:(NSString *)categoryStr
+                          mode:(NSString *)modeStr
+                       options:(NSArray *)optionsArray
                   allowHaptics:(BOOL)allowHaptics
 {
   AVAudioSessionCategory category = [self categoryFromString:categoryStr];
@@ -131,7 +131,6 @@
 - (void)disableSessionManagement
 {
   self.shouldManageSession = false;
-  self.hasDirtySettings = false;
 }
 
 - (NSNumber *)getDevicePreferredSampleRate
