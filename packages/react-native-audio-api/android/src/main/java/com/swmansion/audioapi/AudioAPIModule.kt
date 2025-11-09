@@ -17,8 +17,7 @@ import java.lang.ref.WeakReference
 @ReactModule(name = AudioAPIModule.NAME)
 class AudioAPIModule(
   reactContext: ReactApplicationContext,
-) : NativeAudioAPIModuleSpec(reactContext),
-  LifecycleEventListener {
+) : NativeAudioAPIModuleSpec(reactContext) {
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
@@ -39,8 +38,6 @@ class AudioAPIModule(
     eventName: String,
     eventBody: Map<String, Any>,
   )
-
-  private external fun closeAllContexts()
 
   init {
     try {
@@ -68,25 +65,7 @@ class AudioAPIModule(
     return true
   }
 
-  override fun onHostResume() {
-    // do nothing
-  }
-
-  override fun onHostPause() {
-    // do nothing
-  }
-
-  override fun onHostDestroy() {
-    closeAllContexts()
-  }
-
-  override fun initialize() {
-    reactContext.get()?.addLifecycleEventListener(this)
-  }
-
   override fun invalidate() {
-    closeAllContexts()
-    reactContext.get()?.removeLifecycleEventListener(this)
     // think about cleaning up resources, singletons etc.
   }
 
