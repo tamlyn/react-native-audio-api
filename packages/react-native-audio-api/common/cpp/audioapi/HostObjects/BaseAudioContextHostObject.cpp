@@ -52,7 +52,8 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
-      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createWaveShaper));
 }
 
 JSI_PROPERTY_GETTER_IMPL(BaseAudioContextHostObject, destination) {

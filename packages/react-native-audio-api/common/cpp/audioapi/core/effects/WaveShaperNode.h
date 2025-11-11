@@ -28,6 +28,7 @@ protected:
 private:
   OverSampleType oversample_;
   std::shared_ptr<AudioArray> curve_ {};
+  std::mutex curveMutex_;
 
     static OverSampleType fromString(const std::string &type) {
         std::string lowerType = type;
