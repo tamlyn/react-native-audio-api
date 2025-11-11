@@ -11,6 +11,7 @@ class AudioArray {
  public:
   explicit AudioArray(size_t size);
   AudioArray(const AudioArray &other);
+  AudioArray(float *data, size_t size);
   ~AudioArray();
 
   [[nodiscard]] size_t getSize() const;

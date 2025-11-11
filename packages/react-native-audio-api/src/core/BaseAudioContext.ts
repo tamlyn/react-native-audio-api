@@ -25,6 +25,7 @@ import RecorderAdapterNode from './RecorderAdapterNode';
 import StereoPannerNode from './StereoPannerNode';
 import StreamerNode from './StreamerNode';
 import WorkletNode from './WorkletNode';
+import WaveShaperNode from './WaveShaperNode';
 import { decodeAudioData, decodePCMInBase64 } from './AudioDecoder';
 
 export default class BaseAudioContext {
@@ -295,5 +296,9 @@ export default class BaseAudioContext {
       this,
       this.context.createConvolver(buffer?.buffer, disableNormalization)
     );
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 }

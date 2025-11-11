@@ -56,3 +56,5 @@ export interface ConvolverNodeOptions {
   buffer?: AudioBuffer | null;
   disableNormalization?: boolean;
 }
+
+export type OverSampleType = 'none' | '2x' | '4x';

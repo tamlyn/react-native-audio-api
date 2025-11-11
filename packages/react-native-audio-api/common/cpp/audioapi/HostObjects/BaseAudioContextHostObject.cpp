@@ -9,6 +9,7 @@
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>
+#include <audioapi/HostObjects/effects/WaveShaperNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferQueueSourceNodeHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferSourceNodeHostObject.h>
@@ -300,5 +301,12 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
         runtime, bufferHostObject->getSizeInBytes());
   }
   return jsiObject;
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWaveShaper) {
+  auto waveShaper = context_->createWaveShaper();
+  auto waveShaperHostObject =
+      std::make_shared<WaveShaperNodeHostObject>(waveShaper);
+  return jsi::Object::createFromHostObject(runtime, waveShaperHostObject);
 }
 } // namespace audioapi

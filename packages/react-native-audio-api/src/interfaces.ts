@@ -82,6 +82,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IConvolverNode;
   createStreamer: () => IStreamerNode;
+  createWaveShaper: () => IWaveShaperNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -267,6 +268,13 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
+export interface IWaveShaperNode extends IAudioNode {
+  readonly curve: Float32Array | null;
+  oversample: OverSampleType;
+
+  setCurve(curve: Float32Array | null): void;
+}
+
 export interface IAudioRecorder {
   start: () => void;
   stop: () => void;
@@ -296,7 +304,7 @@ export interface IAudioDecoder {
 
 export interface IAudioStretcher {
   changePlaybackSpeed: (
-    arrayBuffer: AudioBuffer,
+    arrayBuffer: IAudioBuffer,
     playbackSpeed: number
   ) => Promise<IAudioBuffer>;
 }
