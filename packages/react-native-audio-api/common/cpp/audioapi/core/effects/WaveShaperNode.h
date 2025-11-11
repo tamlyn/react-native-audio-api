@@ -35,18 +35,18 @@ private:
                 lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
         if (lowerType == "2x")
-            return OverSampleType::TWICE;
+            return OverSampleType::OVERSAMPLE_2X;
         if (lowerType == "4x")
-            return OverSampleType::FOUR_TIMES;
+            return OverSampleType::OVERSAMPLE_4X;
 
-        return OverSampleType::NONE;
+        return OverSampleType::OVERSAMPLE_NONE;
     }
 
     static std::string toString(OverSampleType type) {
         switch (type) {
-            case OverSampleType::TWICE:
+            case OverSampleType::OVERSAMPLE_2X:
                 return "2x";
-            case OverSampleType::FOUR_TIMES:
+            case OverSampleType::OVERSAMPLE_4X:
                 return "4x";
             default:
                 return "none";

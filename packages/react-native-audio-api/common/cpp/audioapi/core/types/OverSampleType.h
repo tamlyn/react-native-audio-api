@@ -2,6 +2,6 @@
 
 namespace audioapi {
 
-enum class OverSampleType { NONE = 0, TWICE = 2, FOUR_TIMES = 4 };
+enum class OverSampleType { OVERSAMPLE_NONE = 0, OVERSAMPLE_2X = 2, OVERSAMPLE_4X = 4 };
 
 } // namespace audioapi

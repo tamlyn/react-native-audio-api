@@ -27,14 +27,14 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   curve_ = curve;
 }
 
-std::shared_ptr<AudioBus>
-WaveShaperNode::processNode(const std::shared_ptr<AudioBus> &processingBus,
-                            int framesToProcess) {
-    if (!curve_) {
-      return processingBus;
-    }
+std::shared_ptr<AudioBus> WaveShaperNode::processNode(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+  if (!curve_) {
+    return processingBus;
+  }
 
-    return audioBus_;
+  return audioBus_;
 }
 
 } // namespace audioapi
