@@ -1,0 +1,62 @@
+---
+sidebar_position: 6
+---
+
+import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
+import { ReadOnly } from '@site/src/components/Badges';
+
+# WaveShaperNode
+
+The `WaveShaperNode` interface represents non-linear signal distortion.
+
+#### [`AudioNode`](/docs/core/audio-node#properties) properties
+
+<AudioNodePropsTable numberOfInputs={1} numberOfOutputs={1} channelCount={2} channelCountMode={"max"} channelInterpretation={"speakers"} />
+
+## Constructor
+
+[`BaseAudioContext.createWaveShaper()`](/docs/core/base-audio-context#createwaveshaper)
+
+## Properties
+
+It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
+
+| Name | Type | Description |
+| :--: | :--: | :---------- |
+| `curve` | `Float32Array | null` |  ... |
+| `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) |  ... |
+
+## Methods
+
+`WaveShaperNode` does not define any additional methods.
+It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
+
+## Remarks
+
+#### `curve`
+- Default value is null
+- ...
+
+#### `oversample`
+- Default value `none`
+- ...
+
+### `OverSampleType`
+
+<details>
+
+**Acceptable values:**
+  - `none`
+
+  Oversampling is not performed.
+
+  - `2x`
+
+  ...
+
+  - `4x`
+
+  ...
+
+</details>
+
