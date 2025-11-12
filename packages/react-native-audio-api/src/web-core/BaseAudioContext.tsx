@@ -10,6 +10,7 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
+import WaveShaperNode from './WaveShaperNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -37,6 +38,7 @@ export default interface BaseAudioContext {
     constraints?: PeriodicWaveConstraints
   ): PeriodicWave;
   createAnalyser(): AnalyserNode;
+  createWaveShaper(): WaveShaperNode;
   decodeAudioDataSource(source: string): Promise<AudioBuffer>;
   decodeAudioData(arrayBuffer: ArrayBuffer): Promise<AudioBuffer>;
 }

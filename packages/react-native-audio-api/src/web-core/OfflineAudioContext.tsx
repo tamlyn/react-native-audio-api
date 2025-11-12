@@ -16,6 +16,7 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import WaveShaperNode from './WaveShaperNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConvolverNode from './ConvolverNode';
@@ -165,6 +166,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createAnalyser(): AnalyserNode {
     return new AnalyserNode(this, this.context.createAnalyser());
+  }
+
+  createWaveShaper(): WaveShaperNode {
+    return new WaveShaperNode(this, this.context.createWaveShaper());
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {
