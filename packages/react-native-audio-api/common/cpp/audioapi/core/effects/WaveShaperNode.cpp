@@ -1,5 +1,6 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
+#include <audioapi/dsp/Resampler.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -8,27 +9,28 @@ namespace audioapi {
 
 WaveShaperNode::WaveShaperNode(BaseAudioContext *context)
     : AudioNode(context), oversample_(OverSampleType::OVERSAMPLE_NONE) {
+  resampler_ = std::make_shared<Resampler>();
+  tempArray2x_ = std::make_shared<AudioArray>(2 * RENDER_QUANTUM_SIZE);
+  tempArray4x_ = std::make_shared<AudioArray>(4 * RENDER_QUANTUM_SIZE);
   isInitialized_ = true;
 }
 
 std::string WaveShaperNode::getOversample() const {
-  return toString(oversample_);
+  return toString(oversample_.load(std::memory_order_acquire));
 }
 
 void WaveShaperNode::setOversample(const std::string &type) {
-  curveMutex_.lock();
-  oversample_ = fromString(type);
-  curveMutex_.unlock();
+  oversample_.store(fromString(type), std::memory_order_release);
 }
 
 std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
+  std::lock_guard<std::mutex> lock(curveMutex_);
   return curve_;
 }
 
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
-  curveMutex_.lock();
+  std::lock_guard<std::mutex> lock(curveMutex_);
   curve_ = curve;
-  curveMutex_.unlock();
 }
 
 std::shared_ptr<AudioBus> WaveShaperNode::processNode(
@@ -38,38 +40,69 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
     return processingBus;
   }
 
-  if (!curveMutex_.try_lock()) {
+  std::unique_lock<std::mutex> lock(curveMutex_, std::try_to_lock);
+
+  if (!lock.owns_lock()) {
     return processingBus;
   }
+
   if (!curve_) {
     return processingBus;
   }
 
-  auto curveArray = curve_->getData();
+  auto oversample = oversample_.load(std::memory_order_acquire);
 
   for (int channel = 0; channel < processingBus->getNumberOfChannels();
        channel += 1) {
-    auto channelData = processingBus->getChannel(channel)->getData();
-    for (int i = 0; i < framesToProcess; i += 1) {
-      float v = (curve_->getSize() - 1) * 0.5f * (channelData[i] + 1.0f);
+    auto channelData = processingBus->getSharedChannel(channel);
 
-      if (v < 0)
-        channelData[i] = curveArray[0];
-      else if (v >= curve_->getSize() - 1)
-        channelData[i] = curveArray[curve_->getSize() - 1];
-      else {
-        auto k = std::floor(v);
-        auto f = v - k;
-        unsigned kIndex = k;
-        channelData[i] =
-            (1 - f) * curveArray[kIndex] + f * curveArray[kIndex + 1];
-      }
+    switch (oversample) {
+      case OverSampleType::OVERSAMPLE_2X:
+        process2x(channelData);
+      case OverSampleType::OVERSAMPLE_4X:
+        process4x(channelData);
+      case OverSampleType::OVERSAMPLE_NONE:
+      default:
+        process(channelData);
     }
   }
 
-  curveMutex_.unlock();
-
   return processingBus;
+}
+
+void WaveShaperNode::process(const std::shared_ptr<AudioArray> &channelData) {
+  auto curveArray = curve_->getData();
+  auto curveSize = curve_->getSize();
+
+  auto data = channelData->getData();
+
+  for (int i = 0; i < channelData->getSize(); i += 1) {
+    float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
+
+    if (v < 0)
+      data[i] = curveArray[0];
+    else if (v >= static_cast<float>(curveSize) - 1)
+      data[i] = curveArray[curveSize - 1];
+    else {
+      auto k = std::floor(v);
+      auto f = v - k;
+      auto kIndex = static_cast<size_t>(
+          std::clamp(k, 0.0f, static_cast<float>(curveSize) - 1));
+      data[i] = (1 - f) * curveArray[kIndex] + f * curveArray[kIndex + 1];
+    }
+  }
+}
+
+void WaveShaperNode::process2x(const std::shared_ptr<AudioArray> &channelData) {
+  resampler_->process(channelData, tempArray2x_);
+  process(tempArray2x_);
+  resampler_->process(tempArray2x_, channelData);
+}
+
+void WaveShaperNode::process4x(const std::shared_ptr<AudioArray> &channelData) {
+  resampler_->process(channelData, tempArray4x_);
+  process(tempArray4x_);
+  resampler_->process(tempArray4x_, channelData);
 }
 
 } // namespace audioapi

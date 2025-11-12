@@ -10,6 +10,7 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
+class Resampler;
 
 class WaveShaperNode : public AudioNode {
 public:
@@ -26,9 +27,19 @@ protected:
     processNode(const std::shared_ptr<AudioBus> &processingBus, int framesToProcess) override;
 
 private:
-  OverSampleType oversample_;
+  std::atomic<OverSampleType> oversample_;
   std::shared_ptr<AudioArray> curve_ {};
-  std::mutex curveMutex_;
+  mutable std::mutex curveMutex_;
+
+  std::shared_ptr<Resampler> resampler_;
+  std::shared_ptr<AudioArray> tempArray2x_;
+  std::shared_ptr<AudioArray> tempArray4x_;
+
+    void process(const std::shared_ptr<AudioArray> &channelData);
+
+    void process2x(const std::shared_ptr<AudioArray> &channelData);
+
+    void process4x(const std::shared_ptr<AudioArray> &channelData);
 
     static OverSampleType fromString(const std::string &type) {
         std::string lowerType = type;
