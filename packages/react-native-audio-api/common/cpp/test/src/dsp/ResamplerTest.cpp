@@ -1,5 +1,5 @@
-#include <audioapi/dsp/Resampler.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
+#include <audioapi/dsp/Resampler.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>

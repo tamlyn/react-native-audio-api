@@ -7,7 +7,10 @@ import { ReadOnly } from '@site/src/components/Badges';
 
 # WaveShaperNode
 
-The `WaveShaperNode` interface represents non-linear signal distortion.
+The `WaveShaperNode` interface represents non-linear signal distortion effects.
+Non-linear waveshaping distortion is commonly used for both subtle non-linear warming, or more obvious distortion effects.
+
+// example
 
 #### [`AudioNode`](/docs/core/audio-node#properties) properties
 
@@ -23,7 +26,7 @@ It inherits all properties from [`AudioNode`](/docs/core/audio-node#properties).
 
 | Name | Type | Description |
 | :--: | :--: | :---------- |
-| `curve` | `Float32Array | null` |  ... |
+| `curve` | `Float32Array | null` |  The shaping curve used for waveshaping effect. |
 | `oversample` | [`OverSampleType`](/docs/effects/wave-shaper-node#oversampletype) |  ... |
 
 ## Methods
@@ -48,15 +51,15 @@ It inherits all methods from [`AudioNode`](/docs/core/audio-node#methods).
 **Acceptable values:**
   - `none`
 
-  Oversampling is not performed.
+  Do not oversample.
 
   - `2x`
 
-  ...
+  Oversample two times.
 
   - `4x`
 
-  ...
+  Oversample four times.
 
 </details>
 
