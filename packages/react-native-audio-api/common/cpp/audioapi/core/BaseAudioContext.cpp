@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/analysis/AnalyserNode.h>
 #include <audioapi/core/destinations/AudioDestinationNode.h>
@@ -128,8 +129,9 @@ std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
 }
 #endif
 
-std::shared_ptr<GainNode> BaseAudioContext::createGain() {
-  auto gain = std::make_shared<GainNode>(this);
+std::shared_ptr<GainNode> BaseAudioContext::createGain(
+    std::shared_ptr<GainOptions> options) {
+  auto gain = std::make_shared<GainNode>(this, options);
   nodeManager_->addProcessingNode(gain);
   return gain;
 }

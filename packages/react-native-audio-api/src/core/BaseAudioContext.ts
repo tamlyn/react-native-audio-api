@@ -193,7 +193,7 @@ export default class BaseAudioContext {
   }
 
   createGain(): GainNode {
-    return new GainNode(this, this.context.createGain());
+    return new GainNode(this);
   }
 
   createStereoPanner(): StereoPannerNode {

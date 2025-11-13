@@ -16,10 +16,11 @@ namespace audioapi {
 class AudioBus;
 class BaseAudioContext;
 class AudioParam;
+class AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(BaseAudioContext *context);
+  explicit AudioNode(BaseAudioContext *context, std::shared_ptr<AudioNodeOptions> options = nullptr);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;

@@ -19,6 +19,8 @@
 #include <audioapi/HostObjects/sources/WorkletSourceNodeHostObject.h>
 #include <audioapi/core/BaseAudioContext.h>
 
+#include <audioapi/HostObjects/utils/NodeOptionsParser.h>
+
 namespace audioapi {
 
 BaseAudioContextHostObject::BaseAudioContextHostObject(
@@ -184,7 +186,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
-  auto gain = context_->createGain();
+  auto object = args[0].asObject(runtime);
+  GainOptions options =
+      audioapi::option_parser::parseGainOptions(runtime, object);
+  auto gain = context_->createGain(std::make_shared<GainOptions>(options));
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }

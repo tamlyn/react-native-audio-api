@@ -6,6 +6,7 @@ import {
   ContextState,
   OscillatorType,
   WindowType,
+  TGainOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -59,7 +60,7 @@ export interface IBaseAudioContext {
   ): IWorkletProcessingNode;
   createOscillator(): IOscillatorNode;
   createConstantSource(): IConstantSourceNode;
-  createGain(): IGainNode;
+  createGain(gainOptions: TGainOptions): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;

@@ -56,3 +56,13 @@ export interface ConvolverNodeOptions {
   buffer?: AudioBuffer | null;
   disableNormalization?: boolean;
 }
+
+export type TAudioNodeOptions = {
+  channelCount?: number;
+  channelCountMode?: ChannelCountMode;
+  channelInterpretation?: ChannelInterpretation;
+};
+
+export type TGainOptions = TAudioNodeOptions & {
+  gain?: number;
+};

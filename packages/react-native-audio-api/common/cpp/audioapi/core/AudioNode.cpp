@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/BaseAudioContext.h>
@@ -7,7 +8,15 @@
 
 namespace audioapi {
 
-AudioNode::AudioNode(BaseAudioContext *context) : context_(context) {
+AudioNode::AudioNode(
+    BaseAudioContext *context,
+    std::shared_ptr<AudioNodeOptions> options)
+    : context_(context) {
+  if (options != nullptr) {
+    channelCount_ = options->channelCount;
+    channelCountMode_ = options->channelCountMode;
+    channelInterpretation_ = options->channelInterpretation;
+  }
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 }
