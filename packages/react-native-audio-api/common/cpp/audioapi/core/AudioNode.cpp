@@ -265,7 +265,7 @@ void AudioNode::cleanup() {
 std::shared_ptr<AudioBus> AudioNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
-  if (!processingBus) {
+  if (processingBus == nullptr) {
     return nullptr;
   }
   processingBus->zero();
@@ -293,7 +293,7 @@ void AudioNode::processNode(
   if (!outputBuses_.empty()) {
     auto outBus = getOutputBus(0);
 
-    if (returnedBus) {
+    if (returnedBus != nullptr) {
       unsigned int requiredChannels = returnedBus->getNumberOfChannels();
 
       // Reallocate output bus if channel count doesn't match

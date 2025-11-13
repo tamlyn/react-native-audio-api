@@ -185,12 +185,6 @@ class NodeConnections {
   /// @return Maximum number of source channels
   unsigned int findMaxSourceChannels(const std::vector<InputConnection> &connections) const;
 
-  /// @brief Safely get source bus from a node
-  /// @param sourceNode The source node
-  /// @param outputIndex The output index
-  /// @return Source AudioBus
-  std::shared_ptr<AudioBus> getSourceBusSafely(AudioNode *sourceNode, unsigned int outputIndex) const;
-
   /// @brief Prepare the summing bus for mixing
   /// @param computedChannels Number of computed channels
   /// @param maxSourceChannels Maximum number of source channels

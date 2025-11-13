@@ -459,27 +459,14 @@ unsigned int NodeConnections::findMaxSourceChannels(
     if (!ic.sourceNode)
       continue;
 
-    auto srcBus = getSourceBusSafely(ic.sourceNode, ic.outputIndexFromSource);
-    if (srcBus) {
+    auto srcBus = ic.sourceNode->getOutputBus(ic.outputIndexFromSource);
+    if (srcBus != nullptr) {
       maxChannels =
           std::max(maxChannels, (unsigned int)srcBus->getNumberOfChannels());
     }
   }
 
   return maxChannels;
-}
-
-std::shared_ptr<AudioBus> NodeConnections::getSourceBusSafely(
-    AudioNode *sourceNode,
-    unsigned int outputIndex) const {
-  if (sourceNode == nullptr) {
-    return nullptr;
-  }
-  try {
-    return sourceNode->getOutputBus(outputIndex);
-  } catch (const std::out_of_range &e) {
-    return nullptr;
-  }
 }
 
 void NodeConnections::prepareSummingBus(
@@ -510,8 +497,8 @@ void NodeConnections::sumAllConnections(
 
     ic.sourceNode->processAudio(framesToProcess, checkIsAlreadyProcessed);
 
-    auto srcBus = getSourceBusSafely(ic.sourceNode, ic.outputIndexFromSource);
-    if (srcBus) {
+    auto srcBus = ic.sourceNode->getOutputBus(ic.outputIndexFromSource);
+    if (srcBus != nullptr) {
       internalSummingBus_->sum(
           srcBus.get(), owner_->getChannelInterpretationEnum());
     }
