@@ -5,9 +5,9 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
-#include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ChannelMergerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ChannelSplitterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
 #include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/effects/StereoPannerNodeHostObject.h>

@@ -100,14 +100,16 @@ void AudioBufferSourceNode::setBuffer(
     alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
   }
 
-    // Re-initialize output buses with the correct channel count.
-    for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
-      outputBuses_[i] = std::make_shared<AudioBus>(
-          RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
-    }
+  // Re-initialize output buses with the correct channel count.
+  for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
+    outputBuses_[i] = std::make_shared<AudioBus>(
+        RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
   }
+
   playbackRateBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
+      RENDER_QUANTUM_SIZE * 3,
+      channelCount_,
+      context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
 }

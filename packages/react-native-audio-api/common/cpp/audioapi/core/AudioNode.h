@@ -88,9 +88,9 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   virtual void processNode(const std::vector<std::shared_ptr<AudioBus>> &inputBuses, int framesToProcess);
 
   // called by an upstream node when it becomes enabled. Increments the active input counter.
-  void onInputEnabled();
+  virtual void onInputEnabled();
   // called by an upstream node when it becomes disabled. Decrements the active input counter.
-  void onInputDisabled();
+  virtual void onInputDisabled();
 
   std::vector<std::shared_ptr<AudioBus>> outputBuses_;
 

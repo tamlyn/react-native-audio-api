@@ -30,7 +30,7 @@ class ConvolverNode : public AudioNode {
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
 
  private:
-  std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
+  //std::shared_ptr<AudioBus> processInputs(const std::shared_ptr<AudioBus>& outputBus, int framesToProcess, bool checkIsAlreadyProcessed) override;
   void onInputDisabled() override;
   float gainCalibrationSampleRate_;
   size_t remainingSegments_;
