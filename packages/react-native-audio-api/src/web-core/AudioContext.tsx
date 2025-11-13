@@ -19,6 +19,8 @@ import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
+import ConvolverNode from './ConvolverNode';
+import { ConvolverNodeOptions } from './ConvolverNodeOptions';
 import ChannelMergerNode from './ChannelMergerNode';
 import ChannelSplitterNode from './ChannelSplitterNode';
 
@@ -31,7 +33,7 @@ export default class AudioContext implements BaseAudioContext {
   readonly destination: AudioDestinationNode;
   readonly sampleRate: number;
 
-  constructor(options?: AudioContextOptions, _initSuspended: boolean = false) {
+  constructor(options?: AudioContextOptions) {
     if (
       options &&
       options.sampleRate &&
@@ -74,6 +76,29 @@ export default class AudioContext implements BaseAudioContext {
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
+    if (options?.buffer) {
+      const numberOfChannels = options.buffer.numberOfChannels;
+      if (
+        numberOfChannels !== 1 &&
+        numberOfChannels !== 2 &&
+        numberOfChannels !== 4
+      ) {
+        throw new NotSupportedError(
+          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
+        );
+      }
+    }
+    const buffer = options?.buffer ?? null;
+    const disableNormalization = options?.disableNormalization ?? false;
+    return new ConvolverNode(
+      this,
+      this.context.createConvolver(),
+      buffer,
+      disableNormalization
+    );
   }
 
   createChannelSplitter(numberOfOutputs: number = 6): ChannelSplitterNode {

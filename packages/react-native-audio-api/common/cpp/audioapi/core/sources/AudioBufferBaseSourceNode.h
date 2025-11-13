@@ -19,10 +19,11 @@ class AudioBufferBaseSourceNode : public AudioScheduledSourceNode {
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getPlaybackRateParam() const;
 
-  void clearOnPositionChangedCallback();
   void setOnPositionChangedCallbackId(uint64_t callbackId);
   void setOnPositionChangedInterval(int interval);
   [[nodiscard]] int getOnPositionChangedInterval() const;
+  [[nodiscard]] double getInputLatency() const;
+  [[nodiscard]] double getOutputLatency() const;
 
  protected:
     // pitch correction

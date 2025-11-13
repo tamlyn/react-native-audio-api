@@ -36,20 +36,15 @@ std::shared_ptr<AudioParam> AudioBufferBaseSourceNode::getPlaybackRateParam()
   return playbackRateParam_;
 }
 
-void AudioBufferBaseSourceNode::clearOnPositionChangedCallback() {
-  if (onPositionChangedCallbackId_ == 0 || context_ == nullptr ||
-      context_->audioEventHandlerRegistry_ == nullptr) {
-    return;
-  }
-
-  context_->audioEventHandlerRegistry_->unregisterHandler(
-      "positionChanged", onPositionChangedCallbackId_);
-  onPositionChangedCallbackId_ = 0;
-}
-
 void AudioBufferBaseSourceNode::setOnPositionChangedCallbackId(
     uint64_t callbackId) {
-  onPositionChangedCallbackId_ = callbackId;
+  auto oldCallbackId = onPositionChangedCallbackId_.exchange(
+      callbackId, std::memory_order_acq_rel);
+
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler(
+        "positionChanged", oldCallbackId);
+  }
 }
 
 void AudioBufferBaseSourceNode::setOnPositionChangedInterval(int interval) {
@@ -65,15 +60,33 @@ std::mutex &AudioBufferBaseSourceNode::getBufferLock() {
   return bufferLock_;
 }
 
+double AudioBufferBaseSourceNode::getInputLatency() const {
+  if (pitchCorrection_) {
+    return static_cast<double>(stretch_->inputLatency()) /
+        context_->getSampleRate();
+  }
+  return 0;
+}
+
+double AudioBufferBaseSourceNode::getOutputLatency() const {
+  if (pitchCorrection_) {
+    return static_cast<double>(stretch_->outputLatency()) /
+        context_->getSampleRate();
+  }
+  return 0;
+}
+
 void AudioBufferBaseSourceNode::sendOnPositionChangedEvent() {
-  if (onPositionChangedCallbackId_ != 0 &&
-      onPositionChangedTime_ > onPositionChangedInterval_ &&
-      context_->audioEventHandlerRegistry_ != nullptr) {
+  auto onPositionChangedCallbackId =
+      onPositionChangedCallbackId_.load(std::memory_order_acquire);
+
+  if (onPositionChangedCallbackId != 0 &&
+      onPositionChangedTime_ > onPositionChangedInterval_) {
     std::unordered_map<std::string, EventValue> body = {
         {"value", getCurrentPosition()}};
 
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "positionChanged", onPositionChangedCallbackId_, body);
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "positionChanged", onPositionChangedCallbackId, body);
 
     onPositionChangedTime_ = 0;
   }

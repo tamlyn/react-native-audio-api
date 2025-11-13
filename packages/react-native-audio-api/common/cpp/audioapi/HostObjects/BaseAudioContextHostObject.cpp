@@ -5,6 +5,7 @@
 #include <audioapi/HostObjects/analysis/AnalyserNodeHostObject.h>
 #include <audioapi/HostObjects/destinations/AudioDestinationNodeHostObject.h>
 #include <audioapi/HostObjects/effects/BiquadFilterNodeHostObject.h>
+#include <audioapi/HostObjects/effects/ConvolverNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ChannelMergerNodeHostObject.h>
 #include <audioapi/HostObjects/effects/ChannelSplitterNodeHostObject.h>
 #include <audioapi/HostObjects/effects/GainNodeHostObject.h>
@@ -53,6 +54,7 @@ BaseAudioContextHostObject::BaseAudioContextHostObject(
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBufferQueueSource),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createBuffer),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createPeriodicWave),
+      JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createConvolver),
       JSI_EXPORT_FUNCTION(BaseAudioContextHostObject, createAnalyser));
 }
 
@@ -123,7 +125,13 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createWorkletNode) {
       shouldLockRuntime);
   auto workletNodeHostObject =
       std::make_shared<WorkletNodeHostObject>(workletNode);
-  return jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+  auto jsiObject =
+      jsi::Object::createFromHostObject(runtime, workletNodeHostObject);
+  jsiObject.setExternalMemoryPressure(
+      runtime,
+      sizeof(float) * bufferLength *
+          inputChannelCount); // rough estimate of underlying buffer
+  return jsiObject;
 #endif
   return jsi::Value::undefined();
 }
@@ -300,5 +308,29 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
   auto analyser = context_->createAnalyser();
   auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
+}
+
+JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
+  auto disableNormalization = args[1].getBool();
+  std::shared_ptr<ConvolverNode> convolver;
+  if (args[0].isUndefined()) {
+    convolver = context_->createConvolver(nullptr, disableNormalization);
+  } else {
+    auto bufferHostObject =
+        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    convolver = context_->createConvolver(
+        bufferHostObject->audioBuffer_, disableNormalization);
+  }
+  auto convolverHostObject =
+      std::make_shared<ConvolverNodeHostObject>(convolver);
+  auto jsiObject =
+      jsi::Object::createFromHostObject(runtime, convolverHostObject);
+  if (!args[0].isUndefined()) {
+    auto bufferHostObject =
+        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    jsiObject.setExternalMemoryPressure(
+        runtime, bufferHostObject->getSizeInBytes());
+  }
+  return jsiObject;
 }
 } // namespace audioapi

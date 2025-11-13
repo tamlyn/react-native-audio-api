@@ -9,6 +9,7 @@ import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
+import ConvolverNode from './ConvolverNode';
 import ChannelMergerNode from './ChannelMergerNode';
 import ChannelSplitterNode from './ChannelSplitterNode';
 
@@ -25,6 +26,7 @@ export default interface BaseAudioContext {
   createGain(): GainNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
+  createConvolver(): ConvolverNode;
   createChannelSplitter(): ChannelSplitterNode;
   createChannelMerger(): ChannelMergerNode;
   createBufferSource(): Promise<AudioBufferSourceNode>;

@@ -15,6 +15,7 @@ export { default as ChannelMergerNode } from './web-core/ChannelMergerNode';
 export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
+export { default as ConvolverNode } from './web-core/ConvolverNode';
 
 export * from './web-core/custom';
 

@@ -68,6 +68,8 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
  protected:
   friend class AudioNodeManager;
   friend class NodeConnections;
+  friend class ConvolverNode;
+  friend class AudioDestinationNode;
 
   explicit AudioNode(BaseAudioContext *context, unsigned int numberOfInputs = DEFAULT_NUMBER_OF_INPUTS);
 

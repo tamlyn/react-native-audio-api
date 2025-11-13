@@ -508,15 +508,15 @@ void multiply(
   bool source2Aligned = is16ByteAligned(inputVector2);
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT(loadInstr, storeInstr)           \
-  while (outputVector < endP) {                    \
-    pSource1 = _mm_load_ps(inputVector1);          \
+#define SSE2_MULT(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource1 = _mm_load_ps(inputVector1); \
     pSource2 = _mm_##loadInstr##_ps(inputVector2); \
-    dest = _mm_mul_ps(pSource1, pSource2);         \
-    _mm_##storeInstr##_ps(outputVector, dest);     \
-    inputVector1 += 4;                             \
-    inputVector2 += 4;                             \
-    outputVector += 4;                             \
+    dest = _mm_mul_ps(pSource1, pSource2); \
+    _mm_##storeInstr##_ps(outputVector, dest); \
+    inputVector1 += 4; \
+    inputVector2 += 4; \
+    outputVector += 4; \
   }
 
   if (source2Aligned && destAligned) // Both aligned.
@@ -647,15 +647,15 @@ void multiplyByScalarThenAddToOutput(
 
   bool destAligned = is16ByteAligned(outputVector);
 
-#define SSE2_MULT_ADD(loadInstr, storeInstr)   \
-  while (outputVector < endP) {                \
-    pSource = _mm_load_ps(inputVector);        \
-    temp = _mm_mul_ps(pSource, mScale);        \
+#define SSE2_MULT_ADD(loadInstr, storeInstr) \
+  while (outputVector < endP) { \
+    pSource = _mm_load_ps(inputVector); \
+    temp = _mm_mul_ps(pSource, mScale); \
     dest = _mm_##loadInstr##_ps(outputVector); \
-    dest = _mm_add_ps(dest, temp);             \
+    dest = _mm_add_ps(dest, temp); \
     _mm_##storeInstr##_ps(outputVector, dest); \
-    inputVector += 4;                          \
-    outputVector += 4;                         \
+    inputVector += 4; \
+    outputVector += 4; \
   }
 
   if (destAligned)

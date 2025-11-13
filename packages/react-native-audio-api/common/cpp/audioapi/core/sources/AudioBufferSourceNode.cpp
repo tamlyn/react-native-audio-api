@@ -82,11 +82,23 @@ void AudioBufferSourceNode::setBuffer(
   }
 
   buffer_ = buffer;
-  alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
-  int newChannelCount = buffer_->getNumberOfChannels();
+  channelCount_ = buffer_->getNumberOfChannels();
 
-  if (channelCount_ != newChannelCount) {
-    channelCount_ = newChannelCount;
+  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
+
+  if (pitchCorrection_) {
+    int extraTailFrames = static_cast<int>(
+        (getInputLatency() + getOutputLatency()) * context_->getSampleRate());
+    size_t totalSize = buffer_->getLength() + extraTailFrames;
+
+    alignedBus_ = std::make_shared<AudioBus>(
+        totalSize, channelCount_, buffer_->getSampleRate());
+    alignedBus_->copy(buffer_->bus_.get(), 0, 0, buffer_->getLength());
+
+    alignedBus_->zero(buffer_->getLength(), extraTailFrames);
+  } else {
+    alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
+  }
 
     // Re-initialize output buses with the correct channel count.
     for (unsigned int i = 0; i < numberOfOutputs_; ++i) {
@@ -98,8 +110,6 @@ void AudioBufferSourceNode::setBuffer(
       RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
-
-  stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
 }
 
 void AudioBufferSourceNode::start(double when, double offset, double duration) {
@@ -130,19 +140,13 @@ void AudioBufferSourceNode::disable() {
   alignedBus_.reset();
 }
 
-void AudioBufferSourceNode::clearOnLoopEndedCallback() {
-  if (onLoopEndedCallbackId_ == 0 || context_ == nullptr ||
-      context_->audioEventHandlerRegistry_ == nullptr) {
-    return;
-  }
-
-  context_->audioEventHandlerRegistry_->unregisterHandler(
-      "loopEnded", onLoopEndedCallbackId_);
-  onLoopEndedCallbackId_ = 0;
-}
-
 void AudioBufferSourceNode::setOnLoopEndedCallbackId(uint64_t callbackId) {
-  onLoopEndedCallbackId_ = callbackId;
+  auto oldCallbackId =
+      onLoopEndedCallbackId_.exchange(callbackId, std::memory_order_acq_rel);
+
+  if (oldCallbackId != 0) {
+    audioEventHandlerRegistry_->unregisterHandler("loopEnded", oldCallbackId);
+  }
 }
 
 std::shared_ptr<AudioBus> AudioBufferSourceNode::processNode(
@@ -178,8 +182,8 @@ void AudioBufferSourceNode::sendOnLoopEndedEvent() {
   auto onLoopEndedCallbackId =
       onLoopEndedCallbackId_.load(std::memory_order_acquire);
   if (onLoopEndedCallbackId != 0) {
-    context_->audioEventHandlerRegistry_->invokeHandlerWithEventBody(
-        "loopEnded", onLoopEndedCallbackId_, {});
+    audioEventHandlerRegistry_->invokeHandlerWithEventBody(
+        "loopEnded", onLoopEndedCallbackId, {});
   }
 }
 

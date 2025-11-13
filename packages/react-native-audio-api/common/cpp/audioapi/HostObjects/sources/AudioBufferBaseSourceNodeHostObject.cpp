@@ -20,6 +20,11 @@ AudioBufferBaseSourceNodeHostObject::AudioBufferBaseSourceNodeHostObject(
           AudioBufferBaseSourceNodeHostObject, onPositionChanged),
       JSI_EXPORT_PROPERTY_SETTER(
           AudioBufferBaseSourceNodeHostObject, onPositionChangedInterval));
+
+  addFunctions(
+      JSI_EXPORT_FUNCTION(AudioBufferBaseSourceNodeHostObject, getInputLatency),
+      JSI_EXPORT_FUNCTION(
+          AudioBufferBaseSourceNodeHostObject, getOutputLatency));
 }
 
 AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
@@ -28,7 +33,7 @@ AudioBufferBaseSourceNodeHostObject::~AudioBufferBaseSourceNodeHostObject() {
   // When JSI object is garbage collected (together with the eventual callback),
   // underlying source node might still be active and try to call the
   // non-existing callback.
-  sourceNode->clearOnPositionChangedCallback();
+  sourceNode->setOnPositionChangedCallbackId(0);
 }
 
 JSI_PROPERTY_GETTER_IMPL(AudioBufferBaseSourceNodeHostObject, detune) {
@@ -68,6 +73,20 @@ JSI_PROPERTY_SETTER_IMPL(
   auto sourceNode = std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
 
   sourceNode->setOnPositionChangedInterval(static_cast<int>(value.getNumber()));
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getInputLatency) {
+  auto audioBufferBaseSourceNode =
+      std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+
+  return audioBufferBaseSourceNode->getInputLatency();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioBufferBaseSourceNodeHostObject, getOutputLatency) {
+  auto audioBufferBaseSourceNode =
+      std::static_pointer_cast<AudioBufferBaseSourceNode>(node_);
+
+  return audioBufferBaseSourceNode->getOutputLatency();
 }
 
 } // namespace audioapi
