@@ -187,9 +187,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   auto object = args[0].asObject(runtime);
-  GainOptions options =
+  std::shared_ptr<GainOptions> options =
       audioapi::option_parser::parseGainOptions(runtime, object);
-  auto gain = context_->createGain(std::make_shared<GainOptions>(options));
+  auto gain = context_->createGain(options);
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }

@@ -48,7 +48,7 @@ namespace audioapi::option_parser {
     return std::make_shared<AudioNodeOptions>(options);
   }
 
-  GainOptions parseGainOptions(
+  std::shared_ptr<GainOptions> parseGainOptions(
       jsi::Runtime &runtime,
       const jsi::Object &optionsObject) {
     std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
@@ -56,7 +56,7 @@ namespace audioapi::option_parser {
     options.gain = static_cast<float>(optionsObject
                                           .getProperty(runtime, "gain")
                                           .getNumber());
-    return options;
+    return std::make_shared<GainOptions>(options);
   }
 } // namespace audioapi::option_parser
 
