@@ -58,6 +58,17 @@ namespace audioapi::option_parser {
                                           .getNumber());
     return std::make_shared<GainOptions>(options);
   }
+
+  std::shared_ptr<StereoPannerOptions> parseStereoPannerOptions (
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+    std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+    StereoPannerOptions options(*nodeOptions.get());
+    options.pan = static_cast<float>(optionsObject
+      .getProperty(runtime, "pan")
+      .getNumber());
+    return std::make_shared<StereoPannerOptions>(options);
+  }
 } // namespace audioapi::option_parser
 
 

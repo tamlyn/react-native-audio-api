@@ -197,7 +197,7 @@ export default class BaseAudioContext {
   }
 
   createStereoPanner(): StereoPannerNode {
-    return new StereoPannerNode(this, this.context.createStereoPanner());
+    return new StereoPannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {

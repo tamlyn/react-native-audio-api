@@ -36,6 +36,7 @@ class WorkletNode;
 class WorkletProcessingNode;
 class StreamerNode;
 class GainOptions;
+class StereoPannerOptions;
 
 class BaseAudioContext {
  public:
@@ -66,8 +67,8 @@ class BaseAudioContext {
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<ConstantSourceNode> createConstantSource();
   std::shared_ptr<StreamerNode> createStreamer();
-  std::shared_ptr<GainNode> createGain(std::shared_ptr<GainOptions> options);
-  std::shared_ptr<StereoPannerNode> createStereoPanner();
+  std::shared_ptr<GainNode> createGain(const std::shared_ptr<GainOptions> options);
+  std::shared_ptr<StereoPannerNode> createStereoPanner(const std::shared_ptr<StereoPannerOptions> options);
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);

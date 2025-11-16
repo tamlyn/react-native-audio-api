@@ -186,16 +186,19 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
-  auto object = args[0].asObject(runtime);
-  std::shared_ptr<GainOptions> options =
-      audioapi::option_parser::parseGainOptions(runtime, object);
-  auto gain = context_->createGain(options);
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<GainOptions> gainOptions =
+      audioapi::option_parser::parseGainOptions(runtime, options);
+  auto gain = context_->createGain(gainOptions);
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
-  auto stereoPanner = context_->createStereoPanner();
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<StereoPannerOptions> stereoPannerOptions =
+      audioapi::option_parser::parseStereoPannerOptions(runtime, options);
+  auto stereoPanner = context_->createStereoPanner(stereoPannerOptions);
   auto stereoPannerHostObject =
       std::make_shared<StereoPannerNodeHostObject>(stereoPanner);
   return jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);

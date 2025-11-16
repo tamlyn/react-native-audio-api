@@ -15,4 +15,10 @@ struct GainOptions : AudioNodeOptions {
   explicit GainOptions(AudioNodeOptions nodeOptions)
       : AudioNodeOptions(nodeOptions) {}
 };
+
+struct StereoPannerOptions : AudioNodeOptions {
+  float pan;
+  explicit StereoPannerOptions(AudioNodeOptions nodeOptions)
+      : AudioNodeOptions(nodeOptions) {}
+};
 } // namespace audioapi

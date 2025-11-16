@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/utils/Constants.h>
@@ -8,10 +9,11 @@
 
 namespace audioapi {
 
-StereoPannerNode::StereoPannerNode(BaseAudioContext *context)
-    : AudioNode(context) {
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  panParam_ = std::make_shared<AudioParam>(0.0, -1.0f, 1.0f, context);
+StereoPannerNode::StereoPannerNode(
+    BaseAudioContext *context,
+    const std::shared_ptr<StereoPannerOptions> options)
+    : AudioNode(context, options) {
+  panParam_ = std::make_shared<AudioParam>(options->pan, -1.0f, 1.0f, context);
   isInitialized_ = true;
 }
 

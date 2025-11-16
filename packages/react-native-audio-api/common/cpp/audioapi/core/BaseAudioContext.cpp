@@ -136,8 +136,9 @@ std::shared_ptr<GainNode> BaseAudioContext::createGain(
   return gain;
 }
 
-std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner() {
-  auto stereoPanner = std::make_shared<StereoPannerNode>(this);
+std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
+    const std::shared_ptr<StereoPannerOptions> options) {
+  auto stereoPanner = std::make_shared<StereoPannerNode>(this, options);
   nodeManager_->addProcessingNode(stereoPanner);
   return stereoPanner;
 }

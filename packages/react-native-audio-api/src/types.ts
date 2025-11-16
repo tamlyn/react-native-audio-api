@@ -66,3 +66,7 @@ export type TAudioNodeOptions = {
 export type TGainOptions = TAudioNodeOptions & {
   gain?: number;
 };
+
+export type TSteroPannerOptions = TAudioNodeOptions & {
+  pan?: number;
+};
