@@ -67,11 +67,11 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createGain(): GainNode {
-    return new GainNode(this, this.context.createGain());
+    return new GainNode(this);
   }
 
   createStereoPanner(): StereoPannerNode {
-    return new StereoPannerNode(this, this.context.createStereoPanner());
+    return new StereoPannerNode(this);
   }
 
   createBiquadFilter(): BiquadFilterNode {
