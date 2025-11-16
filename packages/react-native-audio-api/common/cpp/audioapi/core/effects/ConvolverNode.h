@@ -16,10 +16,11 @@ namespace audioapi {
 
 class AudioBus;
 class AudioBuffer;
+class ConvolverOptions;
 
 class ConvolverNode : public AudioNode {
  public:
-    explicit ConvolverNode(BaseAudioContext *context, const std::shared_ptr<AudioBuffer>& buffer, bool disableNormalization);
+    explicit ConvolverNode(BaseAudioContext *context, const std::shared_ptr<ConvolverOptions> options);
 
     [[nodiscard]] bool getNormalize_() const;
     [[nodiscard]] const std::shared_ptr<AudioBuffer> &getBuffer() const;

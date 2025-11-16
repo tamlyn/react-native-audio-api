@@ -8,6 +8,7 @@ import {
   WindowType,
   TGainOptions,
   TSteroPannerOptions,
+  TConvolverOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -81,10 +82,7 @@ export interface IBaseAudioContext {
     disableNormalization: boolean
   ) => IPeriodicWave;
   createAnalyser: () => IAnalyserNode;
-  createConvolver: (
-    buffer: IAudioBuffer | undefined,
-    disableNormalization: boolean
-  ) => IConvolverNode;
+  createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
   createStreamer: () => IStreamerNode;
 }
 

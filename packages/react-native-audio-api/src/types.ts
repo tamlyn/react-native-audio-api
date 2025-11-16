@@ -70,3 +70,8 @@ export type TGainOptions = TAudioNodeOptions & {
 export type TSteroPannerOptions = TAudioNodeOptions & {
   pan?: number;
 };
+
+export type TConvolverOptions = TAudioNodeOptions & {
+  buffer?: AudioBuffer;
+  disableNormalization?: boolean;
+};

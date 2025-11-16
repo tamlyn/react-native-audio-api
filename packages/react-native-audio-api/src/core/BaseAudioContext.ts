@@ -5,7 +5,6 @@ import {
   ContextState,
   PeriodicWaveConstraints,
   AudioWorkletRuntime,
-  ConvolverNodeOptions,
 } from '../types';
 import { assertWorkletsEnabled, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
@@ -276,24 +275,7 @@ export default class BaseAudioContext {
     return new AnalyserNode(this, this.context.createAnalyser());
   }
 
-  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
-    if (options?.buffer) {
-      const numberOfChannels = options.buffer.numberOfChannels;
-      if (
-        numberOfChannels !== 1 &&
-        numberOfChannels !== 2 &&
-        numberOfChannels !== 4
-      ) {
-        throw new NotSupportedError(
-          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
-        );
-      }
-    }
-    const buffer = options?.buffer ?? null;
-    const disableNormalization = options?.disableNormalization ?? false;
-    return new ConvolverNode(
-      this,
-      this.context.createConvolver(buffer?.buffer, disableNormalization)
-    );
+  createConvolver(): ConvolverNode {
+    return new ConvolverNode(this);
   }
 }

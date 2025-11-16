@@ -1,4 +1,9 @@
-import { TAudioNodeOptions, TGainOptions, TSteroPannerOptions } from './types';
+import {
+  TAudioNodeOptions,
+  TGainOptions,
+  TSteroPannerOptions,
+  TConvolverOptions,
+} from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
   channelCount: 2,
@@ -15,4 +20,9 @@ export const SteroPannerOptions: TSteroPannerOptions = {
   ...AudioNodeOptions,
   channelCountMode: 'clamped-max',
   pan: 0,
+};
+
+export const ConvolverOptions: TConvolverOptions = {
+  ...AudioNodeOptions,
+  disableNormalization: false,
 };

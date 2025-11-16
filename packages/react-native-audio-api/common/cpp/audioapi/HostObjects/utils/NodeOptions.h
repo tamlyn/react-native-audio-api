@@ -1,7 +1,10 @@
 #pragma once
 
+#include<memory>
+
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/core/sources/AudioBuffer.h>
 
 namespace audioapi {
 struct AudioNodeOptions {
@@ -19,6 +22,13 @@ struct GainOptions : AudioNodeOptions {
 struct StereoPannerOptions : AudioNodeOptions {
   float pan;
   explicit StereoPannerOptions(AudioNodeOptions nodeOptions)
+      : AudioNodeOptions(nodeOptions) {}
+};
+
+struct ConvolverOptions : AudioNodeOptions {
+  std::shared_ptr<AudioBuffer> bus;
+  bool disableNormalization;
+  explicit ConvolverOptions(AudioNodeOptions nodeOptions)
       : AudioNodeOptions(nodeOptions) {}
 };
 } // namespace audioapi

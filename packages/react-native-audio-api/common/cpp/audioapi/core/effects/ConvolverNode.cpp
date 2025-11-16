@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -11,9 +12,8 @@
 namespace audioapi {
 ConvolverNode::ConvolverNode(
     BaseAudioContext *context,
-    const std::shared_ptr<AudioBuffer> &buffer,
-    bool disableNormalization)
-    : AudioNode(context),
+    const std::shared_ptr<ConvolverOptions> options)
+    : AudioNode(context, options),
       remainingSegments_(0),
       internalBufferIndex_(0),
       signalledToStop_(false),
@@ -23,9 +23,9 @@ ConvolverNode::ConvolverNode(
       internalBuffer_(nullptr) {
   channelCount_ = 2;
   channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
-  normalize_ = !disableNormalization;
+  normalize_ = !options->disableNormalization;
   gainCalibrationSampleRate_ = context->getSampleRate();
-  setBuffer(buffer);
+  setBuffer(options->bus);
   audioBus_ = std::make_shared<AudioBus>(
       RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   isInitialized_ = true;

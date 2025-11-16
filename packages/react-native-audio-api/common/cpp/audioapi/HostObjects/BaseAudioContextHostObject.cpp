@@ -281,16 +281,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
-  auto disableNormalization = args[1].getBool();
-  std::shared_ptr<ConvolverNode> convolver;
-  if (args[0].isUndefined()) {
-    convolver = context_->createConvolver(nullptr, disableNormalization);
-  } else {
-    auto bufferHostObject =
-        args[0].getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
-    convolver = context_->createConvolver(
-        bufferHostObject->audioBuffer_, disableNormalization);
-  }
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<ConvolverOptions> convolverOptions =
+      audioapi::option_parser::parseConvolverOptions(runtime, options);
+  auto convolver = context_->createConvolver(convolverOptions);
   auto convolverHostObject =
       std::make_shared<ConvolverNodeHostObject>(convolver);
   return jsi::Object::createFromHostObject(runtime, convolverHostObject);
