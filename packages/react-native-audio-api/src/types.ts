@@ -52,26 +52,21 @@ export interface AudioBufferBaseSourceNodeOptions {
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
-export interface ConvolverNodeOptions {
-  buffer?: AudioBuffer | null;
-  disableNormalization?: boolean;
-}
-
-export type TAudioNodeOptions = {
+export interface TAudioNodeOptions {
   channelCount?: number;
   channelCountMode?: ChannelCountMode;
   channelInterpretation?: ChannelInterpretation;
-};
+}
 
-export type TGainOptions = TAudioNodeOptions & {
+export interface TGainOptions extends TAudioNodeOptions {
   gain?: number;
-};
+}
 
-export type TSteroPannerOptions = TAudioNodeOptions & {
+export interface TSteroPannerOptions extends TAudioNodeOptions {
   pan?: number;
-};
+}
 
-export type TConvolverOptions = TAudioNodeOptions & {
+export interface TConvolverOptions extends TAudioNodeOptions {
   buffer?: AudioBuffer;
   disableNormalization?: boolean;
-};
+}
