@@ -70,3 +70,7 @@ export interface TConvolverOptions extends TAudioNodeOptions {
   buffer?: AudioBuffer;
   disableNormalization?: boolean;
 }
+
+export interface TConstantSourceOptions {
+  offset?: number;
+}

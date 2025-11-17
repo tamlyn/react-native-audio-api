@@ -115,8 +115,9 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
   return oscillator;
 }
 
-std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
-  auto constantSource = std::make_shared<ConstantSourceNode>(this);
+std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
+    const std::shared_ptr<ConstantSourceOptions> options) {
+  auto constantSource = std::make_shared<ConstantSourceNode>(this, options);
   nodeManager_->addSourceNode(constantSource);
   return constantSource;
 }

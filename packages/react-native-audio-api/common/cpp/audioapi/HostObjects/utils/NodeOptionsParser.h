@@ -8,7 +8,7 @@
 #include <vector>
 
 #include <audioapi/HostObjects/utils/NodeOptions.h>
-#include <audioapi/HostObjects/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 
 namespace audioapi::option_parser {
 std::shared_ptr<AudioNodeOptions> parseAudioNodeOptions(
@@ -81,4 +81,12 @@ std::shared_ptr<ConvolverOptions> parseConvolverOptions(
   }
   return std::make_shared<ConvolverOptions>(options);
 }
-} // namespace audioapi::option_parser
+
+std::shared_ptr<ConstantSourceOptions> parseConstantSourceOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  ConstantSourceOptions options;
+  options.offset = static_cast<float>(optionsObject.getProperty(runtime, "offset").getNumber());
+  return std::make_shared<ConstantSourceOptions>(options);
+}
+}// namespace audioapi::option_parser

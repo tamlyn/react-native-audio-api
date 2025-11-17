@@ -188,7 +188,7 @@ export default class BaseAudioContext {
   }
 
   createConstantSource(): ConstantSourceNode {
-    return new ConstantSourceNode(this, this.context.createConstantSource());
+    return new ConstantSourceNode(this);
   }
 
   createGain(): GainNode {

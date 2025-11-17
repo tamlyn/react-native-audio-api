@@ -8,13 +8,10 @@ import BaseAudioContext from './BaseAudioContext';
 export default class StereoPannerNode extends AudioNode {
   readonly pan: AudioParam;
 
-  constructor(
-    context: BaseAudioContext,
-    stereoPannerOptions?: TSteroPannerOptions
-  ) {
+  constructor(context: BaseAudioContext, options?: TSteroPannerOptions) {
     const finalOptions: TSteroPannerOptions = {
       ...SteroPannerOptions,
-      ...stereoPannerOptions,
+      ...options,
     };
     const pan: IStereoPannerNode =
       context.context.createStereoPanner(finalOptions);

@@ -38,6 +38,7 @@ class StreamerNode;
 class GainOptions;
 class StereoPannerOptions;
 class ConvolverOptions;
+class ConstantSourceOptions;
 
 class BaseAudioContext {
  public:
@@ -66,7 +67,7 @@ class BaseAudioContext {
     std::weak_ptr<worklets::WorkletRuntime> runtime,
     bool shouldLockRuntime = true);
   std::shared_ptr<OscillatorNode> createOscillator();
-  std::shared_ptr<ConstantSourceNode> createConstantSource();
+  std::shared_ptr<ConstantSourceNode> createConstantSource(const std::shared_ptr<ConstantSourceOptions> options);
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain(const std::shared_ptr<GainOptions> options);
   std::shared_ptr<StereoPannerNode> createStereoPanner(const std::shared_ptr<StereoPannerOptions> options);

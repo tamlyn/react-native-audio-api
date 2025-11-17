@@ -3,6 +3,7 @@ import {
   TGainOptions,
   TSteroPannerOptions,
   TConvolverOptions,
+  TConstantSourceOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -25,4 +26,8 @@ export const SteroPannerOptions: TSteroPannerOptions = {
 export const ConvolverOptions: TConvolverOptions = {
   ...AudioNodeOptions,
   disableNormalization: false,
+};
+
+export const ConstantSourceOptions: TConstantSourceOptions = {
+  offset: 1,
 };

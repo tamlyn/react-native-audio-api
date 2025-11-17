@@ -9,6 +9,7 @@ import {
   TGainOptions,
   TSteroPannerOptions,
   TConvolverOptions,
+  TConstantSourceOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -61,7 +62,9 @@ export interface IBaseAudioContext {
     shouldUseUiRuntime: boolean
   ): IWorkletProcessingNode;
   createOscillator(): IOscillatorNode;
-  createConstantSource(): IConstantSourceNode;
+  createConstantSource(
+    constantSourceOptions: TConstantSourceOptions
+  ): IConstantSourceNode;
   createGain(gainOptions: TGainOptions): IGainNode;
   createStereoPanner(
     stereoPannerOptions: TSteroPannerOptions

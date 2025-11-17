@@ -8,10 +8,10 @@ import BaseAudioContext from './BaseAudioContext';
 export default class GainNode extends AudioNode {
   readonly gain: AudioParam;
 
-  constructor(context: BaseAudioContext, gainOptions?: TGainOptions) {
+  constructor(context: BaseAudioContext, options?: TGainOptions) {
     const finalOptions: TGainOptions = {
       ...GainOptions,
-      ...gainOptions,
+      ...options,
     };
     const gainNode: IGainNode = context.context.createGain(finalOptions);
     super(context, gainNode);

@@ -25,4 +25,8 @@ struct ConvolverOptions : AudioNodeOptions {
   std::shared_ptr<AudioBuffer> bus = nullptr;
   bool disableNormalization = false;
 };
+
+struct ConstantSourceOptions {
+  float offset = 1.0f;
+};
 } // namespace audioapi

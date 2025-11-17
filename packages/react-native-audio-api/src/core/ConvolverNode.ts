@@ -7,10 +7,10 @@ import AudioNode from './AudioNode';
 import AudioBuffer from './AudioBuffer';
 
 export default class ConvolverNode extends AudioNode {
-  constructor(context: BaseAudioContext, convolverOptions?: TConvolverOptions) {
+  constructor(context: BaseAudioContext, options?: TConvolverOptions) {
     const finalOptions: TConvolverOptions = {
       ...ConvolverOptions,
-      ...convolverOptions,
+      ...options,
     };
     if (finalOptions.buffer) {
       const numberOfChannels = finalOptions.buffer.numberOfChannels;

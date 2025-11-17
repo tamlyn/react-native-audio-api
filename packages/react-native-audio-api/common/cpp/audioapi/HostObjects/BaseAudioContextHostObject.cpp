@@ -179,7 +179,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
-  auto constantSource = context_->createConstantSource();
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<ConstantSourceOptions> constantSourceOptions =
+      audioapi::option_parser::parseConstantSourceOptions(runtime, options);
+  auto constantSource = context_->createConstantSource(constantSourceOptions);
   auto constantSourceHostObject =
       std::make_shared<ConstantSourceNodeHostObject>(constantSource);
   return jsi::Object::createFromHostObject(runtime, constantSourceHostObject);
