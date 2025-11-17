@@ -10,7 +10,7 @@ import {
   IOSFormat,
 } from 'react-native-audio-api';
 
-import { Text, TextInput, View } from 'react-native';
+import { Alert, Text, TextInput, View } from 'react-native';
 import Animated, {
   useAnimatedProps,
   useSharedValue,
@@ -54,6 +54,7 @@ recorder.enableFileOutput({
 });
 
 const Record: FC = () => {
+  const [hasPermissions, setHasPermissions] = useState<boolean>(false);
   const [state, setState] = useState<ExampleState>(ExampleState.Idle);
   const [lastOutput, setLastOutput] = useState<string | null>(null);
   const durationStringSV = useSharedValue('00:00:00:00');
@@ -78,13 +79,27 @@ const Record: FC = () => {
   const onStartRecording = useCallback(async () => {
     await AudioManager.setAudioSessionActivity(true);
 
+    if (!hasPermissions) {
+      const permissionStatus = await AudioManager.requestRecordingPermissions();
+
+      if (permissionStatus !== 'Granted') {
+        Alert.alert(
+          'Baka!',
+          "Recording permissions are no't granted ahoka gaijin-san"
+        );
+        return;
+      }
+
+      setHasPermissions(true);
+    }
+
     const filePath = recorder.start();
     setState(ExampleState.Recording);
 
     if (filePath) {
       setLastOutput(filePath);
     }
-  }, []);
+  }, [hasPermissions]);
 
   const onStopRecording = useCallback(async () => {
     setState(ExampleState.Idle);
@@ -130,6 +145,16 @@ const Record: FC = () => {
       await audioContext.resume();
     }
   }, [lastOutput, state]);
+
+  useEffect(() => {
+    (async () => {
+      const permissionStatus = await AudioManager.checkRecordingPermissions();
+
+      if (permissionStatus === 'Granted') {
+        setHasPermissions(true);
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     if (state !== ExampleState.Recording) {

@@ -18,12 +18,11 @@ namespace audioapi {
 AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry) {
-  openAudioStream();
-
-  streamSampleRate_ = mStream_->getSampleRate();
-  streamChannelCount_ = mStream_->getChannelCount();
-  streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
   nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
+
+  streamSampleRate_ = 0;
+  streamChannelCount_ = 0;
+  streamMaxBufferSizeInFrames_ = 0;
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
@@ -62,6 +61,10 @@ bool AndroidAudioRecorder::openAudioStream() {
     return false;
   }
 
+  streamSampleRate_ = mStream_->getSampleRate();
+  streamChannelCount_ = mStream_->getChannelCount();
+  streamMaxBufferSizeInFrames_ = mStream_->getBufferSizeInFrames();
+
   return true;
 }
 
@@ -70,6 +73,14 @@ std::string AndroidAudioRecorder::start() {
   Locker fileWriterLock(fileWriterMutex_);
 
   if (isRecording()) {
+    return "";
+  }
+
+  if (!openAudioStream()) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Couldn't open audio stream.\n");
     return "";
   }
 
@@ -95,7 +106,16 @@ std::string AndroidAudioRecorder::start() {
     // TODO: set adapter node properties?
   }
 
-  mStream_->requestStart();
+  auto result = mStream_->requestStart();
+
+  if (result != oboe::Result::OK) {
+    __android_log_print(
+        ANDROID_LOG_ERROR,
+        "AndroidAudioRecorder",
+        "Failed to start stream: %s",
+        oboe::convertToText(result));
+    return "";
+  }
 
   jni::ThreadScope::WithClassLoader(
       [this]() { nativeAudioRecorder_->start(); });

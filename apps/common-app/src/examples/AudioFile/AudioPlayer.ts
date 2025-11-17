@@ -1,8 +1,8 @@
-import { AudioContext, AudioManager } from 'react-native-audio-api';
 import type {
-  AudioBufferSourceNode,
   AudioBuffer,
+  AudioBufferSourceNode,
 } from 'react-native-audio-api';
+import { AudioContext, AudioManager } from 'react-native-audio-api';
 
 class AudioPlayer {
   private readonly audioContext: AudioContext;
@@ -93,7 +93,8 @@ class AudioPlayer {
   loadBuffer = async (url: string) => {
     const buffer = await fetch(url, {
       headers: {
-        'User-Agent': 'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
+        'User-Agent':
+          'Mozilla/5.0 (Android; Mobile; rv:122.0) Gecko/122.0 Firefox/122.0',
       },
     })
       .then((response) => response.arrayBuffer())
