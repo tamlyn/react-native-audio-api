@@ -7,8 +7,8 @@
 #include <utility>
 #include <vector>
 
-#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 
 namespace audioapi::option_parser {
 std::shared_ptr<AudioNodeOptions> parseAudioNodeOptions(
@@ -16,13 +16,11 @@ std::shared_ptr<AudioNodeOptions> parseAudioNodeOptions(
     const jsi::Object &optionsObject) {
   AudioNodeOptions options;
 
-  options.channelCount = static_cast<int>(
-      optionsObject.getProperty(runtime, "channelCount").getNumber());
+  options.channelCount =
+      static_cast<int>(optionsObject.getProperty(runtime, "channelCount").getNumber());
 
   auto channelCountModeStr =
-      optionsObject.getProperty(runtime, "channelCountMode")
-          .asString(runtime)
-          .utf8(runtime);
+      optionsObject.getProperty(runtime, "channelCountMode").asString(runtime).utf8(runtime);
 
   if (channelCountModeStr == "max") {
     options.channelCountMode = ChannelCountMode::MAX;
@@ -33,9 +31,7 @@ std::shared_ptr<AudioNodeOptions> parseAudioNodeOptions(
   }
 
   auto channelInterpretationStr =
-      optionsObject.getProperty(runtime, "channelInterpretation")
-          .asString(runtime)
-          .utf8(runtime);
+      optionsObject.getProperty(runtime, "channelInterpretation").asString(runtime).utf8(runtime);
 
   if (channelInterpretationStr == "speakers") {
     options.channelInterpretation = ChannelInterpretation::SPEAKERS;
@@ -49,34 +45,32 @@ std::shared_ptr<AudioNodeOptions> parseAudioNodeOptions(
 std::shared_ptr<GainOptions> parseGainOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  std::shared_ptr<AudioNodeOptions> nodeOptions =
-      parseAudioNodeOptions(runtime, optionsObject);
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
   GainOptions options(*nodeOptions.get());
-  options.gain = static_cast<float>(
-      optionsObject.getProperty(runtime, "gain").getNumber());
+  options.gain = static_cast<float>(optionsObject.getProperty(runtime, "gain").getNumber());
   return std::make_shared<GainOptions>(options);
 }
 
 std::shared_ptr<StereoPannerOptions> parseStereoPannerOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  std::shared_ptr<AudioNodeOptions> nodeOptions =
-      parseAudioNodeOptions(runtime, optionsObject);
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
   StereoPannerOptions options(*nodeOptions.get());
-  options.pan =
-      static_cast<float>(optionsObject.getProperty(runtime, "pan").getNumber());
+  options.pan = static_cast<float>(optionsObject.getProperty(runtime, "pan").getNumber());
   return std::make_shared<StereoPannerOptions>(options);
 }
 
 std::shared_ptr<ConvolverOptions> parseConvolverOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  std::shared_ptr<AudioNodeOptions> nodeOptions =
-      parseAudioNodeOptions(runtime, optionsObject);
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
   ConvolverOptions options(*nodeOptions.get());
-  options.disableNormalization = static_cast<bool>(optionsObject.getProperty(runtime, "disableNormalization").getNumber());
+  options.disableNormalization =
+      static_cast<bool>(optionsObject.getProperty(runtime, "disableNormalization").getNumber());
   if (optionsObject.hasProperty(runtime, "buffer")) {
-    auto bufferHostObject = optionsObject.getProperty(runtime, "buffer").getObject(runtime).asHostObject<AudioBufferHostObject>(runtime);
+    auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
+                                .getObject(runtime)
+                                .asHostObject<AudioBufferHostObject>(runtime);
     options.bus = bufferHostObject->audioBuffer_;
   }
   return std::make_shared<ConvolverOptions>(options);
@@ -89,4 +83,4 @@ std::shared_ptr<ConstantSourceOptions> parseConstantSourceOptions(
   options.offset = static_cast<float>(optionsObject.getProperty(runtime, "offset").getNumber());
   return std::make_shared<ConstantSourceOptions>(options);
 }
-}// namespace audioapi::option_parser
+} // namespace audioapi::option_parser

@@ -1,10 +1,10 @@
 #pragma once
 
-#include<memory>
+#include <memory>
 
+#include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
-#include <audioapi/core/sources/AudioBuffer.h>
 
 namespace audioapi {
 struct AudioNodeOptions {

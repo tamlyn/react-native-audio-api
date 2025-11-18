@@ -4,6 +4,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 
 // https://webaudio.github.io/web-audio-api/#stereopanner-algorithm
 
@@ -28,9 +29,8 @@ std::shared_ptr<AudioBus> StereoPannerNode::processNode(
   double deltaTime = 1.0 / context_->getSampleRate();
 
   auto *inputLeft = processingBus->getChannelByType(AudioBus::ChannelLeft);
-  auto panParamValues = panParam_->processARateParam(framesToProcess, time)
-                            ->getChannel(0)
-                            ->getData();
+  auto panParamValues =
+      panParam_->processARateParam(framesToProcess, time)->getChannel(0)->getData();
 
   auto *outputLeft = audioBus_->getChannelByType(AudioBus::ChannelLeft);
   auto *outputRight = audioBus_->getChannelByType(AudioBus::ChannelRight);

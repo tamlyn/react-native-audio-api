@@ -42,7 +42,9 @@ class ConstantSourceOptions;
 
 class BaseAudioContext {
  public:
-  explicit BaseAudioContext(const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry, const RuntimeRegistry &runtimeRegistry);
+  explicit BaseAudioContext(
+      const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const RuntimeRegistry &runtimeRegistry);
   virtual ~BaseAudioContext() = default;
 
   std::string getState();
@@ -53,24 +55,26 @@ class BaseAudioContext {
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(
-    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime,
-    bool shouldLockRuntime = true);
+      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
+      bool shouldLockRuntime = true);
   std::shared_ptr<WorkletNode> createWorkletNode(
-    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime,
-    size_t bufferLength,
-    size_t inputChannelCount,
-    bool shouldLockRuntime = true);
+      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
+      size_t bufferLength,
+      size_t inputChannelCount,
+      bool shouldLockRuntime = true);
   std::shared_ptr<WorkletProcessingNode> createWorkletProcessingNode(
-    std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
-    std::weak_ptr<worklets::WorkletRuntime> runtime,
-    bool shouldLockRuntime = true);
+      std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
+      std::weak_ptr<worklets::WorkletRuntime> runtime,
+      bool shouldLockRuntime = true);
   std::shared_ptr<OscillatorNode> createOscillator();
-  std::shared_ptr<ConstantSourceNode> createConstantSource(const std::shared_ptr<ConstantSourceOptions> options);
+  std::shared_ptr<ConstantSourceNode> createConstantSource(
+      const std::shared_ptr<ConstantSourceOptions> options);
   std::shared_ptr<StreamerNode> createStreamer();
   std::shared_ptr<GainNode> createGain(const std::shared_ptr<GainOptions> options);
-  std::shared_ptr<StereoPannerNode> createStereoPanner(const std::shared_ptr<StereoPannerOptions> options);
+  std::shared_ptr<StereoPannerNode> createStereoPanner(
+      const std::shared_ptr<StereoPannerOptions> options);
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
@@ -109,8 +113,8 @@ class BaseAudioContext {
   [[nodiscard]] virtual bool isDriverRunning() const = 0;
 
  public:
-    std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
-    RuntimeRegistry runtimeRegistry_;
+  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  RuntimeRegistry runtimeRegistry_;
 };
 
 } // namespace audioapi

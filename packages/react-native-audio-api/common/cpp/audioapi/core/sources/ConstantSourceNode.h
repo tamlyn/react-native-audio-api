@@ -14,12 +14,16 @@ class ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit ConstantSourceNode(BaseAudioContext *context, const std::shared_ptr<ConstantSourceOptions> options);
+  explicit ConstantSourceNode(
+      BaseAudioContext *context,
+      const std::shared_ptr<ConstantSourceOptions> options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> offsetParam_;

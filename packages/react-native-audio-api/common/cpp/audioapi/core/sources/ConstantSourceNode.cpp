@@ -4,6 +4,7 @@
 #include <audioapi/dsp/AudioUtils.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <memory>
 
 namespace audioapi {
 ConstantSourceNode::ConstantSourceNode(
@@ -11,10 +12,7 @@ ConstantSourceNode::ConstantSourceNode(
     const std::shared_ptr<ConstantSourceOptions> options)
     : AudioScheduledSourceNode(context) {
   offsetParam_ = std::make_shared<AudioParam>(
-      options->offset,
-      MOST_NEGATIVE_SINGLE_FLOAT,
-      MOST_POSITIVE_SINGLE_FLOAT,
-      context);
+      options->offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   isInitialized_ = true;
 }
 
@@ -35,13 +33,11 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     return processingBus;
   }
 
-  auto offsetBus = offsetParam_->processARateParam(
-      framesToProcess, context_->getCurrentTime());
+  auto offsetBus = offsetParam_->processARateParam(framesToProcess, context_->getCurrentTime());
 
   auto offsetChannelData = offsetBus->getChannel(0)->getData();
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels();
-       ++channel) {
+  for (int channel = 0; channel < processingBus->getNumberOfChannels(); ++channel) {
     auto outputChannelData = processingBus->getChannel(channel)->getData();
 
     std::copy(
