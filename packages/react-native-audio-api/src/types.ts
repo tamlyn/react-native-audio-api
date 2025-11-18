@@ -67,8 +67,13 @@ export interface TSteroPannerOptions extends TAudioNodeOptions {
 }
 
 export interface TConvolverOptions extends TAudioNodeOptions {
-  buffer?: AudioBuffer;
+  buffer?: AudioBuffer | null;
   disableNormalization?: boolean;
+}
+
+export interface TWebConvolverOptions {
+  buffer?: globalThis.AudioBuffer | null;
+  normalize?: boolean;
 }
 
 export interface TConstantSourceOptions {

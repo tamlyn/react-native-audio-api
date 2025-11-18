@@ -20,8 +20,8 @@
 #include <audioapi/core/BaseAudioContext.h>
 
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
-#include <vector>
 #include <memory>
+#include <vector>
 
 namespace audioapi {
 
