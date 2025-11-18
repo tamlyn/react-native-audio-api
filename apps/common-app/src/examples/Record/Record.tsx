@@ -1,13 +1,8 @@
 import React, { FC, useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  AndroidFormat,
   AudioContext,
   AudioManager,
   AudioRecorder,
-  BitDepth,
-  FileDirectory,
-  IOSAudioQuality,
-  IOSFormat,
 } from 'react-native-audio-api';
 
 import { Alert, Text, TextInput, View } from 'react-native';
@@ -17,8 +12,6 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Button, Container } from '../../components';
 import { colors } from '../../styles';
-
-const SAMPLE_RATE = 48000;
 
 AudioManager.setAudioSessionOptions({
   iosCategory: 'playAndRecord',
@@ -39,18 +32,7 @@ const recorder = new AudioRecorder();
 const audioContext = new AudioContext({ initSuspended: true });
 
 recorder.enableFileOutput({
-  sampleRate: SAMPLE_RATE,
-  channels: 2,
-  bitRate: 128000,
-  bitDepth: BitDepth.Bit32,
-  directory: FileDirectory.Document,
-  ios: {
-    format: IOSFormat.M4A,
-    quality: IOSAudioQuality.Medium,
-  },
-  android: {
-    format: AndroidFormat.M4A,
-  },
+  batchDurationSeconds: 60,
 });
 
 const Record: FC = () => {
@@ -93,11 +75,13 @@ const Record: FC = () => {
       setHasPermissions(true);
     }
 
-    const filePath = recorder.start();
+    const result = recorder.start();
     setState(ExampleState.Recording);
 
-    if (filePath) {
-      setLastOutput(filePath);
+    if (result.status === 'success') {
+      setLastOutput(result.path);
+    } else {
+      Alert.alert('Error', `Failed to start recording: ${result.message}`);
     }
   }, [hasPermissions]);
 
@@ -253,9 +237,6 @@ const Record: FC = () => {
 
   return (
     <Container style={{ gap: 40 }}>
-      <Text style={{ color: colors.gray, fontSize: 18, textAlign: 'center' }}>
-        Sample rate: {SAMPLE_RATE}
-      </Text>
       <View style={{ alignItems: 'center', gap: 10, paddingTop: 20 }}>
         <Text style={{ color: colors.white, fontSize: 16 }}>{status}</Text>
         <AnimatedTextInput

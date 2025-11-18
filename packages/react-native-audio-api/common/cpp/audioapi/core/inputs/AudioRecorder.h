@@ -1,16 +1,20 @@
 #pragma once
 
+
 #include <memory>
 #include <atomic>
 #include <mutex>
 #include <string>
 #include <tuple>
 
+#include <audioapi/utils/ReturnStatus.hpp>
+
 namespace audioapi {
 
-class RecorderAdapterNode;
 class AudioBus;
 class CircularAudioArray;
+class RecorderAdapterNode;
+class AudioFileProperties;
 class AudioEventHandlerRegistry;
 
 class AudioRecorder {
@@ -20,15 +24,10 @@ class AudioRecorder {
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
 
-  virtual std::string start() = 0;
-  virtual std::tuple<std::string, double, double> stop() = 0;
+  virtual ReturnStatus<std::string> start() = 0;
+  virtual ReturnStatus<std::tuple<std::string, double, double>> stop() = 0;
 
-  virtual void enableFileOutput(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t iosFlags,
-    size_t androidFlags) = 0;
+  virtual void enableFileOutput(std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
   virtual void pause() = 0;
@@ -43,6 +42,9 @@ class AudioRecorder {
     size_t channelCount,
     uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
+
+  virtual void setOnErrorCallback(uint64_t callbackId) = 0;
+  virtual void clearOnErrorCallback() = 0;
 
   virtual double getCurrentDuration() const = 0;
 

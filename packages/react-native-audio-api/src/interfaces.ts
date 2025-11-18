@@ -1,11 +1,17 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
   BiquadFilterType,
+  BitDepth,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  FileDirectory,
+  FileFormat,
   FileInfo,
+  FlacCompressionLevel,
+  IOSAudioQuality,
   OscillatorType,
+  Result,
   WindowType,
 } from './types';
 
@@ -262,32 +268,27 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
-type IOSAudioRecorderFileDescriptor = number;
-type AndroidAudioRecorderFileDescriptor = number;
-
-interface IAudioRecorderFileOptions {
+export interface IFilePreset {
   sampleRate: number;
-  channels: number;
   bitRate: number;
-  /**
-   * IOS specific file recording options
-   *
-   * - `format` - IOSFormat, bitmask 0 x 0000000F
-   * - `quality` - IOSAudioQuality, bitmask 0 x 000000F0
-   * - `flacCompressionLevel` - FlacCompressionLevel, bitmask 0 x 00000F00
-   * - `directory` - FileDirectory, bitmask 0 x 0000F000
-   * - `bitDepth` - BitDepth, bitmask 0 x 000F0000
-   */
-  ios: IOSAudioRecorderFileDescriptor;
-  /**
-   * Android specific file recording options
-   *
-   * - He he
-   */
-  android: AndroidAudioRecorderFileDescriptor;
+  bitDepth: BitDepth;
+  iosQuality: IOSAudioQuality;
+  flacCompressionLevel: FlacCompressionLevel;
 }
 
-interface IAudioRecorderCallbackOptions {
+export interface IAudioRecorderFileOptions {
+  channelCount: number;
+  batchDurationSeconds: number;
+
+  format: FileFormat;
+  preset: IFilePreset;
+
+  directory: FileDirectory;
+  subDirectory: string;
+  fileNamePrefix: string;
+}
+
+export interface IAudioRecorderCallbackOptions {
   sampleRate: number;
   bufferLength: number;
   channelCount: number;
@@ -296,8 +297,8 @@ interface IAudioRecorderCallbackOptions {
 
 export interface IAudioRecorder {
   // default recorder methods
-  start: () => string | void;
-  stop: () => FileInfo;
+  start: () => Result<{ path: string }>;
+  stop: () => Result<FileInfo>;
   isRecording: () => boolean;
   isPaused: () => boolean;
 
@@ -315,7 +316,11 @@ export interface IAudioRecorder {
   setOnAudioReady: (options: IAudioRecorderCallbackOptions) => void;
   clearOnAudioReady: () => void;
 
+  setOnError: (options: { callbackId: string }) => void;
+  clearOnError: () => void;
+
   getCurrentDuration: () => number;
+  getFilePath: () => string | null;
 }
 
 export interface IAudioDecoder {

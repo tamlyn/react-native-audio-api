@@ -1,66 +1,39 @@
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
-import { OnAudioReadyEventType } from '../events/types';
-import { IAudioRecorder } from '../interfaces';
 import {
-  AndroidFormat,
+  OnAudioReadyEventType,
+  OnRecorderErrorEventType,
+} from '../events/types';
+import { IAudioRecorder, IAudioRecorderFileOptions } from '../interfaces';
+import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
-  BitDepth,
   FileDirectory,
+  FileFormat,
   FileInfo,
-  IOSAudioQuality,
-  IOSFormat,
+  Result,
 } from '../types';
-import { encodeFlags } from '../utils';
+import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
-function withDefaultOptions(inOptions: AudioRecorderFileOptions) {
+function withDefaultOptions(
+  inOptions: AudioRecorderFileOptions
+): IAudioRecorderFileOptions {
   return {
     directory: FileDirectory.Cache,
-    sampleRate: 48000,
-    channels: 2,
-    bitRate: 128000,
-    bitDepth: BitDepth.Bit24,
+    subDirectory: 'AudioAPI',
+    fileNamePrefix: 'recording_',
+    channelCount: 2,
+    format: FileFormat.M4A,
+    batchDurationSeconds: 0,
+    preset: FilePreset.High,
     ...inOptions,
-    ios: {
-      format: IOSFormat.M4A,
-      quality: IOSAudioQuality.High,
-      ...(inOptions.ios ?? {}),
-    },
-    android: {
-      format: AndroidFormat.M4A,
-      ...(inOptions.android ?? {}),
-    },
-  };
-}
-
-function parseFileOptions(inOptions: AudioRecorderFileOptions) {
-  const { sampleRate, channels, bitRate, directory, bitDepth, ios, android } =
-    withDefaultOptions(inOptions);
-
-  const iosFlags = encodeFlags(
-    ios.format,
-    ios.quality,
-    ios.flacCompressionLevel || 0,
-    directory,
-    bitDepth
-  );
-
-  // TODO: ensure directory and bitDepth are last in the bitmask
-  const androidFlags = encodeFlags(android.format, directory, bitDepth);
-
-  return {
-    sampleRate,
-    channels,
-    bitRate,
-    ios: iosFlags,
-    android: androidFlags,
   };
 }
 
 export default class AudioRecorder {
   protected onAudioReadySubscription: AudioEventSubscription | null = null;
+  protected onErrorSubscription: AudioEventSubscription | null = null;
   protected readonly recorder: IAudioRecorder;
   protected options_: AudioRecorderFileOptions | null = null;
   private isFileOutputEnabled: boolean = false;
@@ -75,8 +48,7 @@ export default class AudioRecorder {
 
   enableFileOutput(options: AudioRecorderFileOptions): void {
     this.options_ = options;
-
-    const parsedOptions = parseFileOptions(options);
+    const parsedOptions = withDefaultOptions(options);
     this.recorder.enableFileOutput(parsedOptions);
     this.isFileOutputEnabled = true;
   }
@@ -92,17 +64,17 @@ export default class AudioRecorder {
   }
 
   /** Starts the audio recording process with configured output options */
-  start(): string | void {
+  start(): Result<{ path: string }> {
     if (!this.isFileOutputEnabled) {
       this.recorder.start();
-      return;
+      return { status: 'success', path: '' };
     }
 
     return this.recorder.start();
   }
 
   /** Stops the audio recording process and releases internal resources */
-  stop(): FileInfo {
+  stop(): Result<FileInfo> {
     return this.recorder.stop();
   }
 
@@ -217,5 +189,33 @@ export default class AudioRecorder {
 
   getCurrentDuration(): number {
     return this.recorder.getCurrentDuration();
+  }
+
+  onError(callback: (error: OnRecorderErrorEventType) => void): void {
+    if (this.onErrorSubscription) {
+      this.recorder.clearOnError();
+      this.onErrorSubscription.remove();
+      this.onErrorSubscription = null;
+    }
+
+    this.onErrorSubscription = this.audioEventEmitter.addAudioEventListener(
+      'recorderError',
+      callback
+    );
+
+    this.recorder.setOnError({
+      callbackId: this.onErrorSubscription.subscriptionId,
+    });
+  }
+
+  clearOnError(): void {
+    if (!this.onErrorSubscription) {
+      return;
+    }
+
+    this.recorder.clearOnError();
+
+    this.onErrorSubscription.remove();
+    this.onErrorSubscription = null;
   }
 }

@@ -1,18 +1,17 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
-#include <audioapi/ios/core/IOSAudioFileOptions.h>
-#include <audioapi/ios/core/IOSAudioFileWriter.h>
+#include <audioapi/ios/core/utils/FileOptions.h>
+#include <audioapi/ios/core/utils/FileWriter.h>
+#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/ReturnStatus.hpp>
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
-IOSAudioFileWriter::IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags)
-{
-  fileOptions_ = std::make_shared<IOSAudioFileOptions>(sampleRate, channelCount, bitRate, iosFlags);
-}
+FileWriter::FileWriter(const std::shared_ptr<AudioFileProperties> &fileProperties) : fileProperties_(fileProperties) {}
 
-IOSAudioFileWriter::~IOSAudioFileWriter()
+FileWriter::~FileWriter()
 {
   fileURL_ = nil;
   audioFile_ = nil;
@@ -20,27 +19,41 @@ IOSAudioFileWriter::~IOSAudioFileWriter()
   bufferFormat_ = nil;
 }
 
-std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+ReturnStatus<std::string> FileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
-      NSLog(@"⚠️ createFileForWriting: currentAudioFile_ already exists");
-      return "";
+      return ReturnStatus<std::string>::Error("file already open");
     }
 
     framesWritten_.store(0);
-
     bufferFormat_ = bufferFormat;
 
     NSError *error = nil;
-    NSDictionary *settings = fileOptions_->getFileSettings();
-    fileURL_ = getFileURL();
+    NSDictionary *settings = fileoptions::getFileSettings(fileProperties_);
+    fileURL_ = fileoptions::getFileURL(fileProperties_);
+
+    if (fileProperties_->sampleRate == 0 || fileProperties_->channelCount == 0) {
+      return ReturnStatus<std::string>::Error(
+          "Invalid file properties: sampleRate and channelCount must be greater than 0");
+    }
+
+    if (bufferFormat.sampleRate == 0 || bufferFormat.channelCount == 0) {
+      return ReturnStatus<std::string>::Error(
+          "Invalid input format: sampleRate and channelCount must be greater than 0");
+    }
 
     audioFile_ = [[AVAudioFile alloc] initForWriting:fileURL_
                                             settings:settings
                                         commonFormat:AVAudioPCMFormatFloat32
                                          interleaved:bufferFormat.interleaved
                                                error:&error];
+
+    if (error != nil) {
+      return ReturnStatus<std::string>::Error(
+          std::string("Error creating audio file for writing: ") + [[error debugDescription] UTF8String]);
+    }
+
     converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat toFormat:[audioFile_ processingFormat]];
     converter_.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     converter_.sampleRateConverterQuality = AVAudioQualityMax;
@@ -48,32 +61,34 @@ std::string IOSAudioFileWriter::openFile(AVAudioFormat *bufferFormat, size_t max
 
     converterInputBufferSize_ = maxInputBufferLength;
     converterOutputBufferSize_ = std::max(
-        (double)maxInputBufferLength, fileOptions_->getSampleRate() / bufferFormat.sampleRate * maxInputBufferLength);
+        (double)maxInputBufferLength, fileProperties_->sampleRate / bufferFormat.sampleRate * maxInputBufferLength);
 
     converterInputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat
                                                           frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
     converterOutputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile_ processingFormat]
                                                            frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
 
-    if (error != nil || audioFile_ == nil) {
-      NSLog(@"Error creating audio file for writing: %@", [error debugDescription]);
+    if (converterInputBuffer_ == nil || converterOutputBuffer_ == nil || audioFile_ == nil || converter_ == nil) {
       audioFile_ = nil;
+      converter_ = nil;
+      converterInputBuffer_ = nil;
+      converterOutputBuffer_ = nil;
 
-      return "";
+      return ReturnStatus<std::string>::Error("Error creating converter buffers");
     }
 
-    return [[fileURL_ path] UTF8String];
+    return ReturnStatus<std::string>::Success([[fileURL_ path] UTF8String]);
   }
 }
 
-std::tuple<double, double> IOSAudioFileWriter::closeFile()
+ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
 {
   @autoreleasepool {
     NSError *error;
     std::string filePath = [[fileURL_ path] UTF8String];
 
     if (audioFile_ == nil) {
-      return {0, 0};
+      return ReturnStatus<std::tuple<double, double>>::Error("file is not open: " + filePath);
     }
 
     // AVAudioFile automatically finalizes the file when deallocated
@@ -85,12 +100,6 @@ std::tuple<double, double> IOSAudioFileWriter::closeFile()
                                                                               error:&error] fileSize]) /
         BYTES_TO_MB;
 
-    NSLog(
-        @"ℹ️ Closed audio file at path: %s, duration: %.2f sec, size: %.2f MB",
-        filePath.c_str(),
-        fileDuration,
-        fileSizeBytesMb);
-
     if (error != nil) {
       NSLog(@"⚠️ closeFile: error while retrieving file size");
       fileSizeBytesMb = 0;
@@ -99,11 +108,11 @@ std::tuple<double, double> IOSAudioFileWriter::closeFile()
     fileURL_ = nil;
     framesWritten_.store(0);
 
-    return {fileSizeBytesMb, fileDuration};
+    return ReturnStatus<std::tuple<double, double>>::Success(std::make_tuple(fileDuration, fileSizeBytesMb));
   }
 }
 
-bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
+bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
   if (audioFile_ == nil) {
     NSLog(@"⚠️ writeAudioData: audioFile is nil, cannot write data");
@@ -136,8 +145,6 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
       return true;
     }
 
-    size_t outputFrameCount = ceil(numFrames * fileFormat.sampleRate / bufferFormat_.sampleRate);
-
     for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
       memcpy(
           converterInputBuffer_.mutableAudioBufferList->mBuffers[i].mData,
@@ -162,7 +169,7 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength = fileOptions_->getSampleRate() / bufferFormat_.sampleRate * numFrames;
+    converterOutputBuffer_.frameLength = fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       NSLog(@"Error during audio conversion: %@", [error debugDescription]);
@@ -181,53 +188,14 @@ bool IOSAudioFileWriter::writeAudioData(const AudioBufferList *audioBufferList, 
   }
 }
 
-NSString *IOSAudioFileWriter::getISODateStringForDirectory()
-{
-  NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-  fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyy-MM-dd";
-  return [fmt stringFromDate:[NSDate date]];
-}
-
-NSString *IOSAudioFileWriter::getTimestampForFilename()
-{
-  NSDateFormatter *fmt = [[NSDateFormatter alloc] init];
-  fmt.locale = [NSLocale localeWithLocaleIdentifier:@"en_US_POSIX"];
-  fmt.timeZone = [NSTimeZone timeZoneWithAbbreviation:@"UTC"]; // or local if you prefer
-  fmt.dateFormat = @"yyyyMMdd_HHmmss_SSS";
-  return [fmt stringFromDate:[NSDate date]];
-}
-
-NSURL *IOSAudioFileWriter::getFileURL()
-{
-  NSError *error = nil;
-
-  NSSearchPathDirectory searchDirectory = fileOptions_->getDirectory();
-  NSString *directory = [NSString stringWithFormat:@"AudioAPI/%@", getISODateStringForDirectory()];
-
-  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:searchDirectory
-                                                           inDomains:NSUserDomainMask] firstObject];
-  NSURL *dirURL = [baseURL URLByAppendingPathComponent:directory isDirectory:YES];
-
-  [[NSFileManager defaultManager] createDirectoryAtURL:dirURL
-                           withIntermediateDirectories:YES
-                                            attributes:nil
-                                                 error:&error];
-
-  if (error != nil) {
-    NSLog(@"Error creating directory for audio recordings: %@", [error debugDescription]);
-    dirURL = baseURL;
-  }
-
-  NSString *fileName =
-      [NSString stringWithFormat:@"audio_%@.%@", getTimestampForFilename(), fileOptions_->getFileExtension()];
-  return [dirURL URLByAppendingPathComponent:fileName];
-}
-
-double IOSAudioFileWriter::getCurrentDuration() const
+double FileWriter::getCurrentDuration() const
 {
   return static_cast<double>(framesWritten_.load()) / bufferFormat_.sampleRate;
+}
+
+std::string FileWriter::getFilePath() const
+{
+  return [[fileURL_ path] UTF8String];
 }
 
 } // namespace audioapi

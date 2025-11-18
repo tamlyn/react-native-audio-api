@@ -23,6 +23,11 @@ interface OnRouteChangeEventType {
     | 'NoSuitableRouteForCategory';
 }
 
+export interface OnRecorderErrorEventType {
+  type: 'todo';
+  message: string;
+}
+
 interface RemoteCommandEvents {
   remotePlay: EventEmptyType;
   remotePause: EventEmptyType;
@@ -80,6 +85,7 @@ interface AudioAPIEvents {
   positionChanged: EventTypeWithValue;
   audioError: EventEmptyType; // to change
   systemStateChanged: EventEmptyType; // to change
+  recorderError: OnRecorderErrorEventType;
 }
 
 type AudioEvents = SystemEvents & AudioAPIEvents;

@@ -1,5 +1,9 @@
 import AudioBuffer from './core/AudioBuffer';
 
+export type Result<T> =
+  | ({ status: 'success' } & T)
+  | { status: 'error'; message: string };
+
 export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
 export type ChannelInterpretation = 'speakers' | 'discrete';
@@ -45,7 +49,7 @@ export enum FileDirectory {
   Cache = 2,
 }
 
-export enum IOSFormat {
+export enum FileFormat {
   Wav = 1,
   Caf = 2,
   M4A = 3,
@@ -58,13 +62,6 @@ export enum IOSAudioQuality {
   Medium = 3,
   High = 4,
   Max = 5,
-}
-
-export enum AndroidFormat {
-  Wav = 1,
-  Caf = 2,
-  M4A = 3,
-  Flac = 4,
 }
 
 export enum FlacCompressionLevel {
@@ -85,24 +82,30 @@ export enum BitDepth {
   Bit32 = 3,
 }
 
-export interface AudioRecorderFileOptionsIOS {
-  format?: IOSFormat;
-  quality?: IOSAudioQuality;
-  flacCompressionLevel?: FlacCompressionLevel;
-}
-
-export interface AudioRecorderFileOptionsAndroid {
-  format?: AndroidFormat;
+export interface FilePresetType {
+  bitRate: number;
+  sampleRate: number;
+  bitDepth: BitDepth;
+  iosQuality: IOSAudioQuality;
+  flacCompressionLevel: FlacCompressionLevel;
 }
 
 export interface AudioRecorderFileOptions {
+  channelCount?: number;
+  batchDurationSeconds?: number;
+
+  format?: FileFormat;
+  preset?: FilePresetType;
+
   directory?: FileDirectory;
-  sampleRate?: number;
-  channels?: number;
-  bitRate?: number;
-  bitDepth?: BitDepth;
-  ios?: AudioRecorderFileOptionsIOS;
-  android?: AudioRecorderFileOptionsAndroid;
+  subDirectory?: string;
+  fileNamePrefix?: string;
+}
+
+export interface FileInfo {
+  path: string;
+  size: number;
+  duration: number;
 }
 
 export type WindowType = 'blackman' | 'hann';
@@ -138,10 +141,4 @@ export interface AudioRecorderCallbackOptions {
    * for stereo recordings.
    */
   channelCount: number;
-}
-
-export interface FileInfo {
-  path: string;
-  size: number;
-  duration: number;
 }

@@ -170,45 +170,28 @@
 
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
 {
-  if (@available(iOS 17, *)) {
-    NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
-    switch (res) {
-      case AVAudioApplicationRecordPermissionUndetermined:
-        resolve(@"Undetermined");
-        break;
-      case AVAudioApplicationRecordPermissionGranted:
-        resolve(@"Granted");
-        break;
-      case AVAudioApplicationRecordPermissionDenied:
-        resolve(@"Denied");
-        break;
-      default:
-        resolve(@"Undetermined");
-        break;
-    }
-  } else {
-    NSInteger res = [self.audioSession recordPermission];
-    switch (res) {
-      case AVAudioSessionRecordPermissionUndetermined:
-        resolve(@"Undetermined");
-        break;
-      case AVAudioSessionRecordPermissionGranted:
-        resolve(@"Granted");
-        break;
-      case AVAudioSessionRecordPermissionDenied:
-        resolve(@"Denied");
-        break;
-      default:
-        resolve(@"Undetermined");
-        break;
-    }
-  }
+  resolve([self checkRecordingPermissions]);
 }
 
 - (NSString *)checkRecordingPermissions
 {
+#if TARGET_OS_SIMULATOR
+  NSInteger res = [self.audioSession recordPermission];
+
+  switch (res) {
+    case AVAudioSessionRecordPermissionUndetermined:
+      return @"Undetermined";
+    case AVAudioSessionRecordPermissionGranted:
+      return @"Granted";
+    case AVAudioSessionRecordPermissionDenied:
+      return @"Denied";
+    default:
+      return @"Undetermined";
+  }
+#else
   if (@available(iOS 17, *)) {
     NSInteger res = [[AVAudioApplication sharedInstance] recordPermission];
+
     switch (res) {
       case AVAudioApplicationRecordPermissionUndetermined:
         return @"Undetermined";
@@ -219,19 +202,21 @@
       default:
         return @"Undetermined";
     }
-  } else {
-    NSInteger res = [self.audioSession recordPermission];
-    switch (res) {
-      case AVAudioSessionRecordPermissionUndetermined:
-        return @"Undetermined";
-      case AVAudioSessionRecordPermissionGranted:
-        return @"Granted";
-      case AVAudioSessionRecordPermissionDenied:
-        return @"Denied";
-      default:
-        return @"Undetermined";
-    }
   }
+
+  NSInteger res = [self.audioSession recordPermission];
+
+  switch (res) {
+    case AVAudioSessionRecordPermissionUndetermined:
+      return @"Undetermined";
+    case AVAudioSessionRecordPermissionGranted:
+      return @"Granted";
+    case AVAudioSessionRecordPermissionDenied:
+      return @"Denied";
+    default:
+      return @"Undetermined";
+  }
+#endif
 }
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

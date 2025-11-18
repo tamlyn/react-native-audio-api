@@ -1,5 +1,7 @@
 #pragma once
 
+#include <audioapi/utils/ReturnStatus.hpp>
+
 #include <memory>
 #include <string>
 #include <tuple>
@@ -15,30 +17,27 @@ typedef struct objc_object AVAudioConverter;
 
 namespace audioapi {
 
-class IOSAudioFileOptions;
+class AudioFileProperties;
 
-class IOSAudioFileWriter {
+class FileWriter {
  public:
-  IOSAudioFileWriter(float sampleRate, size_t channelCount, size_t bitRate, size_t iosFlags);
-  ~IOSAudioFileWriter();
+  FileWriter(const std::shared_ptr<AudioFileProperties> &fileProperties);
+  ~FileWriter();
 
-  std::string openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
-  std::tuple<double, double> closeFile();
+  ReturnStatus<std::string> openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
+  ReturnStatus<std::tuple<double, double>> closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
 
   double getCurrentDuration() const;
+  std::string getFilePath() const;
 
  private:
   size_t converterInputBufferSize_;
   size_t converterOutputBufferSize_;
   std::atomic<size_t> framesWritten_{0};
 
-  NSString *getISODateStringForDirectory();
-  NSString *getTimestampForFilename();
-  NSURL *getFileURL();
-
-  std::shared_ptr<IOSAudioFileOptions> fileOptions_;
+  std::shared_ptr<AudioFileProperties> fileProperties_;
   AVAudioFile *audioFile_;
   AVAudioFormat *bufferFormat_;
   AVAudioConverter *converter_;

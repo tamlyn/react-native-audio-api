@@ -5,6 +5,7 @@
 #include <audioapi/core/inputs/AudioRecorder.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
+#include <audioapi/utils/AudioFileProperties.hpp>
 #ifdef ANDROID
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #else
@@ -36,25 +37,63 @@ AudioRecorderHostObject::AudioRecorderHostObject(
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, disconnect),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnAudioReady),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnAudioReady),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, setOnError),
+      JSI_EXPORT_FUNCTION(AudioRecorderHostObject, clearOnError),
       JSI_EXPORT_FUNCTION(AudioRecorderHostObject, getCurrentDuration));
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
-  std::string filePath = audioRecorder_->start();
+  auto result = audioRecorder_->start();
+  auto jsResult = jsi::Object(runtime);
 
-  return jsi::Value(runtime, jsi::String::createFromUtf8(runtime, filePath));
+  jsResult.setProperty(
+      runtime,
+      "status",
+      jsi::String::createFromUtf8(
+          runtime, result.isSuccess() ? "success" : "error"));
+
+  if (result.isSuccess()) {
+    jsResult.setProperty(
+        runtime,
+        "path",
+        jsi::String::createFromUtf8(runtime, result.getValue()));
+  } else {
+    jsResult.setProperty(
+        runtime,
+        "message",
+        jsi::String::createFromUtf8(runtime, result.getMessage()));
+  }
+
+  return jsResult;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
-  auto [path, size, duration] = audioRecorder_->stop();
-  auto result = jsi::Object(runtime);
+  auto result = audioRecorder_->stop();
+  auto jsResult = jsi::Object(runtime);
 
-  result.setProperty(
-      runtime, "path", jsi::String::createFromUtf8(runtime, path));
-  result.setProperty(runtime, "size", size);
-  result.setProperty(runtime, "duration", duration);
+  jsResult.setProperty(
+      runtime,
+      "status",
+      jsi::String::createFromUtf8(
+          runtime, result.isSuccess() ? "success" : "error"));
 
-  return result;
+  if (result.isSuccess()) {
+    auto info = result.getValue();
+
+    jsResult.setProperty(
+        runtime,
+        "path",
+        jsi::String::createFromUtf8(runtime, std::get<0>(info)));
+    jsResult.setProperty(runtime, "size", std::get<1>(info));
+    jsResult.setProperty(runtime, "duration", std::get<2>(info));
+  } else {
+    jsResult.setProperty(
+        runtime,
+        "message",
+        jsi::String::createFromUtf8(runtime, result.getMessage()));
+  }
+
+  return jsResult;
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isRecording) {
@@ -66,21 +105,10 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, isPaused) {
 }
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
-  auto options = args[0].getObject(runtime);
+  auto fileProperties =
+      AudioFileProperties::CreateFromJSIValue(runtime, args[0]);
 
-  auto sampleRate = static_cast<float>(
-      options.getProperty(runtime, "sampleRate").getNumber());
-  auto channelCount =
-      static_cast<size_t>(options.getProperty(runtime, "channels").getNumber());
-  auto bitRate =
-      static_cast<size_t>(options.getProperty(runtime, "bitRate").getNumber());
-  auto iosFlags =
-      static_cast<size_t>(options.getProperty(runtime, "ios").getNumber());
-  auto androidFlags =
-      static_cast<size_t>(options.getProperty(runtime, "android").getNumber());
-
-  audioRecorder_->enableFileOutput(
-      sampleRate, channelCount, bitRate, iosFlags, androidFlags);
+  audioRecorder_->enableFileOutput(fileProperties);
   return jsi::Value::undefined();
 }
 
@@ -137,6 +165,18 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
 
 JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnAudioReady) {
   audioRecorder_->clearOnAudioReadyCallback();
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnError) {
+  uint64_t callbackId = std::stoull(args[0].getString(runtime).utf8(runtime));
+
+  // audioRecorder_->setOnErrorCallback(callbackId);
+  return jsi::Value::undefined();
+}
+
+JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, clearOnError) {
+  // audioRecorder_->clearOnErrorCallback();
   return jsi::Value::undefined();
 }
 

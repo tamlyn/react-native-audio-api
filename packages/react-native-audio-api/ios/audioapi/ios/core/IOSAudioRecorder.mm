@@ -6,12 +6,13 @@
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/ios/core/IOSAudioFileWriter.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
-#include <audioapi/ios/core/IOSRecorderCallback.h>
+#include <audioapi/ios/core/utils/FileWriter.h>
+#include <audioapi/ios/core/utils/RecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/utils/AudioFileProperties.hpp>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
@@ -42,7 +43,7 @@ IOSAudioRecorder::~IOSAudioRecorder()
   stop();
   [nativeRecorder_ cleanup];
 }
-std::string IOSAudioRecorder::start()
+ReturnStatus<std::string> IOSAudioRecorder::start()
 {
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
@@ -50,11 +51,17 @@ std::string IOSAudioRecorder::start()
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
 
   if (isRecording()) {
-    return filePath_;
+    return ReturnStatus<std::string>::Error("Already recording");
   }
 
   if (usesFileOutput()) {
-    filePath_ = fileWriter_->openFile([nativeRecorder_ getInputFormat], maxInputBufferLength);
+    auto result = fileWriter_->openFile([nativeRecorder_ getInputFormat], maxInputBufferLength);
+
+    if (!result.isSuccess()) {
+      return ReturnStatus<std::string>::Error("Failed to open file for writing: " + result.getMessage());
+    }
+
+    filePath_ = result.getValue();
   }
 
   if (usesCallback()) {
@@ -68,10 +75,10 @@ std::string IOSAudioRecorder::start()
   [nativeRecorder_ start];
   state_.store(RecorderState::Recording);
 
-  return filePath_;
+  return ReturnStatus<std::string>::Success(filePath_);
 }
 
-std::tuple<std::string, double, double> IOSAudioRecorder::stop()
+ReturnStatus<std::tuple<std::string, double, double>> IOSAudioRecorder::stop()
 {
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
@@ -81,16 +88,22 @@ std::tuple<std::string, double, double> IOSAudioRecorder::stop()
   double outputDuration = 0;
 
   if (!isRecording()) {
-    return {filePath, 0, 0};
+    return ReturnStatus<std::tuple<std::string, double, double>>::Error("Not recording");
   }
 
   [nativeRecorder_ stop];
   state_.store(RecorderState::Idle);
 
   if (usesFileOutput()) {
-    auto [size, duration] = fileWriter_->closeFile();
-    outputFileSize = size;
-    outputDuration = duration;
+    auto result = fileWriter_->closeFile();
+
+    if (!result.isSuccess()) {
+      return ReturnStatus<std::tuple<std::string, double, double>>::Error(
+          "Failed to close file: " + result.getMessage());
+    }
+
+    outputFileSize = std::get<0>(result.getValue());
+    outputDuration = std::get<1>(result.getValue());
   }
 
   if (usesCallback()) {
@@ -98,20 +111,16 @@ std::tuple<std::string, double, double> IOSAudioRecorder::stop()
   }
 
   filePath_ = "";
-  return {filePath, outputFileSize, outputDuration};
+  return ReturnStatus<std::tuple<std::string, double, double>>::Success(
+      std::make_tuple(filePath, outputFileSize, outputDuration));
 }
 
-void IOSAudioRecorder::enableFileOutput(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t iosFlags,
-    size_t androidFlags)
+void IOSAudioRecorder::enableFileOutput(std::shared_ptr<AudioFileProperties> properties)
 {
   Locker lock(fileWriterMutex_);
 
+  fileWriter_ = std::make_shared<FileWriter>(properties);
   fileOutputEnabled_.store(true);
-  fileWriter_ = std::make_shared<IOSAudioFileWriter>(sampleRate, channelCount, bitRate, iosFlags);
 }
 
 void IOSAudioRecorder::disableFileOutput()
@@ -173,7 +182,7 @@ void IOSAudioRecorder::setOnAudioReadyCallback(
 {
   Locker lock(callbackMutex_);
 
-  callback_ = std::make_shared<IOSRecorderCallback>(
+  callback_ = std::make_shared<RecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
@@ -188,6 +197,16 @@ void IOSAudioRecorder::clearOnAudioReadyCallback()
   Locker lock(callbackMutex_);
   callbackOutputEnabled_.store(false);
   callback_ = nullptr;
+}
+
+void IOSAudioRecorder::setOnErrorCallback(uint64_t callbackId)
+{
+  errorCallbackId_.store(callbackId);
+}
+
+void IOSAudioRecorder::clearOnErrorCallback()
+{
+  errorCallbackId_.store(0);
 }
 
 double IOSAudioRecorder::getCurrentDuration() const

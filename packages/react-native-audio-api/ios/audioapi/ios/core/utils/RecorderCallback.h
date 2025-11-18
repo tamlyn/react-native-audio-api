@@ -15,15 +15,15 @@ class AudioBus;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
-class IOSRecorderCallback {
+class RecorderCallback {
  public:
-  IOSRecorderCallback(
+  RecorderCallback(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
       size_t channelCount,
       uint64_t callbackId);
-  ~IOSRecorderCallback();
+  ~RecorderCallback();
 
   void prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
   void cleanup();

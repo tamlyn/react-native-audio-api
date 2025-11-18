@@ -5,7 +5,7 @@
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
-#include <audioapi/ios/core/IOSRecorderCallback.h>
+#include <audioapi/ios/core/utils/RecorderCallback.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
@@ -13,7 +13,7 @@
 
 namespace audioapi {
 
-IOSRecorderCallback::IOSRecorderCallback(
+RecorderCallback::RecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
@@ -35,7 +35,7 @@ IOSRecorderCallback::IOSRecorderCallback(
   isInitialized_.store(true);
 }
 
-IOSRecorderCallback::~IOSRecorderCallback()
+RecorderCallback::~RecorderCallback()
 {
   isInitialized_.store(false);
   @autoreleasepool {
@@ -51,7 +51,7 @@ IOSRecorderCallback::~IOSRecorderCallback()
   }
 }
 
-void IOSRecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+void RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
 {
   @autoreleasepool {
     bufferFormat_ = bufferFormat;
@@ -77,7 +77,7 @@ void IOSRecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBu
   }
 }
 
-void IOSRecorderCallback::cleanup()
+void RecorderCallback::cleanup()
 {
   @autoreleasepool {
     sendRemainingData();
@@ -94,7 +94,7 @@ void IOSRecorderCallback::cleanup()
   }
 }
 
-void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int numFrames)
+void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int numFrames)
 {
   if (!isInitialized_.load()) {
     return;
@@ -157,7 +157,7 @@ void IOSRecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, i
   }
 }
 
-void IOSRecorderCallback::emitAudioData()
+void RecorderCallback::emitAudioData()
 {
   while (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
     auto bus = std::make_shared<AudioBus>(bufferLength_, channelCount_, sampleRate_);
@@ -171,7 +171,7 @@ void IOSRecorderCallback::emitAudioData()
   }
 }
 
-void IOSRecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames)
+void RecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames)
 {
   auto audioBuffer = std::make_shared<AudioBuffer>(bus);
   auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
@@ -185,7 +185,7 @@ void IOSRecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, i
   }
 }
 
-void IOSRecorderCallback::sendRemainingData()
+void RecorderCallback::sendRemainingData()
 {
   auto numberOfFrames = circularBus_[0]->getNumberOfAvailableFrames();
   auto bus = std::make_shared<AudioBus>(circularBus_[0]->getNumberOfAvailableFrames(), channelCount_, sampleRate_);
