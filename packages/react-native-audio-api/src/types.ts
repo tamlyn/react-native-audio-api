@@ -62,6 +62,13 @@ export interface TSteroPannerOptions extends TAudioNodeOptions {
   pan?: number;
 }
 
+export interface TAnalyserOptions extends TAudioNodeOptions {
+  fftSize?: number;
+  minDecibels?: number;
+  maxDecibels?: number;
+  smoothingTimeConstant?: number;
+}
+
 export interface TConvolverOptions extends TAudioNodeOptions {
   buffer?: AudioBuffer | null;
   disableNormalization?: boolean;

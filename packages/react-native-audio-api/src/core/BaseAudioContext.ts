@@ -266,7 +266,7 @@ export default class BaseAudioContext {
   }
 
   createAnalyser(): AnalyserNode {
-    return new AnalyserNode(this, this.context.createAnalyser());
+    return new AnalyserNode(this);
   }
 
   createConvolver(): ConvolverNode {

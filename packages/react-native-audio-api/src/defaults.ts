@@ -5,6 +5,7 @@ import {
   TConvolverOptions,
   TConstantSourceOptions,
   TPeriodicWaveConstraints,
+  TAnalyserOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -22,6 +23,14 @@ export const SteroPannerOptions: TSteroPannerOptions = {
   ...AudioNodeOptions,
   channelCountMode: 'clamped-max',
   pan: 0,
+};
+
+export const AnalyserOptions: TAnalyserOptions = {
+  ...AudioNodeOptions,
+  fftSize: 2048,
+  minDecibels: -100,
+  maxDecibels: -30,
+  smoothingTimeConstant: 0.8,
 };
 
 export const ConvolverOptions: TConvolverOptions = {

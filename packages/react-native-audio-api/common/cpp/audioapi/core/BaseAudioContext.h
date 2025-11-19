@@ -39,6 +39,7 @@ class GainOptions;
 class StereoPannerOptions;
 class ConvolverOptions;
 class ConstantSourceOptions;
+class AnalyserOptions;
 
 class BaseAudioContext {
  public:
@@ -51,7 +52,7 @@ class BaseAudioContext {
   [[nodiscard]] float getSampleRate() const;
   [[nodiscard]] double getCurrentTime() const;
   [[nodiscard]] std::size_t getCurrentSampleFrame() const;
-  std::shared_ptr<AudioDestinationNode> getDestination();
+  std::shared_ptr<AudioDestinationNode> getDestination() const;
 
   std::shared_ptr<RecorderAdapterNode> createRecorderAdapter();
   std::shared_ptr<WorkletSourceNode> createWorkletSourceNode(
@@ -70,11 +71,11 @@ class BaseAudioContext {
       bool shouldLockRuntime = true);
   std::shared_ptr<OscillatorNode> createOscillator();
   std::shared_ptr<ConstantSourceNode> createConstantSource(
-      const std::shared_ptr<ConstantSourceOptions> options);
+      std::shared_ptr<ConstantSourceOptions> options);
   std::shared_ptr<StreamerNode> createStreamer();
-  std::shared_ptr<GainNode> createGain(const std::shared_ptr<GainOptions> options);
+  std::shared_ptr<GainNode> createGain(std::shared_ptr<GainOptions> options);
   std::shared_ptr<StereoPannerNode> createStereoPanner(
-      const std::shared_ptr<StereoPannerOptions> options);
+      std::shared_ptr<StereoPannerOptions> options);
   std::shared_ptr<BiquadFilterNode> createBiquadFilter();
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
@@ -84,8 +85,8 @@ class BaseAudioContext {
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,
       int length);
-  std::shared_ptr<AnalyserNode> createAnalyser();
-  std::shared_ptr<ConvolverNode> createConvolver(const std::shared_ptr<ConvolverOptions> options);
+  std::shared_ptr<AnalyserNode> createAnalyser(std::shared_ptr<AnalyserOptions> options);
+  std::shared_ptr<ConvolverNode> createConvolver(std::shared_ptr<ConvolverOptions> options);
 
   std::shared_ptr<PeriodicWave> getBasicWaveForm(OscillatorType type);
   [[nodiscard]] float getNyquistFrequency() const;

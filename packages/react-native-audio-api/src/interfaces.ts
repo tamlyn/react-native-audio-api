@@ -10,6 +10,7 @@ import {
   TSteroPannerOptions,
   TConvolverOptions,
   TConstantSourceOptions,
+  TAnalyserOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -84,7 +85,7 @@ export interface IBaseAudioContext {
     imag: Float32Array,
     disableNormalization: boolean
   ) => IPeriodicWave;
-  createAnalyser: () => IAnalyserNode;
+  createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
   createStreamer: () => IStreamerNode;
 }

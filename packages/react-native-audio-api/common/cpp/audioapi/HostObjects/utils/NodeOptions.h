@@ -29,4 +29,11 @@ struct ConvolverOptions : AudioNodeOptions {
 struct ConstantSourceOptions {
   float offset = 1.0f;
 };
+
+struct AnalyserOptions : AudioNodeOptions {
+  int fftSize = 2048;
+  float minDecibels = -100.0f;
+  float maxDecibels = -30.0f;
+  float smoothingTimeConstant = 0.8f;
+};
 } // namespace audioapi

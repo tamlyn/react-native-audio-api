@@ -66,7 +66,7 @@ double BaseAudioContext::getCurrentTime() const {
   return destination_->getCurrentTime();
 }
 
-std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() {
+std::shared_ptr<AudioDestinationNode> BaseAudioContext::getDestination() const {
   return destination_;
 }
 
@@ -117,7 +117,7 @@ std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
 }
 
 std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
-    const std::shared_ptr<ConstantSourceOptions> options) {
+    std::shared_ptr<ConstantSourceOptions> options) {
   auto constantSource = std::make_shared<ConstantSourceNode>(this, options);
   nodeManager_->addSourceNode(constantSource);
   return constantSource;
@@ -138,7 +138,7 @@ std::shared_ptr<GainNode> BaseAudioContext::createGain(std::shared_ptr<GainOptio
 }
 
 std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
-    const std::shared_ptr<StereoPannerOptions> options) {
+    std::shared_ptr<StereoPannerOptions> options) {
   auto stereoPanner = std::make_shared<StereoPannerNode>(this, options);
   nodeManager_->addProcessingNode(stereoPanner);
   return stereoPanner;
@@ -175,14 +175,15 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
   return std::make_shared<PeriodicWave>(sampleRate_, complexData, length, disableNormalization);
 }
 
-std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
-  auto analyser = std::make_shared<AnalyserNode>(this);
+std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser(
+    std::shared_ptr<AnalyserOptions> options) {
+  auto analyser = std::make_shared<AnalyserNode>(this, options);
   nodeManager_->addProcessingNode(analyser);
   return analyser;
 }
 
 std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
-    const std::shared_ptr<ConvolverOptions> options) {
+    std::shared_ptr<ConvolverOptions> options) {
   auto convolver = std::make_shared<ConvolverNode>(this, options);
   nodeManager_->addProcessingNode(convolver);
   return convolver;

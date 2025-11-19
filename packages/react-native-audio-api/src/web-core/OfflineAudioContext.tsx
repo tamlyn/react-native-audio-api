@@ -141,7 +141,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createAnalyser(): AnalyserNode {
-    return new AnalyserNode(this, this.context.createAnalyser());
+    return new AnalyserNode(this);
   }
 
   async decodeAudioDataSource(source: string): Promise<AudioBuffer> {

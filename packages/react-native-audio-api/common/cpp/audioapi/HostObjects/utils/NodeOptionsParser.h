@@ -83,4 +83,19 @@ std::shared_ptr<ConstantSourceOptions> parseConstantSourceOptions(
   options.offset = static_cast<float>(optionsObject.getProperty(runtime, "offset").getNumber());
   return std::make_shared<ConstantSourceOptions>(options);
 }
+
+std::shared_ptr<AnalyserOptions> parseAnalyserOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+  AnalyserOptions options(*nodeOptions.get());
+  options.fftSize = static_cast<int>(optionsObject.getProperty(runtime, "fftSize").getNumber());
+  options.minDecibels =
+      static_cast<float>(optionsObject.getProperty(runtime, "minDecibels").getNumber());
+  options.maxDecibels =
+      static_cast<float>(optionsObject.getProperty(runtime, "maxDecibels").getNumber());
+  options.smoothingTimeConstant =
+      static_cast<float>(optionsObject.getProperty(runtime, "smoothingTimeConstant").getNumber());
+  return std::make_shared<AnalyserOptions>(options);
+}
 } // namespace audioapi::option_parser

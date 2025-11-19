@@ -1,12 +1,33 @@
+import BaseAudioContext from './BaseAudioContext';
+import { AnalyserOptions } from '../defaults';
 import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
-import { WindowType } from '../types';
+import { WindowType, TAnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
 
 export default class AnalyserNode extends AudioNode {
   private static allowedFFTSize: number[] = [
     32, 64, 128, 256, 512, 1024, 2048, 4096, 8192, 16384, 32768,
   ];
+
+  constructor(context: BaseAudioContext, options?: TAnalyserOptions) {
+    const finalOptions: TAnalyserOptions = {
+      ...AnalyserOptions,
+      ...options,
+    };
+
+    if (!AnalyserNode.allowedFFTSize.includes(finalOptions.fftSize!)) {
+      throw new IndexSizeError(
+        `fftSize must be one of the following values: ${AnalyserNode.allowedFFTSize.join(
+          ', '
+        )}`
+      );
+    }
+    console.log('finalOptions', finalOptions);
+    const analyserNode: IAnalyserNode =
+      context.context.createAnalyser(finalOptions);
+    super(context, analyserNode);
+  }
 
   public get fftSize(): number {
     return (this.node as IAnalyserNode).fftSize;

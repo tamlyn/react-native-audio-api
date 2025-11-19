@@ -253,7 +253,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
-  auto analyser = context_->createAnalyser();
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<AnalyserOptions> analyserOptions =
+      audioapi::option_parser::parseAnalyserOptions(runtime, options);
+  auto analyser = context_->createAnalyser(analyserOptions);
   auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
 }
