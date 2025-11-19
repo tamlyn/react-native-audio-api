@@ -144,8 +144,9 @@ std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
   return stereoPanner;
 }
 
-std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
-  auto biquadFilter = std::make_shared<BiquadFilterNode>(this);
+std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter(
+    std::shared_ptr<BiquadFilterOptions> options) {
+  auto biquadFilter = std::make_shared<BiquadFilterNode>(this, options);
   nodeManager_->addProcessingNode(biquadFilter);
   return biquadFilter;
 }

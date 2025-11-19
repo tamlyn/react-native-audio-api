@@ -1,6 +1,5 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import {
-  BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
@@ -11,6 +10,7 @@ import {
   TConvolverOptions,
   TConstantSourceOptions,
   TAnalyserOptions,
+  TBiquadFilterOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -70,7 +70,9 @@ export interface IBaseAudioContext {
   createStereoPanner(
     stereoPannerOptions: TSteroPannerOptions
   ): IStereoPannerNode;
-  createBiquadFilter: () => IBiquadFilterNode;
+  createBiquadFilter: (
+    biquadFilterOptions: TBiquadFilterOptions
+  ) => IBiquadFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (
     pitchCorrection: boolean

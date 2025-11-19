@@ -4,7 +4,7 @@ export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
 export type ChannelInterpretation = 'speakers' | 'discrete';
 
-export type BiquadFilterType =
+type BiquadFilterType =
   | 'lowpass'
   | 'highpass'
   | 'bandpass'
@@ -67,6 +67,14 @@ export interface TAnalyserOptions extends TAudioNodeOptions {
   minDecibels?: number;
   maxDecibels?: number;
   smoothingTimeConstant?: number;
+}
+
+export interface TBiquadFilterOptions extends TAudioNodeOptions {
+  type?: BiquadFilterType;
+  frequency?: number;
+  detune?: number;
+  Q?: number;
+  gain?: number;
 }
 
 export interface TConvolverOptions extends TAudioNodeOptions {

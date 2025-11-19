@@ -26,6 +26,7 @@
  * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/utils/AudioArray.h>
@@ -38,21 +39,23 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context) : AudioNode(context) {
-  frequencyParam_ =
-      std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency(), context);
+BiquadFilterNode::BiquadFilterNode(
+    BaseAudioContext *context,
+    std::shared_ptr<BiquadFilterOptions> options)
+    : AudioNode(context, options) {
+  frequencyParam_ = std::make_shared<AudioParam>(
+      options->frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0f,
+      options->detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
   QParam_ = std::make_shared<AudioParam>(
-      1.0f, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options->Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      0.0f, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = BiquadFilterType::LOWPASS;
+      options->gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
+  type_ = options->type;
   isInitialized_ = true;
-  channelCountMode_ = ChannelCountMode::MAX;
 }
 
 std::string BiquadFilterNode::getType() {

@@ -46,6 +46,7 @@
 namespace audioapi {
 
 class AudioBus;
+class BiquadFilterOptions;
 
 class BiquadFilterNode : public AudioNode {
 #ifdef AUDIO_API_TEST_SUITE
@@ -54,7 +55,9 @@ class BiquadFilterNode : public AudioNode {
 #endif
 
  public:
-  explicit BiquadFilterNode(BaseAudioContext *context);
+  explicit BiquadFilterNode(
+      BaseAudioContext *context,
+      std::shared_ptr<BiquadFilterOptions> options);
 
   [[nodiscard]] std::string getType();
   void setType(const std::string &type);

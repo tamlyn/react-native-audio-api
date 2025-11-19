@@ -61,7 +61,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createConstantSource(): ConstantSourceNode {
-    return new ConstantSourceNode(this, this.context.createConstantSource());
+    return new ConstantSourceNode(this);
   }
 
   createGain(): GainNode {
@@ -73,7 +73,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
+    return new BiquadFilterNode(this);
   }
 
   createConvolver(): ConvolverNode {

@@ -98,4 +98,39 @@ std::shared_ptr<AnalyserOptions> parseAnalyserOptions(
       static_cast<float>(optionsObject.getProperty(runtime, "smoothingTimeConstant").getNumber());
   return std::make_shared<AnalyserOptions>(options);
 }
+
+std::shared_ptr<BiquadFilterOptions> parseBiquadFilterOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+  BiquadFilterOptions options(*nodeOptions.get());
+
+  auto typeStr = optionsObject.getProperty(runtime, "type").asString(runtime).utf8(runtime);
+
+  if (typeStr == "lowpass") {
+    options.type = BiquadFilterType::LOWPASS;
+  } else if (typeStr == "highpass") {
+    options.type = BiquadFilterType::HIGHPASS;
+  } else if (typeStr == "bandpass") {
+    options.type = BiquadFilterType::BANDPASS;
+  } else if (typeStr == "lowshelf") {
+    options.type = BiquadFilterType::LOWSHELF;
+  } else if (typeStr == "highshelf") {
+    options.type = BiquadFilterType::HIGHSHELF;
+  } else if (typeStr == "peaking") {
+    options.type = BiquadFilterType::PEAKING;
+  } else if (typeStr == "notch") {
+    options.type = BiquadFilterType::NOTCH;
+  } else if (typeStr == "allpass") {
+    options.type = BiquadFilterType::ALLPASS;
+  }
+
+  options.frequency =
+      static_cast<float>(optionsObject.getProperty(runtime, "frequency").getNumber());
+  options.detune = static_cast<float>(optionsObject.getProperty(runtime, "detune").getNumber());
+  options.Q = static_cast<float>(optionsObject.getProperty(runtime, "Q").getNumber());
+  options.gain = static_cast<float>(optionsObject.getProperty(runtime, "gain").getNumber());
+
+  return std::make_shared<BiquadFilterOptions>(options);
+}
 } // namespace audioapi::option_parser

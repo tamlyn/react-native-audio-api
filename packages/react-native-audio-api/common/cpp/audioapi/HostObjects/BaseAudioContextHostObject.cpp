@@ -195,7 +195,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
-  auto biquadFilter = context_->createBiquadFilter();
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<BiquadFilterOptions> biquadFilterOptions =
+      audioapi::option_parser::parseBiquadFilterOptions(runtime, options);
+  auto biquadFilter = context_->createBiquadFilter(biquadFilterOptions);
   auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
 }

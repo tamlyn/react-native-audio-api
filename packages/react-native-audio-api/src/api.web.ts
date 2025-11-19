@@ -20,7 +20,6 @@ export * from './web-core/custom';
 
 export {
   OscillatorType,
-  BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,

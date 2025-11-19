@@ -40,6 +40,7 @@ class StereoPannerOptions;
 class ConvolverOptions;
 class ConstantSourceOptions;
 class AnalyserOptions;
+class BiquadFilterOptions;
 
 class BaseAudioContext {
  public:
@@ -76,7 +77,8 @@ class BaseAudioContext {
   std::shared_ptr<GainNode> createGain(std::shared_ptr<GainOptions> options);
   std::shared_ptr<StereoPannerNode> createStereoPanner(
       std::shared_ptr<StereoPannerOptions> options);
-  std::shared_ptr<BiquadFilterNode> createBiquadFilter();
+  std::shared_ptr<BiquadFilterNode> createBiquadFilter(
+      std::shared_ptr<BiquadFilterOptions> options);
   std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
   static std::shared_ptr<AudioBuffer>

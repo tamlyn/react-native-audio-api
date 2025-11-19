@@ -6,6 +6,7 @@ import {
   TConstantSourceOptions,
   TPeriodicWaveConstraints,
   TAnalyserOptions,
+  TBiquadFilterOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -31,6 +32,15 @@ export const AnalyserOptions: TAnalyserOptions = {
   minDecibels: -100,
   maxDecibels: -30,
   smoothingTimeConstant: 0.8,
+};
+
+export const BiquadFilterOptions: TBiquadFilterOptions = {
+  ...AudioNodeOptions,
+  Q: 1,
+  detune: 0,
+  frequency: 350,
+  gain: 0,
+  type: 'lowpass',
 };
 
 export const ConvolverOptions: TConvolverOptions = {

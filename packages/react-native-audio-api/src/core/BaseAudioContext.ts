@@ -199,7 +199,7 @@ export default class BaseAudioContext {
   }
 
   createBiquadFilter(): BiquadFilterNode {
-    return new BiquadFilterNode(this, this.context.createBiquadFilter());
+    return new BiquadFilterNode(this);
   }
 
   createBufferSource(

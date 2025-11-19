@@ -82,7 +82,6 @@ export { default as PeriodicWave } from './core/PeriodicWave';
 
 export {
   OscillatorType,
-  BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
