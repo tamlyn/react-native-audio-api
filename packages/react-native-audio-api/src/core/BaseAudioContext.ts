@@ -3,7 +3,6 @@ import { IBaseAudioContext } from '../interfaces';
 import {
   AudioBufferBaseSourceNodeOptions,
   ContextState,
-  PeriodicWaveConstraints,
   AudioWorkletRuntime,
 } from '../types';
 import { assertWorkletsEnabled, workletsModule } from '../utils';
@@ -263,12 +262,7 @@ export default class BaseAudioContext {
         `The lengths of the real (${real.length}) and imaginary (${imag.length}) arrays must match.`
       );
     }
-
-    const disableNormalization = constraints?.disableNormalization ?? false;
-
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, disableNormalization)
-    );
+    return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
   createAnalyser(): AnalyserNode {

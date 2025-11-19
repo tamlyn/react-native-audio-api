@@ -1,4 +1,4 @@
-import { ContextState, PeriodicWaveConstraints } from '../types';
+import { ContextState } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';

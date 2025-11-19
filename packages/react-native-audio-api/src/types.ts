@@ -25,10 +25,6 @@ export type OscillatorType =
   | 'triangle'
   | 'custom';
 
-export interface PeriodicWaveConstraints {
-  disableNormalization: boolean;
-}
-
 export interface AudioContextOptions {
   sampleRate?: number;
 }
@@ -78,4 +74,13 @@ export interface TWebConvolverOptions {
 
 export interface TConstantSourceOptions {
   offset?: number;
+}
+
+export interface TPeriodicWaveConstraints {
+  disableNormalization?: boolean;
+}
+
+export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
+  real: Float32Array;
+  imag: Float32Array;
 }

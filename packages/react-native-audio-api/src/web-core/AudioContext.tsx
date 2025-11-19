@@ -1,6 +1,5 @@
 import {
   ContextState,
-  PeriodicWaveConstraints,
   AudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
 } from '../types';
@@ -19,6 +18,7 @@ import ConvolverNode from './ConvolverNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConstantSourceNode from './ConstantSourceNode';
+import { PeriodicWaveConstraints } from '../defaults';
 
 export default class AudioContext implements BaseAudioContext {
   readonly context: globalThis.AudioContext;
@@ -132,9 +132,7 @@ export default class AudioContext implements BaseAudioContext {
       );
     }
 
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, constraints)
-    );
+    return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
   createAnalyser(): AnalyserNode {

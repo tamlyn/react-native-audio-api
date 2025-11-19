@@ -1,6 +1,5 @@
 import {
   ContextState,
-  PeriodicWaveConstraints,
   OfflineAudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
 } from '../types';
@@ -138,9 +137,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    return new PeriodicWave(
-      this.context.createPeriodicWave(real, imag, constraints)
-    );
+    return new PeriodicWave(this, { real, imag, ...constraints });
   }
 
   createAnalyser(): AnalyserNode {

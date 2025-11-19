@@ -78,6 +78,7 @@ export { default as ConvolverNode } from './core/ConvolverNode';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { decodeAudioData, decodePCMInBase64 } from './core/AudioDecoder';
 export { default as changePlaybackSpeed } from './core/AudioStretcher';
+export { default as PeriodicWave } from './core/PeriodicWave';
 
 export {
   OscillatorType,
@@ -86,7 +87,6 @@ export {
   ChannelInterpretation,
   ContextState,
   WindowType,
-  PeriodicWaveConstraints,
   AudioWorkletRuntime,
 } from './types';
 

@@ -4,6 +4,7 @@ import {
   TSteroPannerOptions,
   TConvolverOptions,
   TConstantSourceOptions,
+  TPeriodicWaveConstraints,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -30,4 +31,8 @@ export const ConvolverOptions: TConvolverOptions = {
 
 export const ConstantSourceOptions: TConstantSourceOptions = {
   offset: 1,
+};
+
+export const PeriodicWaveConstraints: TPeriodicWaveConstraints = {
+  disableNormalization: false,
 };
