@@ -154,7 +154,10 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createRecorderAdapter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
-  auto oscillator = context_->createOscillator();
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<OscillatorOptions> oscillatorOptions =
+      audioapi::option_parser::parseOscillatorOptions(runtime, options);
+  auto oscillator = context_->createOscillator(oscillatorOptions);
   auto oscillatorHostObject = std::make_shared<OscillatorNodeHostObject>(oscillator);
   return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
 }

@@ -1,4 +1,5 @@
 import AudioBuffer from './core/AudioBuffer';
+import PeriodicWave from './core/PeriodicWave';
 
 export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
@@ -75,6 +76,13 @@ export interface TBiquadFilterOptions extends TAudioNodeOptions {
   detune?: number;
   Q?: number;
   gain?: number;
+}
+
+export interface TOscillatorOptions {
+  type?: OscillatorType;
+  frequency?: number;
+  detune?: number;
+  periodicWave?: PeriodicWave;
 }
 
 export interface TConvolverOptions extends TAudioNodeOptions {

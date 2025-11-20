@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/dsp/AudioUtils.h>
@@ -8,16 +9,26 @@
 
 namespace audioapi {
 
-OscillatorNode::OscillatorNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {
+OscillatorNode::OscillatorNode(
+    BaseAudioContext *context,
+    std::shared_ptr<OscillatorOptions> options)
+    : AudioScheduledSourceNode(context) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      444.0, -context_->getNyquistFrequency(), context_->getNyquistFrequency(), context);
+      options->frequency,
+      -context_->getNyquistFrequency(),
+      context_->getNyquistFrequency(),
+      context);
   detuneParam_ = std::make_shared<AudioParam>(
-      0.0,
+      options->detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
-  type_ = OscillatorType::SINE;
-  periodicWave_ = context_->getBasicWaveForm(type_);
+  type_ = options->type;
+  if (options->periodicWave) {
+    periodicWave_ = options->periodicWave;
+  } else {
+    periodicWave_ = context_->getBasicWaveForm(type_);
+  }
 
   audioBus_ = std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, 1, context_->getSampleRate());
 

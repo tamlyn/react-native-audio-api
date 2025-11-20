@@ -52,7 +52,6 @@ export default class PeriodicWave {
       context.sampleRate,
       options
     );
-    console.log('finalOptions', finalOptions);
     this.periodicWave = context.context.createPeriodicWave(
       finalOptions.real,
       finalOptions.imag,

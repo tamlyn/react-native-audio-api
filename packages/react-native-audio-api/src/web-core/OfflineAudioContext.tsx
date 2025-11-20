@@ -57,7 +57,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+    return new OscillatorNode(this);
   }
 
   createConstantSource(): ConstantSourceNode {

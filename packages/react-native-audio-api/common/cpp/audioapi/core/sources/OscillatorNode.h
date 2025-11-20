@@ -13,10 +13,11 @@
 namespace audioapi {
 
 class AudioBus;
+class OscillatorOptions;
 
 class OscillatorNode : public AudioScheduledSourceNode {
  public:
-  explicit OscillatorNode(BaseAudioContext *context);
+  explicit OscillatorNode(BaseAudioContext *context, std::shared_ptr<OscillatorOptions> options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getFrequencyParam() const;
   [[nodiscard]] std::shared_ptr<AudioParam> getDetuneParam() const;

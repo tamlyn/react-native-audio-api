@@ -11,6 +11,7 @@ import {
   TConstantSourceOptions,
   TAnalyserOptions,
   TBiquadFilterOptions,
+  TOscillatorOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -62,7 +63,7 @@ export interface IBaseAudioContext {
     shareableWorklet: ShareableWorkletCallback,
     shouldUseUiRuntime: boolean
   ): IWorkletProcessingNode;
-  createOscillator(): IOscillatorNode;
+  createOscillator(oscillatorOptions: TOscillatorOptions): IOscillatorNode;
   createConstantSource(
     constantSourceOptions: TConstantSourceOptions
   ): IConstantSourceNode;

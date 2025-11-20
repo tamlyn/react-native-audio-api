@@ -2,10 +2,12 @@
 
 #include <memory>
 
+#include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioBuffer.h>
 #include <audioapi/core/types/BiquadFilterType.h>
 #include <audioapi/core/types/ChannelCountMode.h>
 #include <audioapi/core/types/ChannelInterpretation.h>
+#include <audioapi/core/types/OscillatorType.h>
 
 namespace audioapi {
 struct AudioNodeOptions {
@@ -39,11 +41,17 @@ struct AnalyserOptions : AudioNodeOptions {
 };
 
 struct BiquadFilterOptions : AudioNodeOptions {
-  BiquadFilterType type =
-      BiquadFilterType::LOWPASS; // Uncomment and define BiquadFilterType enum as needed
+  BiquadFilterType type = BiquadFilterType::LOWPASS;
   float frequency = 350.0f;
   float detune = 0.0f;
   float Q = 1.0f;
   float gain = 0.0f;
+};
+
+struct OscillatorOptions {
+  std::shared_ptr<PeriodicWave> periodicWave = nullptr;
+  float frequency = 440.0f;
+  float detune = 0.0f;
+  OscillatorType type = OscillatorType::SINE;
 };
 } // namespace audioapi

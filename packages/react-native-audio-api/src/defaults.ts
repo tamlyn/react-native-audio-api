@@ -7,6 +7,7 @@ import {
   TPeriodicWaveConstraints,
   TAnalyserOptions,
   TBiquadFilterOptions,
+  TOscillatorOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -54,4 +55,11 @@ export const ConstantSourceOptions: TConstantSourceOptions = {
 
 export const PeriodicWaveConstraints: TPeriodicWaveConstraints = {
   disableNormalization: false,
+};
+
+export const OscillatorOptions: TOscillatorOptions = {
+  ...AudioNodeOptions,
+  type: 'sine',
+  frequency: 440,
+  detune: 0,
 };

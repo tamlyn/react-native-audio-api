@@ -41,6 +41,7 @@ class ConvolverOptions;
 class ConstantSourceOptions;
 class AnalyserOptions;
 class BiquadFilterOptions;
+class OscillatorOptions;
 
 class BaseAudioContext {
  public:
@@ -70,7 +71,7 @@ class BaseAudioContext {
       std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
-  std::shared_ptr<OscillatorNode> createOscillator();
+  std::shared_ptr<OscillatorNode> createOscillator(std::shared_ptr<OscillatorOptions> options);
   std::shared_ptr<ConstantSourceNode> createConstantSource(
       std::shared_ptr<ConstantSourceOptions> options);
   std::shared_ptr<StreamerNode> createStreamer();

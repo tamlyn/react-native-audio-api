@@ -179,7 +179,7 @@ export default class BaseAudioContext {
   }
 
   createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+    return new OscillatorNode(this);
   }
 
   createStreamer(): StreamerNode {

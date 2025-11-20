@@ -7,6 +7,7 @@
 #include <utility>
 #include <vector>
 
+#include <audioapi/HostObjects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 
@@ -132,5 +133,39 @@ std::shared_ptr<BiquadFilterOptions> parseBiquadFilterOptions(
   options.gain = static_cast<float>(optionsObject.getProperty(runtime, "gain").getNumber());
 
   return std::make_shared<BiquadFilterOptions>(options);
+}
+
+std::shared_ptr<OscillatorOptions> parseOscillatorOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+  OscillatorOptions options;
+
+  auto typeStr = optionsObject.getProperty(runtime, "type").asString(runtime).utf8(runtime);
+
+  if (typeStr == "sine") {
+    options.type = OscillatorType::SINE;
+  } else if (typeStr == "square") {
+    options.type = OscillatorType::SQUARE;
+  } else if (typeStr == "sawtooth") {
+    options.type = OscillatorType::SAWTOOTH;
+  } else if (typeStr == "triangle") {
+    options.type = OscillatorType::TRIANGLE;
+  } else if (typeStr == "custom") {
+    options.type = OscillatorType::CUSTOM;
+  }
+
+  options.frequency =
+      static_cast<float>(optionsObject.getProperty(runtime, "frequency").getNumber());
+  options.detune = static_cast<float>(optionsObject.getProperty(runtime, "detune").getNumber());
+
+  if (optionsObject.hasProperty(runtime, "periodicWave")) {
+    auto periodicWaveHostObject = optionsObject.getProperty(runtime, "periodicWave")
+                                      .getObject(runtime)
+                                      .asHostObject<PeriodicWaveHostObject>(runtime);
+    options.periodicWave = periodicWaveHostObject->periodicWave_;
+  }
+
+  return std::make_shared<OscillatorOptions>(options);
 }
 } // namespace audioapi::option_parser

@@ -110,8 +110,9 @@ std::shared_ptr<RecorderAdapterNode> BaseAudioContext::createRecorderAdapter() {
   return recorderAdapter;
 }
 
-std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator() {
-  auto oscillator = std::make_shared<OscillatorNode>(this);
+std::shared_ptr<OscillatorNode> BaseAudioContext::createOscillator(
+    std::shared_ptr<OscillatorOptions> options) {
+  auto oscillator = std::make_shared<OscillatorNode>(this, options);
   nodeManager_->addSourceNode(oscillator);
   return oscillator;
 }

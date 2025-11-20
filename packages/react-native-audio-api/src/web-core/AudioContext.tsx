@@ -51,7 +51,7 @@ export default class AudioContext implements BaseAudioContext {
   }
 
   createOscillator(): OscillatorNode {
-    return new OscillatorNode(this, this.context.createOscillator());
+    return new OscillatorNode(this);
   }
 
   createConstantSource(): ConstantSourceNode {
