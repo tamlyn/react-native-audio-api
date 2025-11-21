@@ -7,6 +7,8 @@
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <mutex>
+#include <atomic>
 
 namespace audioapi {
 

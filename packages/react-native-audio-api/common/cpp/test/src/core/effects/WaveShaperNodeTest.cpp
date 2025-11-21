@@ -24,7 +24,7 @@ class WaveShaperNodeTest : public ::testing::Test {
 
 class TestableWaveShaperNode : public WaveShaperNode {
  public:
-  explicit TestableStereoPannerNode(BaseAudioContext *context) : StereoPannerNode(context) {}
+  explicit TestableWaveShaperNode(BaseAudioContext *context) : WaveShaperNode(context) {}
 
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
