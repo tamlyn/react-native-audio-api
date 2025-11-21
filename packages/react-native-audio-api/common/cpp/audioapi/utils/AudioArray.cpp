@@ -8,14 +8,14 @@ AudioArray::AudioArray(size_t size) : data_(nullptr), size_(size) {
 }
 
 AudioArray::AudioArray(const AudioArray &other) : data_(nullptr), size_(0) {
-  resize(other.size_);
+    resize(other.size_);
 
-  copy(&other);
+    copy(&other);
 }
 
-AudioArray::AudioArray(float *data, size_t size) {
-  resize(size);
-  memcpy(data_, data, size_ * sizeof(float));
+AudioArray::AudioArray(float *data, size_t size) : size_(size) {
+    data_ = new float[size_];
+    memcpy(data_, data, size_ * sizeof(float));
 }
 
 AudioArray::~AudioArray() {
