@@ -1,6 +1,9 @@
+#import <AVFAudio/AVFAudio.h>
 #import <audioapi/ios/system/AudioSessionManager.h>
 
 @implementation AudioSessionManager
+
+static AudioSessionManager *_sharedInstance = nil;
 
 - (instancetype)init
 {
@@ -16,7 +19,13 @@
     self.allowHapticsAndSounds = false;
   }
 
+  _sharedInstance = self;
   return self;
+}
+
++ (instancetype)sharedInstance
+{
+  return _sharedInstance;
 }
 
 - (void)cleanup
@@ -149,23 +158,45 @@
         nil);
     return;
   }
-  if (@available(iOS 17, *)) {
-    [AVAudioSession.sharedInstance requestRecordPermission:^(BOOL granted) {
-      if (granted) {
-        resolve(@"Granted");
-      } else {
-        resolve(@"Denied");
-      }
+
+  resolve([self requestRecordingPermissions]);
+}
+
+- (NSString *)requestRecordingPermissions
+{
+  id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
+
+  if (value == nil) {
+    return @"Denied";
+  }
+
+  __block NSString *result = @"Denied";
+  dispatch_semaphore_t sem = dispatch_semaphore_create(0);
+
+#if TARGET_OS_SIMULATOR
+  [self.audioSession requestRecordPermission:^(BOOL granted) {
+    result = granted ? @"Granted" : @"Denied";
+    dispatch_semaphore_signal(sem);
+  }];
+
+  dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+  return result;
+#else
+  if (@available(iOS 17.0, *)) {
+    [AVAudioApplication requestRecordPermissionWithCompletionHandler:^(BOOL granted) {
+      result = granted ? @"Granted" : @"Denied";
+      dispatch_semaphore_signal(sem);
     }];
   } else {
     [self.audioSession requestRecordPermission:^(BOOL granted) {
-      if (granted) {
-        resolve(@"Granted");
-      } else {
-        resolve(@"Denied");
-      }
+      result = granted ? @"Granted" : @"Denied";
+      dispatch_semaphore_signal(sem);
     }];
   }
+
+  dispatch_semaphore_wait(sem, DISPATCH_TIME_FOREVER);
+  return result;
+#endif
 }
 
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject

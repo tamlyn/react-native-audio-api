@@ -10,7 +10,7 @@ static AudioEngine *_sharedInstance = nil;
   return _sharedInstance;
 }
 
-- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager
+- (instancetype)init
 {
   if (self = [super init]) {
     self.state = AudioEngineState::AudioEngineStateIdle;
@@ -20,7 +20,7 @@ static AudioEngine *_sharedInstance = nil;
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
 
-    self.sessionManager = sessionManager;
+    self.sessionManager = [AudioSessionManager sharedInstance];
   }
 
   _sharedInstance = self;

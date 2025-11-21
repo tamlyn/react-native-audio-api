@@ -1,5 +1,8 @@
 #import <AVFoundation/AVFoundation.h>
+#import <AudioEngine.h>
+#import <AudioSessionManager.h>
 #import <Foundation/Foundation.h>
+
 #include <unordered_map>
 
 #include <audioapi/core/utils/Constants.h>
@@ -47,6 +50,11 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
 {
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
+  AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
+
+  if ([[audioSessionManager requestRecordingPermissions] isEqual:@"Denied"]) {
+    return ReturnStatus<std::string>::Error("Microphone permissions are not granted");
+  }
 
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
 
@@ -118,7 +126,6 @@ ReturnStatus<std::tuple<std::string, double, double>> IOSAudioRecorder::stop()
 void IOSAudioRecorder::enableFileOutput(std::shared_ptr<AudioFileProperties> properties)
 {
   Locker lock(fileWriterMutex_);
-
   fileWriter_ = std::make_shared<FileWriter>(properties);
   fileOutputEnabled_.store(true);
 }

@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as C++
+#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioRecorder.h>
 #else
 typedef struct objc_object NSURL;

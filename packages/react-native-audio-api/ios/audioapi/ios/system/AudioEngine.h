@@ -21,9 +21,9 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
 
-- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager;
-
+- (instancetype)init;
 + (instancetype)sharedInstance;
+
 - (void)cleanup;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;

@@ -19,9 +19,10 @@
 @property (nonatomic, assign) bool allowHapticsAndSounds;
 
 - (instancetype)init;
++ (instancetype)sharedInstance;
+
 - (void)cleanup;
 
-- (void)disableSessionManagement;
 - (void)setAudioSessionOptions:(NSString *)category
                           mode:(NSString *)mode
                        options:(NSArray *)options
@@ -34,7 +35,10 @@
 - (NSNumber *)getDevicePreferredSampleRate;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (NSString *)requestRecordingPermissions;
+
 - (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (NSString *)checkRecordingPermissions;
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
 - (NSArray<NSDictionary *> *)parseDeviceList:(NSArray<AVAudioSessionPortDescription *> *)devices;

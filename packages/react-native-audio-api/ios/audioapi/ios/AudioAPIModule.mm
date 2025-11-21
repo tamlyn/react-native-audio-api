@@ -67,7 +67,7 @@ RCT_EXPORT_MODULE(AudioAPIModule);
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
-  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
+  self.audioEngine = [[AudioEngine alloc] init];
   self.lockScreenManager = [[LockScreenManager alloc] initWithAudioAPIModule:self];
   self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
 
