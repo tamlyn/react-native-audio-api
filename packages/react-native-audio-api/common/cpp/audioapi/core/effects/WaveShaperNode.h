@@ -5,10 +5,10 @@
 #include <audioapi/dsp/Resampler.h>
 
 #include <algorithm>
-#include <memory>
-#include <string>
-#include <mutex>
 #include <atomic>
+#include <memory>
+#include <mutex>
+#include <string>
 
 namespace audioapi {
 
