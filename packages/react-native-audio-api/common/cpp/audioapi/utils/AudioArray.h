@@ -1,9 +1,9 @@
 #pragma once
 
 #include <algorithm>
-#include <memory>
 #include <cstddef>
 #include <cstring>
+#include <memory>
 
 namespace audioapi {
 
@@ -30,19 +30,11 @@ class AudioArray {
 
   void sum(const AudioArray *source);
   void sum(const AudioArray *source, size_t start, size_t length);
-  void sum(
-      const AudioArray *source,
-      size_t sourceStart,
-      size_t destinationStart,
-      size_t length);
+  void sum(const AudioArray *source, size_t sourceStart, size_t destinationStart, size_t length);
 
   void copy(const AudioArray *source);
   void copy(const AudioArray *source, size_t start, size_t length);
-  void copy(
-      const AudioArray *source,
-      size_t sourceStart,
-      size_t destinationStart,
-      size_t length);
+  void copy(const AudioArray *source, size_t sourceStart, size_t destinationStart, size_t length);
 
  protected:
   float *data_;

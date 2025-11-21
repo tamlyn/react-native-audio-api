@@ -5,41 +5,39 @@
 #include <vector>
 
 namespace audioapi {
-    constexpr int KERNEL_SIZE = 64;
-    constexpr int MAX_BLOCK_SIZE = 1024;
+constexpr int KERNEL_SIZE = 64;
+constexpr int MAX_BLOCK_SIZE = 1024;
 
-    class UpSampler {
-    public:
-        UpSampler();
+class UpSampler {
+ public:
+  UpSampler();
 
-        // N -> 2N
-        void process(const std::shared_ptr<AudioArray>& input,
-                     const std::shared_ptr<AudioArray>& output);
+  // N -> 2N
+  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output);
 
-        void reset();
+  void reset();
 
-    private:
-        void initializeKernel();
+ private:
+  void initializeKernel();
 
-        std::shared_ptr<AudioArray> kernel_;
-        std::shared_ptr<AudioArray> stateBuffer_;
-    };
+  std::shared_ptr<AudioArray> kernel_;
+  std::shared_ptr<AudioArray> stateBuffer_;
+};
 
-    class DownSampler {
-    public:
-        DownSampler();
+class DownSampler {
+ public:
+  DownSampler();
 
-        // 2N -> N
-        void process(const std::shared_ptr<AudioArray>& input,
-                     const std::shared_ptr<AudioArray>& output);
+  // 2N -> N
+  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output);
 
-        void reset();
+  void reset();
 
-    private:
-        void initializeKernel();
+ private:
+  void initializeKernel();
 
-        std::shared_ptr<AudioArray> kernel_;
-        std::shared_ptr<AudioArray> stateBuffer_;
-    };
+  std::shared_ptr<AudioArray> kernel_;
+  std::shared_ptr<AudioArray> stateBuffer_;
+};
 
 } // namespace audioapi

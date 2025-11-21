@@ -62,6 +62,10 @@ export interface IBaseAudioContext {
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
+  createIIRFilter: (
+    feedforward: number[],
+    feedback: number[]
+  ) => IIIRFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (
     pitchCorrection: boolean
@@ -124,6 +128,14 @@ export interface IBiquadFilterNode extends IAudioNode {
   readonly gain: AudioParam;
   type: BiquadFilterType;
 
+  getFrequencyResponse(
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
+  ): void;
+}
+
+export interface IIIRFilterNode extends IAudioNode {
   getFrequencyResponse(
     frequencyArray: Float32Array,
     magResponseOutput: Float32Array,

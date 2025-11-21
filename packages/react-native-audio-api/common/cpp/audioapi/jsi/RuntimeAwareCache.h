@@ -24,19 +24,22 @@ using namespace facebook;
 template <typename T>
 class RuntimeAwareCache : public RuntimeLifecycleListener {
  public:
-  void onRuntimeDestroyed(jsi::Runtime *rt) override {
+  void onRuntimeDestroyed(jsi::Runtime *rt) override
+  {
     // A runtime has been destroyed, so destroy the related cache.
     runtimeCaches_.erase(rt);
   }
 
-  ~RuntimeAwareCache() override {
+  ~RuntimeAwareCache() override
+  {
     for (auto &cache : runtimeCaches_) {
       // remove all `onRuntimeDestroyed` listeners.
       RuntimeLifecycleMonitor::removeListener(*cache.first, this);
     }
   }
 
-  T &get(jsi::Runtime &rt) {
+  T &get(jsi::Runtime &rt)
+  {
     if (runtimeCaches_.count(&rt) == 0) {
       // This is the first time this Runtime has been accessed.
       // We set up a `onRuntimeDestroyed` listener for it and

@@ -2,10 +2,12 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/jsi/AudioArrayBuffer.h>
 
+#include <string>
+#include <memory>
+
 namespace audioapi {
 
-WaveShaperNodeHostObject::WaveShaperNodeHostObject(
-    const std::shared_ptr<WaveShaperNode> &node)
+WaveShaperNodeHostObject::WaveShaperNodeHostObject(const std::shared_ptr<WaveShaperNode> &node)
     : AudioNodeHostObject(node) {
   addGetters(
       JSI_EXPORT_PROPERTY_GETTER(WaveShaperNodeHostObject, oversample),
@@ -33,10 +35,8 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
   auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(audioArray);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
 
-  auto float32ArrayCtor =
-      runtime.global().getPropertyAsFunction(runtime, "Float32Array");
-  auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer)
-                          .getObject(runtime);
+  auto float32ArrayCtor = runtime.global().getPropertyAsFunction(runtime, "Float32Array");
+  auto float32Array = float32ArrayCtor.callAsConstructor(runtime, arrayBuffer).getObject(runtime);
   float32Array.setExternalMemoryPressure(runtime, audioArrayBuffer->size());
 
   return float32Array;
@@ -51,18 +51,15 @@ JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
 JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
 
-  auto arrayBuffer = args[0]
-                         .getObject(runtime)
-                         .getPropertyAsObject(runtime, "buffer")
-                         .getArrayBuffer(runtime);
+  auto arrayBuffer =
+      args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
 
   auto curve = std::make_shared<AudioArray>(
       reinterpret_cast<float *>(arrayBuffer.data(runtime)),
       static_cast<size_t>(arrayBuffer.size(runtime) / sizeof(float)));
 
   waveShaperNode->setCurve(curve);
-  thisValue.asObject(runtime).setExternalMemoryPressure(
-      runtime, arrayBuffer.size(runtime));
+  thisValue.asObject(runtime).setExternalMemoryPressure(runtime, arrayBuffer.size(runtime));
 
   return jsi::Value::undefined();
 }

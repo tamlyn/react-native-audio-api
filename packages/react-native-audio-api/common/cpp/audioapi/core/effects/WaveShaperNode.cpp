@@ -4,6 +4,10 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <algorithm>
+#include <memory>
+#include <string>
+
 namespace audioapi {
 
 WaveShaperNode::WaveShaperNode(BaseAudioContext *context)
@@ -71,8 +75,7 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
 
   auto oversample = oversample_.load(std::memory_order_acquire);
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels();
-       channel += 1) {
+  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel += 1) {
     auto channelData = processingBus->getSharedChannel(channel);
 
     switch (oversample) {
@@ -101,15 +104,14 @@ void WaveShaperNode::process(const std::shared_ptr<AudioArray> &channelData) {
   for (int i = 0; i < channelData->getSize(); i += 1) {
     float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
 
-    if (v < 0)
-      data[i] = curveArray[0];
-    else if (v >= static_cast<float>(curveSize) - 1)
+    if (v < 0) {
+        data[i] = curveArray[0];
+    } else if (v >= static_cast<float>(curveSize) - 1) {
       data[i] = curveArray[curveSize - 1];
-    else {
+    } else {
       auto k = std::floor(v);
       auto f = v - k;
-      auto kIndex = static_cast<size_t>(
-          std::clamp(k, 0.0f, static_cast<float>(curveSize) - 1));
+      auto kIndex = static_cast<size_t>(std::clamp(k, 0.0f, static_cast<float>(curveSize) - 1));
       data[i] = (1 - f) * curveArray[kIndex] + f * curveArray[kIndex + 1];
     }
   }

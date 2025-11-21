@@ -5,6 +5,7 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
@@ -23,8 +24,7 @@ class WaveShaperNodeTest : public ::testing::Test {
 
 class TestableWaveShaperNode : public WaveShaperNode {
  public:
-  explicit TestableStereoPannerNode(BaseAudioContext *context)
-      : StereoPannerNode(context) {}
+  explicit TestableStereoPannerNode(BaseAudioContext *context) : StereoPannerNode(context) {}
 
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,

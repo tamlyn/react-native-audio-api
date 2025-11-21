@@ -20,16 +20,19 @@ class ParamChangeEvent {
       ParamChangeEventType type);
 
   ParamChangeEvent(const ParamChangeEvent &other) = delete;
-  ParamChangeEvent& operator=(const ParamChangeEvent &other) = delete;
+  ParamChangeEvent &operator=(const ParamChangeEvent &other) = delete;
 
   explicit ParamChangeEvent(ParamChangeEvent &&other) noexcept
-    : startTime_(other.startTime_),
-      endTime_(other.endTime_),
-      calculateValue_(std::move(other.calculateValue_)),
-      startValue_(other.startValue_),
-      endValue_(other.endValue_),
-      type_(other.type_) {}
-  ParamChangeEvent& operator=(ParamChangeEvent &&other) noexcept {
+      : startTime_(other.startTime_),
+        endTime_(other.endTime_),
+        calculateValue_(std::move(other.calculateValue_)),
+        startValue_(other.startValue_),
+        endValue_(other.endValue_),
+        type_(other.type_)
+  {
+  }
+  ParamChangeEvent &operator=(ParamChangeEvent &&other) noexcept
+  {
     if (this != &other) {
       startTime_ = other.startTime_;
       endTime_ = other.endTime_;
@@ -41,33 +44,42 @@ class ParamChangeEvent {
     return *this;
   }
 
-  [[nodiscard]] inline double getEndTime() const noexcept {
+  [[nodiscard]] inline double getEndTime() const noexcept
+  {
     return endTime_;
   }
-  [[nodiscard]] inline double getStartTime() const noexcept {
+  [[nodiscard]] inline double getStartTime() const noexcept
+  {
     return startTime_;
   }
-  [[nodiscard]] inline float getEndValue() const noexcept {
+  [[nodiscard]] inline float getEndValue() const noexcept
+  {
     return endValue_;
   }
-  [[nodiscard]] inline float getStartValue() const noexcept {
+  [[nodiscard]] inline float getStartValue() const noexcept
+  {
     return startValue_;
   }
-  [[nodiscard]] inline const std::function<float(double, double, float, float, double)>&
-  getCalculateValue() const noexcept {
+  [[nodiscard]] inline const std::function<float(double, double, float, float, double)> &
+  getCalculateValue() const noexcept
+  {
     return calculateValue_;
   }
-  [[nodiscard]] inline ParamChangeEventType getType() const noexcept {
+  [[nodiscard]] inline ParamChangeEventType getType() const noexcept
+  {
     return type_;
   }
 
-  inline void setEndTime(double endTime) noexcept {
+  inline void setEndTime(double endTime) noexcept
+  {
     endTime_ = endTime;
   }
-  inline void setStartValue(float startValue) noexcept {
+  inline void setStartValue(float startValue) noexcept
+  {
     startValue_ = startValue;
   }
-  inline void setEndValue(float endValue) noexcept {
+  inline void setEndValue(float endValue) noexcept
+  {
     endValue_ = endValue;
   }
 

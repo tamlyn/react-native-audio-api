@@ -1,10 +1,11 @@
 #pragma once
 
 #include <audioapi/core/AudioParam.h>
+#include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioScheduledSourceNode.h>
 #include <audioapi/core/types/OscillatorType.h>
-#include <audioapi/core/effects/PeriodicWave.h>
 
+#include <algorithm>
 #include <cmath>
 #include <memory>
 #include <string>
@@ -24,7 +25,9 @@ class OscillatorNode : public AudioScheduledSourceNode {
   void setPeriodicWave(const std::shared_ptr<PeriodicWave> &periodicWave);
 
  protected:
-  std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus>& processingBus, int framesToProcess) override;
+  std::shared_ptr<AudioBus> processNode(
+      const std::shared_ptr<AudioBus> &processingBus,
+      int framesToProcess) override;
 
  private:
   std::shared_ptr<AudioParam> frequencyParam_;
@@ -33,10 +36,10 @@ class OscillatorNode : public AudioScheduledSourceNode {
   float phase_ = 0.0;
   std::shared_ptr<PeriodicWave> periodicWave_;
 
-  static OscillatorType fromString(const std::string &type) {
+  static OscillatorType fromString(const std::string &type)
+  {
     std::string lowerType = type;
-    std::transform(
-        lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
+    std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
     if (lowerType == "sine")
       return OscillatorType::SINE;
@@ -52,7 +55,8 @@ class OscillatorNode : public AudioScheduledSourceNode {
     throw std::invalid_argument("Unknown oscillator type: " + type);
   }
 
-  static std::string toString(OscillatorType type) {
+  static std::string toString(OscillatorType type)
+  {
     switch (type) {
       case OscillatorType::SINE:
         return "sine";

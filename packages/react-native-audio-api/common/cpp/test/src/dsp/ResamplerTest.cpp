@@ -4,6 +4,7 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 

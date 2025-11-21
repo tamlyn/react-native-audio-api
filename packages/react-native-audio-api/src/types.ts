@@ -58,3 +58,7 @@ export interface ConvolverNodeOptions {
 }
 
 export type OverSampleType = 'none' | '2x' | '4x';
+export interface IIRFilterNodeOptions {
+  feedforward: number[];
+  feedback: number[];
+}

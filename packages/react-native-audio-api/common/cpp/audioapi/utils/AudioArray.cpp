@@ -1,5 +1,6 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
+#include <algorithm>
 
 namespace audioapi {
 
@@ -98,10 +99,7 @@ void AudioArray::sum(
     size_t destinationStart,
     size_t length) {
   dsp::add(
-      data_ + destinationStart,
-      source->getData() + sourceStart,
-      data_ + destinationStart,
-      length);
+      data_ + destinationStart, source->getData() + sourceStart, data_ + destinationStart, length);
 }
 
 void AudioArray::copy(const AudioArray *source) {
@@ -117,10 +115,7 @@ void AudioArray::copy(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) {
-  memcpy(
-      data_ + destinationStart,
-      source->getData() + sourceStart,
-      length * sizeof(float));
+  memcpy(data_ + destinationStart, source->getData() + sourceStart, length * sizeof(float));
 }
 
 } // namespace audioapi
