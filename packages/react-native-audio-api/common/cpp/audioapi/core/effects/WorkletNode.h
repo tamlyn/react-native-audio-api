@@ -21,15 +21,12 @@ class WorkletNode : public AudioNode {
       size_t bufferLength,
       size_t inputChannelCount,
       WorkletsRunner &&workletRunner)
-      : AudioNode(context)
-  {
-  }
+      : AudioNode(context) {}
 
  protected:
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
-      int framesToProcess) override
-  {
+      int framesToProcess) override {
     return processingBus;
   }
 };

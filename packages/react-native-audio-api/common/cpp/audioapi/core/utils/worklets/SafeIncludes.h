@@ -46,16 +46,14 @@ class WorkletRuntime {
           throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
       executeSync(std::function<jsi::Value(jsi::Runtime &)> &&job) const {
           throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value
-      executeSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const
-  {
+      executeSync(const std::function<jsi::Value(jsi::Runtime &)> &job) const {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
 };
 class SerializableWorklet {
  public:
   SerializableWorklet(jsi::Runtime *, const jsi::Object &){
-      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value toJSValue(jsi::Runtime &rt)
-  {
+      throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR} jsi::Value toJSValue(jsi::Runtime &rt) {
     throw RN_AUDIO_API_WORKLETS_DISABLED_ERROR
   }
 };
@@ -72,8 +70,7 @@ struct RuntimeRegistry {
   std::shared_ptr<worklets::WorkletRuntime> audioRuntime;
 
 #if ANDROID
-  ~RuntimeRegistry()
-  {
+  ~RuntimeRegistry() {
     facebook::jni::ThreadScope::WithClassLoader([this]() {
       uiRuntime.reset();
       audioRuntime.reset();

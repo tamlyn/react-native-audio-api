@@ -36,8 +36,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
   float phase_ = 0.0;
   std::shared_ptr<PeriodicWave> periodicWave_;
 
-  static OscillatorType fromString(const std::string &type)
-  {
+  static OscillatorType fromString(const std::string &type) {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
@@ -55,8 +54,7 @@ class OscillatorNode : public AudioScheduledSourceNode {
     throw std::invalid_argument("Unknown oscillator type: " + type);
   }
 
-  static std::string toString(OscillatorType type)
-  {
+  static std::string toString(OscillatorType type) {
     switch (type) {
       case OscillatorType::SINE:
         return "sine";

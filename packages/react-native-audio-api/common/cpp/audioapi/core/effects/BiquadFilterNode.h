@@ -93,8 +93,7 @@ class BiquadFilterNode : public AudioNode {
   float a1_ = 0;
   float a2_ = 0;
 
-  static BiquadFilterType fromString(const std::string &type)
-  {
+  static BiquadFilterType fromString(const std::string &type) {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
@@ -118,8 +117,7 @@ class BiquadFilterNode : public AudioNode {
     throw std::invalid_argument("Invalid filter type: " + type);
   }
 
-  static std::string toString(BiquadFilterType type)
-  {
+  static std::string toString(BiquadFilterType type) {
     switch (type) {
       case BiquadFilterType::LOWPASS:
         return "lowpass";

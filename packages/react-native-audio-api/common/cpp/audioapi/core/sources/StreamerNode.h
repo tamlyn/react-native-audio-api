@@ -48,8 +48,7 @@ struct StreamingData {
   StreamingData(audioapi::AudioBus b, size_t s) : bus(b), size(s) {}
   StreamingData(const StreamingData &data) : bus(data.bus), size(data.size) {}
   StreamingData(StreamingData &&data) noexcept : bus(std::move(data.bus)), size(data.size) {}
-  StreamingData &operator=(const StreamingData &data)
-  {
+  StreamingData &operator=(const StreamingData &data) {
     if (this == &data) {
       return *this;
     }

@@ -42,13 +42,10 @@ class Blackman : public WindowFunction {
 class Kaiser : public WindowFunction {
  public:
   explicit Kaiser(float beta, float amplitude = 1.0f)
-      : WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta))
-  {
-  }
+      : WindowFunction(amplitude), beta_(beta), invB0_(1.0f / bessel0(beta)) {}
 
   static Kaiser
-  withBandwidth(float bandwidth, bool heuristicOptimal = false, float amplitude = 1.0f)
-  {
+  withBandwidth(float bandwidth, bool heuristicOptimal = false, float amplitude = 1.0f) {
     return Kaiser(bandwidthToBeta(bandwidth, heuristicOptimal), amplitude);
   }
 
@@ -61,8 +58,7 @@ class Kaiser : public WindowFunction {
   float invB0_;
 
   // https://en.wikipedia.org/wiki/Bessel_function#Modified_Bessel_functions:_I%CE%B1,_K%CE%B1
-  static inline float bessel0(float x)
-  {
+  static inline float bessel0(float x) {
     const double significanceLimit = 1e-4;
     auto result = 0.0f;
     auto term = 1.0f;
@@ -82,12 +78,9 @@ class Kaiser : public WindowFunction {
 class ApproximateConfinedGaussian : public WindowFunction {
  public:
   explicit ApproximateConfinedGaussian(float sigma, float amplitude = 1.0f)
-      : WindowFunction(amplitude), gaussianFactor_(0.0625f / (sigma * sigma))
-  {
-  }
+      : WindowFunction(amplitude), gaussianFactor_(0.0625f / (sigma * sigma)) {}
 
-  static ApproximateConfinedGaussian withBandwidth(float bandwidth, float amplitude = 1.0f)
-  {
+  static ApproximateConfinedGaussian withBandwidth(float bandwidth, float amplitude = 1.0f) {
     return ApproximateConfinedGaussian(bandwidthToSigma(bandwidth), amplitude);
   }
 

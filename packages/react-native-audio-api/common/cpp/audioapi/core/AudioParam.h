@@ -27,32 +27,27 @@ class AudioParam {
   /// These methods are called only from HostObjects invoked on the JS thread.
 
   // JS-Thread only
-  [[nodiscard]] inline float getValue() const noexcept
-  {
+  [[nodiscard]] inline float getValue() const noexcept {
     return value_;
   }
 
   // JS-Thread only
-  [[nodiscard]] inline float getDefaultValue() const noexcept
-  {
+  [[nodiscard]] inline float getDefaultValue() const noexcept {
     return defaultValue_;
   }
 
   // JS-Thread only
-  [[nodiscard]] inline float getMinValue() const noexcept
-  {
+  [[nodiscard]] inline float getMinValue() const noexcept {
     return minValue_;
   }
 
   // JS-Thread only
-  [[nodiscard]] inline float getMaxValue() const noexcept
-  {
+  [[nodiscard]] inline float getMaxValue() const noexcept {
     return maxValue_;
   }
 
   // JS-Thread only
-  inline void setValue(float value)
-  {
+  inline void setValue(float value) {
     value_ = std::clamp(value, minValue_, maxValue_);
   }
 
@@ -121,8 +116,7 @@ class AudioParam {
 
   /// @brief Get the end time of the parameter queue.
   /// @return The end time of the parameter queue or last endTime_ if queue is empty.
-  inline double getQueueEndTime() const noexcept
-  {
+  inline double getQueueEndTime() const noexcept {
     if (eventsQueue_.isEmpty()) {
       return endTime_;
     }
@@ -131,8 +125,7 @@ class AudioParam {
 
   /// @brief Get the end value of the parameter queue.
   /// @return The end value of the parameter queue or last endValue_ if queue is empty.
-  inline float getQueueEndValue() const noexcept
-  {
+  inline float getQueueEndValue() const noexcept {
     if (eventsQueue_.isEmpty()) {
       return endValue_;
     }
@@ -140,16 +133,14 @@ class AudioParam {
   }
 
   /// @brief Process all scheduled events.
-  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this)))
-  {
+  inline void processScheduledEvents() noexcept(noexcept(eventScheduler_.processAllEvents(*this))) {
     eventScheduler_.processAllEvents(*this);
   }
 
   /// @brief Update the parameter queue with a new event.
   /// @param event The new event to add to the queue.
   /// @note Handles connecting start value of the new event to the end value of the previous event.
-  inline void updateQueue(ParamChangeEvent &&event)
-  {
+  inline void updateQueue(ParamChangeEvent &&event) {
     eventsQueue_.pushBack(std::move(event));
   }
   float getValueAtTime(double time);

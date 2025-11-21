@@ -12,13 +12,11 @@ using namespace facebook;
 
 class AudioArrayBuffer : public jsi::MutableBuffer {
  public:
-  explicit AudioArrayBuffer(const std::shared_ptr<AudioArray> &audioArray) : audioArray_(audioArray)
-  {
-  }
+  explicit AudioArrayBuffer(const std::shared_ptr<AudioArray> &audioArray)
+      : audioArray_(audioArray) {}
   ~AudioArrayBuffer() override = default;
 
-  AudioArrayBuffer(AudioArrayBuffer &&other) noexcept : audioArray_(std::move(other.audioArray_))
-  {
+  AudioArrayBuffer(AudioArrayBuffer &&other) noexcept : audioArray_(std::move(other.audioArray_)) {
     other.audioArray_ = nullptr;
   }
 

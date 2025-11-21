@@ -29,25 +29,20 @@ class Promise {
       jsi::Function &&reject)
       : inner_(
             std::make_shared<Inner>(
-                Inner{std::move(callInvoker), std::move(resolve), std::move(reject)}))
-  {
-  }
+                Inner{std::move(callInvoker), std::move(resolve), std::move(reject)})) {}
 
-  Promise(const Promise &other)
-  {
+  Promise(const Promise &other) {
     inner_ = other.inner_;
   }
   Promise(Promise &&other) noexcept : inner_(std::move(other.inner_)) {}
-  Promise &operator=(Promise &&other) noexcept
-  {
+  Promise &operator=(Promise &&other) noexcept {
     if (this != &other) {
       inner_ = std::move(other.inner_);
     }
     return *this;
   }
 
-  void resolve(const std::function<jsi::Value(jsi::Runtime &)> &&resolver) const
-  {
+  void resolve(const std::function<jsi::Value(jsi::Runtime &)> &&resolver) const {
     auto inner = inner_;
     inner->callInvoker->invokeAsync(
         [inner = std::move(inner),
@@ -57,8 +52,7 @@ class Promise {
         });
   }
 
-  void reject(const std::string &errorMessage) const
-  {
+  void reject(const std::string &errorMessage) const {
     auto inner = inner_;
     inner->callInvoker->invokeAsync(
         [inner = std::move(inner), errorMessage](jsi::Runtime &runtime) -> void {
@@ -82,9 +76,7 @@ class PromiseVendor {
             std::make_shared<ThreadPool>(
                 audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_COUNT,
                 audioapi::PROMISE_VENDOR_THREAD_POOL_LOAD_BALANCER_QUEUE_SIZE,
-                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE))
-  {
-  }
+                audioapi::PROMISE_VENDOR_THREAD_POOL_WORKER_QUEUE_SIZE)) {}
 
   /// @brief Creates an asynchronous promise.
   /// @param function The function to execute asynchronously. It should return either a jsi::Value on success or a std::string error message on failure.

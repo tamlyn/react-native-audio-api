@@ -57,20 +57,17 @@ class JsiHostObject : public jsi::HostObject {
   void set(jsi::Runtime &runtime, const jsi::PropNameID &name, const jsi::Value &value) override;
 
   template <typename... Args>
-  void addGetters(Args... args)
-  {
+  void addGetters(Args... args) {
     (getters_->insert(args), ...);
   }
 
   template <typename... Args>
-  void addSetters(Args... args)
-  {
+  void addSetters(Args... args) {
     (setters_->insert(args), ...);
   }
 
   template <typename... Args>
-  void addFunctions(Args... args)
-  {
+  void addFunctions(Args... args) {
     (functions_->insert(args), ...);
   }
 

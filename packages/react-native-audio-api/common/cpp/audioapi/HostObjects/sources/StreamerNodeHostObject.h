@@ -15,8 +15,7 @@ class StreamerNodeHostObject : public AudioScheduledSourceNodeHostObject {
  public:
   explicit StreamerNodeHostObject(const std::shared_ptr<StreamerNode> &node);
 
-  [[nodiscard]] static inline size_t getSizeInBytes()
-  {
+  [[nodiscard]] static inline size_t getSizeInBytes() {
     return SIZE;
   }
 

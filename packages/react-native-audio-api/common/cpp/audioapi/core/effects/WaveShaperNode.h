@@ -50,8 +50,7 @@ class WaveShaperNode : public AudioNode {
 
   void process4x(const std::shared_ptr<AudioArray> &channelData);
 
-  static OverSampleType fromString(const std::string &type)
-  {
+  static OverSampleType fromString(const std::string &type) {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
@@ -63,8 +62,7 @@ class WaveShaperNode : public AudioNode {
     return OverSampleType::OVERSAMPLE_NONE;
   }
 
-  static std::string toString(OverSampleType type)
-  {
+  static std::string toString(OverSampleType type) {
     switch (type) {
       case OverSampleType::OVERSAMPLE_2X:
         return "2x";

@@ -17,8 +17,7 @@ class BiquadFilterTest : public ::testing::Test {
   std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::unique_ptr<OfflineAudioContext> context;
 
-  void SetUp() override
-  {
+  void SetUp() override {
     eventRegistry = std::make_shared<MockAudioEventHandlerRegistry>();
     context = std::make_unique<OfflineAudioContext>(
         2, 5 * sampleRate, sampleRate, eventRegistry, RuntimeRegistry{});

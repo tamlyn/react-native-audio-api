@@ -14,8 +14,6 @@ class PeriodicWaveHostObject : public jsi::HostObject {
   std::shared_ptr<PeriodicWave> periodicWave_;
 
   explicit PeriodicWaveHostObject(const std::shared_ptr<PeriodicWave> &periodicWave)
-      : periodicWave_(periodicWave)
-  {
-  }
+      : periodicWave_(periodicWave) {}
 };
 } // namespace audioapi

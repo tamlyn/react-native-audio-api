@@ -8,37 +8,31 @@ namespace audioapi {
 class Locker {
  public:
   Locker() : lockPtr_(nullptr) {}
-  explicit Locker(std::mutex &lockPtr) : lockPtr_(&lockPtr)
-  {
+  explicit Locker(std::mutex &lockPtr) : lockPtr_(&lockPtr) {
     lock();
   }
 
-  ~Locker()
-  {
+  ~Locker() {
     unlock();
   }
 
-  explicit operator bool() const
-  {
+  explicit operator bool() const {
     return lockPtr_ != nullptr;
   }
 
-  void lock()
-  {
+  void lock() {
     if (lockPtr_) {
       lockPtr_->lock();
     }
   }
 
-  void unlock()
-  {
+  void unlock() {
     if (lockPtr_) {
       lockPtr_->unlock();
     }
   }
 
-  static Locker tryLock(std::mutex &lock)
-  {
+  static Locker tryLock(std::mutex &lock) {
     Locker result = Locker();
 
     if (lock.try_lock()) {

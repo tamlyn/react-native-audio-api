@@ -20,8 +20,7 @@ class AudioBufferHostObject : public JsiHostObject {
   AudioBufferHostObject(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject &operator=(const AudioBufferHostObject &) = delete;
   AudioBufferHostObject(AudioBufferHostObject &&other) noexcept;
-  AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept
-  {
+  AudioBufferHostObject &operator=(AudioBufferHostObject &&other) noexcept {
     if (this != &other) {
       JsiHostObject::operator=(std::move(other));
       audioBuffer_ = std::move(other.audioBuffer_);
@@ -29,8 +28,7 @@ class AudioBufferHostObject : public JsiHostObject {
     return *this;
   }
 
-  [[nodiscard]] inline size_t getSizeInBytes() const
-  {
+  [[nodiscard]] inline size_t getSizeInBytes() const {
     return audioBuffer_->getLength() * audioBuffer_->getNumberOfChannels() * sizeof(float);
   }
 

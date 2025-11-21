@@ -36,8 +36,7 @@ class AudioDecoder {
       float outputSampleRate,
       int outputChannels);
 
-  static AudioFormat detectAudioFormat(const void *data, size_t size)
-  {
+  static AudioFormat detectAudioFormat(const void *data, size_t size) {
     if (size < 12)
       return AudioFormat::UNKNOWN;
     const auto *bytes = static_cast<const unsigned char *>(data);
@@ -76,8 +75,7 @@ class AudioDecoder {
 
   static inline bool pathHasExtension(
       const std::string &path,
-      const std::vector<std::string> &extensions)
-  {
+      const std::vector<std::string> &extensions) {
     std::string pathLower = path;
     std::transform(pathLower.begin(), pathLower.end(), pathLower.begin(), ::tolower);
     for (const auto &ext : extensions) {
@@ -87,16 +85,13 @@ class AudioDecoder {
     return false;
   }
 
-  [[nodiscard]] static inline int16_t floatToInt16(float sample)
-  {
+  [[nodiscard]] static inline int16_t floatToInt16(float sample) {
     return static_cast<int16_t>(sample * INT16_MAX);
   }
-  [[nodiscard]] static inline float int16ToFloat(int16_t sample)
-  {
+  [[nodiscard]] static inline float int16ToFloat(int16_t sample) {
     return static_cast<float>(sample) / INT16_MAX;
   }
-  [[nodiscard]] static inline float uint8ToFloat(uint8_t byte1, uint8_t byte2)
-  {
+  [[nodiscard]] static inline float uint8ToFloat(uint8_t byte1, uint8_t byte2) {
     return static_cast<float>(static_cast<int16_t>((byte2 << 8) | byte1)) / INT16_MAX;
   }
 };

@@ -17,15 +17,12 @@ namespace audioapi {
 class WorkletSourceNode : public AudioScheduledSourceNode {
  public:
   explicit WorkletSourceNode(BaseAudioContext *context, WorkletsRunner &&workletRunner)
-      : AudioScheduledSourceNode(context)
-  {
-  }
+      : AudioScheduledSourceNode(context) {}
 
  protected:
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
-      int framesToProcess) override
-  {
+      int framesToProcess) override {
     return processingBus;
   }
 };

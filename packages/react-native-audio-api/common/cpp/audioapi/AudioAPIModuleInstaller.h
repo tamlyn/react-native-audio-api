@@ -31,8 +31,7 @@ class AudioAPIModuleInstaller {
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr)
-  {
+      std::shared_ptr<worklets::WorkletRuntime> uiRuntime = nullptr) {
     auto createAudioContext = getCreateAudioContextFunction(
         jsiRuntime, jsCallInvoker, audioEventHandlerRegistry, uiRuntime);
     auto createAudioRecorder =
@@ -57,8 +56,7 @@ class AudioAPIModuleInstaller {
         jsi::Object::createFromHostObject(*jsiRuntime, audioEventHandlerRegistryHostObject));
   }
 
-  static void closeAllContexts()
-  {
+  static void closeAllContexts() {
     for (auto it = contexts_.begin(); it != contexts_.end(); ++it) {
       auto weakContext = *it;
 
@@ -76,8 +74,7 @@ class AudioAPIModuleInstaller {
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime)
-  {
+      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioContext"),
@@ -113,8 +110,7 @@ class AudioAPIModuleInstaller {
       jsi::Runtime *jsiRuntime,
       const std::shared_ptr<react::CallInvoker> &jsCallInvoker,
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
-      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime)
-  {
+      const std::weak_ptr<worklets::WorkletRuntime> &uiRuntime) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createOfflineAudioContext"),
@@ -148,8 +144,7 @@ class AudioAPIModuleInstaller {
 
   static jsi::Function getCreateAudioRecorderFunction(
       jsi::Runtime *jsiRuntime,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-  {
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioRecorder"),
@@ -179,8 +174,7 @@ class AudioAPIModuleInstaller {
 
   static jsi::Function getCreateAudioDecoderFunction(
       jsi::Runtime *jsiRuntime,
-      const std::shared_ptr<react::CallInvoker> &jsCallInvoker)
-  {
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioDecoder"),
@@ -198,8 +192,7 @@ class AudioAPIModuleInstaller {
 
   static jsi::Function getCreateAudioStretcherFunction(
       jsi::Runtime *jsiRuntime,
-      const std::shared_ptr<react::CallInvoker> &jsCallInvoker)
-  {
+      const std::shared_ptr<react::CallInvoker> &jsCallInvoker) {
     return jsi::Function::createFromHostFunction(
         *jsiRuntime,
         jsi::PropNameID::forAscii(*jsiRuntime, "createAudioStretcher"),

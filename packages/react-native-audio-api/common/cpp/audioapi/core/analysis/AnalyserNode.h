@@ -62,8 +62,7 @@ class AnalyserNode : public AudioNode {
   std::unique_ptr<AudioArray> magnitudeBuffer_;
   bool shouldDoFFTAnalysis_{true};
 
-  static WindowType fromString(const std::string &type)
-  {
+  static WindowType fromString(const std::string &type) {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
     if (lowerType == "blackman") {
@@ -76,8 +75,7 @@ class AnalyserNode : public AudioNode {
     throw std::invalid_argument("Unknown window type");
   }
 
-  static std::string toString(WindowType type)
-  {
+  static std::string toString(WindowType type) {
     switch (type) {
       case WindowType::BLACKMAN:
         return "blackman";
