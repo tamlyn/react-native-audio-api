@@ -105,7 +105,7 @@ void WaveShaperNode::process(const std::shared_ptr<AudioArray> &channelData) {
     float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
 
     if (v < 0) {
-        data[i] = curveArray[0];
+      data[i] = curveArray[0];
     } else if (v >= static_cast<float>(curveSize) - 1) {
       data[i] = curveArray[curveSize - 1];
     } else {

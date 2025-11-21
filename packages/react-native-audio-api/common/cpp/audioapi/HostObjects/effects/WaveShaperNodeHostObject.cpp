@@ -2,8 +2,8 @@
 #include <audioapi/core/effects/WaveShaperNode.h>
 #include <audioapi/jsi/AudioArrayBuffer.h>
 
-#include <string>
 #include <memory>
+#include <string>
 
 namespace audioapi {
 
