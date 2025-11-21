@@ -2,6 +2,7 @@
 
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/types/OverSampleType.h>
+#include <audioapi/dsp/Resampler.h>
 
 #include <memory>
 #include <string>
@@ -10,7 +11,6 @@ namespace audioapi {
 
 class AudioBus;
 class AudioArray;
-class Resampler;
 
 class WaveShaperNode : public AudioNode {
 public:
@@ -31,9 +31,16 @@ private:
   std::shared_ptr<AudioArray> curve_ {};
   mutable std::mutex curveMutex_;
 
-  std::shared_ptr<Resampler> resampler_;
-  std::shared_ptr<AudioArray> tempArray2x_;
-  std::shared_ptr<AudioArray> tempArray4x_;
+    // stage 1 Filters (1x <-> 2x)
+    std::unique_ptr<UpSampler> upSampler_;
+    std::unique_ptr<DownSampler> downSampler_;
+
+    // stage 2 Filters (2x <-> 4x)
+    std::unique_ptr<UpSampler> upSampler2_;
+    std::unique_ptr<DownSampler> downSampler2_;
+
+    std::shared_ptr<AudioArray> tempBuffer2x_;
+    std::shared_ptr<AudioArray> tempBuffer4x_;
 
     void process(const std::shared_ptr<AudioArray> &channelData);
 

@@ -1,6 +1,5 @@
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/WaveShaperNode.h>
-#include <audioapi/dsp/Resampler.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -9,9 +8,13 @@ namespace audioapi {
 
 WaveShaperNode::WaveShaperNode(BaseAudioContext *context)
     : AudioNode(context), oversample_(OverSampleType::OVERSAMPLE_NONE) {
-  resampler_ = std::make_shared<Resampler>();
-  tempArray2x_ = std::make_shared<AudioArray>(2 * RENDER_QUANTUM_SIZE);
-  tempArray4x_ = std::make_shared<AudioArray>(4 * RENDER_QUANTUM_SIZE);
+  tempBuffer2x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 2);
+  tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
+
+  upSampler_ = std::make_unique<UpSampler>();
+  downSampler_ = std::make_unique<DownSampler>();
+  upSampler2_ = std::make_unique<UpSampler>();
+  downSampler2_ = std::make_unique<DownSampler>();
   isInitialized_ = true;
 }
 
@@ -21,6 +24,22 @@ std::string WaveShaperNode::getOversample() const {
 
 void WaveShaperNode::setOversample(const std::string &type) {
   oversample_.store(fromString(type), std::memory_order_release);
+
+  if (upSampler_) {
+    upSampler_->reset();
+  }
+
+  if (downSampler_) {
+    downSampler_->reset();
+  }
+
+  if (upSampler2_) {
+    upSampler2_->reset();
+  }
+
+  if (downSampler2_) {
+    downSampler2_->reset();
+  }
 }
 
 std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
@@ -59,11 +78,14 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
     switch (oversample) {
       case OverSampleType::OVERSAMPLE_2X:
         process2x(channelData);
+        break;
       case OverSampleType::OVERSAMPLE_4X:
         process4x(channelData);
+        break;
       case OverSampleType::OVERSAMPLE_NONE:
       default:
         process(channelData);
+        break;
     }
   }
 
@@ -94,15 +116,17 @@ void WaveShaperNode::process(const std::shared_ptr<AudioArray> &channelData) {
 }
 
 void WaveShaperNode::process2x(const std::shared_ptr<AudioArray> &channelData) {
-  resampler_->process(channelData, tempArray2x_);
-  process(tempArray2x_);
-  resampler_->process(tempArray2x_, channelData);
+  upSampler_->process(channelData, tempBuffer2x_);
+  process(tempBuffer2x_);
+  downSampler_->process(tempBuffer2x_, channelData);
 }
 
 void WaveShaperNode::process4x(const std::shared_ptr<AudioArray> &channelData) {
-  resampler_->process(channelData, tempArray4x_);
-  process(tempArray4x_);
-  resampler_->process(tempArray4x_, channelData);
+  upSampler_->process(channelData, tempBuffer2x_);
+  upSampler2_->process(tempBuffer2x_, tempBuffer4x_);
+  process(tempBuffer4x_);
+  downSampler2_->process(tempBuffer4x_, tempBuffer2x_);
+  downSampler_->process(tempBuffer2x_, channelData);
 }
 
 } // namespace audioapi

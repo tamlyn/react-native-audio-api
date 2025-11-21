@@ -14,6 +14,7 @@ export { default as OscillatorNode } from './web-core/OscillatorNode';
 export { default as StereoPannerNode } from './web-core/StereoPannerNode';
 export { default as ConstantSourceNode } from './web-core/ConstantSourceNode';
 export { default as ConvolverNode } from './web-core/ConvolverNode';
+export { default as WaveShaperNode } from './web-core/WaveShaperNode';
 
 export * from './web-core/custom';
 

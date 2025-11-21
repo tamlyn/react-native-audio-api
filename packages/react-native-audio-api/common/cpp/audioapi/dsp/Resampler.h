@@ -1,32 +1,45 @@
 #pragma once
 
+#include <audioapi/utils/AudioArray.h>
 #include <memory>
+#include <vector>
 
 namespace audioapi {
+    constexpr int KERNEL_SIZE = 64;
+    constexpr int MAX_BLOCK_SIZE = 1024;
 
-class AudioArray;
+    class UpSampler {
+    public:
+        UpSampler();
 
-class Resampler {
+        // N -> 2N
+        void process(const std::shared_ptr<AudioArray>& input,
+                     const std::shared_ptr<AudioArray>& output);
 
-public:
-    explicit Resampler(float a = 3.0f) : a_(a) {}
+        void reset();
 
-    // https://en.wikipedia.org/wiki/Lanczos_resampling
-    void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output) const;
+    private:
+        void initializeKernel();
 
-private:
-  float a_;
+        std::shared_ptr<AudioArray> kernel_;
+        std::shared_ptr<AudioArray> stateBuffer_;
+    };
 
-  // Lanczos kernel function
-  [[nodiscard]] inline float kernel(float x) const {
-      if (std::abs(x) < 1e-6) {
-        return 1.0f;
-      } else if (std::abs(x) >= a_) {
-        return 0.0f;
-      } else {
-        auto piX = static_cast<float>(M_PI * x);
-        return (a_ * std::sin(piX) * std::sin(piX / a_)) / (piX * piX);
-      }
-  }
-};
+    class DownSampler {
+    public:
+        DownSampler();
+
+        // 2N -> N
+        void process(const std::shared_ptr<AudioArray>& input,
+                     const std::shared_ptr<AudioArray>& output);
+
+        void reset();
+
+    private:
+        void initializeKernel();
+
+        std::shared_ptr<AudioArray> kernel_;
+        std::shared_ptr<AudioArray> stateBuffer_;
+    };
+
 } // namespace audioapi
