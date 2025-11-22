@@ -28,7 +28,7 @@ class DownSampler {
  public:
   DownSampler();
 
-  // 2N -> N
+  // N -> N / 2
   void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output);
 
   void reset();

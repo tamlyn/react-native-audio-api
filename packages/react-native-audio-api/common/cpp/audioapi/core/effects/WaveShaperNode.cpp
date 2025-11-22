@@ -104,14 +104,14 @@ void WaveShaperNode::process(const std::shared_ptr<AudioArray> &channelData) {
   for (int i = 0; i < channelData->getSize(); i += 1) {
     float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
 
-    if (v < 0) {
+    if (v <= 0) {
       data[i] = curveArray[0];
     } else if (v >= static_cast<float>(curveSize) - 1) {
       data[i] = curveArray[curveSize - 1];
     } else {
       auto k = std::floor(v);
       auto f = v - k;
-      auto kIndex = static_cast<size_t>(std::clamp(k, 0.0f, static_cast<float>(curveSize) - 1));
+      auto kIndex = static_cast<size_t>(k);
       data[i] = (1 - f) * curveArray[kIndex] + f * curveArray[kIndex + 1];
     }
   }

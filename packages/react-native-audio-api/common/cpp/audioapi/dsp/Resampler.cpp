@@ -5,6 +5,10 @@
 #include <memory>
 #include <numbers>
 
+#if defined(__ARM_NEON)
+#include <arm_neon.h>
+#endif
+
 namespace audioapi {
 
 static constexpr float PI = std::numbers::pi_v<float>;
@@ -66,10 +70,34 @@ void UpSampler::process(
   for (int i = 0; i < inputSize; ++i) {
     int centerIdx = KERNEL_SIZE + i;
 
+    // direct copy for even samples
     outputData[2 * i] = state[centerIdx];
 
     float sum = 0.0f;
-    for (int k = 0; k < KERNEL_SIZE; ++k) {
+    int k = 0;
+
+    // convolution for odd samples
+#ifdef __ARM_NEON
+    float32x4_t vSum = vdupq_n_f32(0.0f);
+
+    // process 4 samples at a time
+    // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
+    for (; k <= KERNEL_SIZE - 4; k += 4) {
+        float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
+        float32x4_t vKernel = vld1q_f32(&kernel[k]);
+
+        // fused multiply-add: vSum += vState * vKernel
+        vSum = vmlaq_f32(vSum, vState, vKernel);
+    }
+
+    // horizontal reduction: Sum the 4 lanes of vSum into a single float
+    sum += vgetq_lane_f32(vSum, 0);
+    sum += vgetq_lane_f32(vSum, 1);
+    sum += vgetq_lane_f32(vSum, 2);
+    sum += vgetq_lane_f32(vSum, 3);
+#endif
+
+    for (; k < KERNEL_SIZE; ++k) {
       sum += state[centerIdx - halfKernel + k] * kernel[KERNEL_SIZE - 1 - k];
     }
     outputData[2 * i + 1] = sum;
@@ -125,7 +153,28 @@ void DownSampler::process(
     int centerIdx = KERNEL_SIZE + (2 * i);
 
     float sum = 0.0f;
-    for (int k = 0; k < KERNEL_SIZE; ++k) {
+    int k = 0;
+
+    // convolution for downsampled samples
+#ifdef __ARM_NEON
+      float32x4_t vSum = vdupq_n_f32(0.0f);
+
+    // process 4 samples at a time
+    // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
+    for (; k <= KERNEL_SIZE - 4; k += 4) {
+        float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
+        float32x4_t vKernel = vld1q_f32(&kernel[k]);
+        // fused multiply-add: vSum += vState * vKernel
+        vSum = vmlaq_f32(vSum, vState, vKernel);
+    }
+
+    sum += vgetq_lane_f32(vSum, 0);
+    sum += vgetq_lane_f32(vSum, 1);
+    sum += vgetq_lane_f32(vSum, 2);
+    sum += vgetq_lane_f32(vSum, 3);
+#endif
+
+    for (; k < KERNEL_SIZE; ++k) {
       sum += state[centerIdx - halfKernel + k] * kernel[KERNEL_SIZE - 1 - k];
     }
     outputData[i] = sum;
