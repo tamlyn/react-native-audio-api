@@ -30,7 +30,7 @@ UpSampler::UpSampler() {
 }
 
 void UpSampler::initializeKernel() {
-  float *kData = kernel_->getData();
+  auto kData = kernel_->getData();
   int halfSize = KERNEL_SIZE / 2;
 
   for (int i = 0; i < KERNEL_SIZE; ++i) {
@@ -112,7 +112,7 @@ DownSampler::DownSampler() {
 }
 
 void DownSampler::initializeKernel() {
-  float *kData = kernel_->getData();
+  auto kData = kernel_->getData();
   int halfSize = KERNEL_SIZE / 2;
 
   for (int i = 0; i < KERNEL_SIZE; ++i) {

@@ -30,7 +30,7 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
     return jsi::Value::null();
   }
 
-  // copy AudioArray holding curve data on purpose to avoid modifying on js side
+  // copy AudioArray holding curve data to avoid subsequent modifications
   auto audioArray = std::make_shared<AudioArray>(*curve);
   auto audioArrayBuffer = std::make_shared<AudioArrayBuffer>(audioArray);
   auto arrayBuffer = jsi::ArrayBuffer(runtime, audioArrayBuffer);
