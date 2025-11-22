@@ -83,11 +83,11 @@ void UpSampler::process(
     // process 4 samples at a time
     // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
     for (; k <= KERNEL_SIZE - 4; k += 4) {
-        float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
-        float32x4_t vKernel = vld1q_f32(&kernel[k]);
+      float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
+      float32x4_t vKernel = vld1q_f32(&kernel[k]);
 
-        // fused multiply-add: vSum += vState * vKernel
-        vSum = vmlaq_f32(vSum, vState, vKernel);
+      // fused multiply-add: vSum += vState * vKernel
+      vSum = vmlaq_f32(vSum, vState, vKernel);
     }
 
     // horizontal reduction: Sum the 4 lanes of vSum into a single float
@@ -157,15 +157,15 @@ void DownSampler::process(
 
     // convolution for downsampled samples
 #ifdef __ARM_NEON
-      float32x4_t vSum = vdupq_n_f32(0.0f);
+    float32x4_t vSum = vdupq_n_f32(0.0f);
 
     // process 4 samples at a time
     // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
     for (; k <= KERNEL_SIZE - 4; k += 4) {
-        float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
-        float32x4_t vKernel = vld1q_f32(&kernel[k]);
-        // fused multiply-add: vSum += vState * vKernel
-        vSum = vmlaq_f32(vSum, vState, vKernel);
+      float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
+      float32x4_t vKernel = vld1q_f32(&kernel[k]);
+      // fused multiply-add: vSum += vState * vKernel
+      vSum = vmlaq_f32(vSum, vState, vKernel);
     }
 
     sum += vgetq_lane_f32(vSum, 0);

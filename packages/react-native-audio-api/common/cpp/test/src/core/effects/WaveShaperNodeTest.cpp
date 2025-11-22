@@ -24,13 +24,21 @@ class WaveShaperNodeTest : public ::testing::Test {
 
 class TestableWaveShaperNode : public WaveShaperNode {
  public:
-  explicit TestableWaveShaperNode(BaseAudioContext *context) : WaveShaperNode(context) {}
+  explicit TestableWaveShaperNode(BaseAudioContext *context) : WaveShaperNode(context) {
+    testCurve_ = std::make_shared<AudioArray>(3);
+    auto data = testCurve_->getData();
+    data[0] = -2.0f;
+    data[1] = 0.0f;
+    data[2] = 2.0f;
+  }
 
   std::shared_ptr<AudioBus> processNode(
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess) override {
     return WaveShaperNode::processNode(processingBus, framesToProcess);
   }
+
+  std::shared_ptr<AudioArray> testCurve_;
 };
 
 TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
@@ -38,8 +46,24 @@ TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
   ASSERT_NE(waveShaper, nullptr);
 }
 
-// curve alg test1, test2...
+TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
+  static constexpr int FRAMES_TO_PROCESS = 5;
+  auto waveShaper = std::make_shared<TestableWaveShaperNode>(context.get());
+  waveShaper->setOversample("none");
+  waveShaper->setCurve(waveShaper->testCurve_);
 
-// no curve test
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  for (size_t i = 0; i < bus->getSize(); ++i) {
+    bus->getChannel(0)->getData()[i] = -1.0f + i * 0.5f;
+  }
 
-// does none, 2x, 4x return correct number of frames
+  auto resultBus = waveShaper->processNode(bus, FRAMES_TO_PROCESS);
+  auto curveData = waveShaper->testCurve_->getData();
+  auto resultData = resultBus->getChannel(0)->getData();
+
+  EXPECT_FLOAT_EQ(resultData[0], curveData[0]);
+  EXPECT_FLOAT_EQ(resultData[1], -1.0f);
+  EXPECT_FLOAT_EQ(resultData[2], 0.0f);
+  EXPECT_FLOAT_EQ(resultData[3], 1.0f);
+  EXPECT_FLOAT_EQ(resultData[4], curveData[2]);
+}
