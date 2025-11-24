@@ -168,4 +168,35 @@ std::shared_ptr<OscillatorOptions> parseOscillatorOptions(
 
   return std::make_shared<OscillatorOptions>(options);
 }
+
+std::shared_ptr<BaseAudioBufferSourceOptions> parseBaseAudioBufferSourceOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  BaseAudioBufferSourceOptions options;
+  options.detune = static_cast<float>(optionsObject.getProperty(runtime, "detune").getNumber());
+  options.playbackRate =
+      static_cast<float>(optionsObject.getProperty(runtime, "playbackRate").getNumber());
+  options.pitchCorrection =
+      static_cast<bool>(optionsObject.getProperty(runtime, "pitchCorrection").getNumber());
+  return std::make_shared<BaseAudioBufferSourceOptions>(options);
+}
+
+std::shared_ptr<AudioBufferSourceOptions> parseAudioBufferSourceOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<BaseAudioBufferSourceOptions> baseOptions =
+      parseBaseAudioBufferSourceOptions(runtime, optionsObject);
+  AudioBufferSourceOptions options(*baseOptions.get());
+  if (optionsObject.hasProperty(runtime, "buffer")) {
+    auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
+                                .getObject(runtime)
+                                .asHostObject<AudioBufferHostObject>(runtime);
+    options.buffer = bufferHostObject->audioBuffer_;
+  }
+  options.loop = static_cast<bool>(optionsObject.getProperty(runtime, "loop").getNumber());
+  options.loopStart =
+      static_cast<float>(optionsObject.getProperty(runtime, "loopStart").getNumber());
+  options.loopEnd = static_cast<float>(optionsObject.getProperty(runtime, "loopEnd").getNumber());
+  return std::make_shared<AudioBufferSourceOptions>(options);
+}
 } // namespace audioapi::option_parser

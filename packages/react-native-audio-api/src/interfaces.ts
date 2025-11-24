@@ -12,6 +12,8 @@ import {
   TAnalyserOptions,
   TBiquadFilterOptions,
   TOscillatorOptions,
+  TBaseAudioBufferSourceOptions,
+  TAudioBufferSourceOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -74,9 +76,11 @@ export interface IBaseAudioContext {
   createBiquadFilter: (
     biquadFilterOptions: TBiquadFilterOptions
   ) => IBiquadFilterNode;
-  createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
+  createBufferSource: (
+    audioBufferSourceOptions: TAudioBufferSourceOptions
+  ) => IAudioBufferSourceNode;
   createBufferQueueSource: (
-    pitchCorrection: boolean
+    audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
   createBuffer: (
     channels: number,

@@ -152,15 +152,16 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter(
   return biquadFilter;
 }
 
-std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {
-  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
+    std::shared_ptr<AudioBufferSourceOptions> options) {
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, options);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
 
 std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueSource(
-    bool pitchCorrection) {
-  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
+    std::shared_ptr<BaseAudioBufferSourceOptions> options) {
+  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, options);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }

@@ -8,6 +8,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <algorithm>
 #include <memory>
 #include <queue>
@@ -19,12 +20,12 @@ namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context,
-    bool pitchCorrection)
-    : AudioBufferBaseSourceNode(context, pitchCorrection) {
+    std::shared_ptr<BaseAudioBufferSourceOptions> options)
+    : AudioBufferBaseSourceNode(context, options) {
   buffers_ = {};
   stretch_->presetDefault(channelCount_, context_->getSampleRate());
 
-  if (pitchCorrection) {
+  if (options->pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;

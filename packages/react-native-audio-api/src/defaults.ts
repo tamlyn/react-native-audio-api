@@ -8,6 +8,8 @@ import {
   TAnalyserOptions,
   TBiquadFilterOptions,
   TOscillatorOptions,
+  TBaseAudioBufferSourceOptions,
+  TAudioBufferSourceOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -62,4 +64,17 @@ export const OscillatorOptions: TOscillatorOptions = {
   type: 'sine',
   frequency: 440,
   detune: 0,
+};
+
+export const BaseAudioBufferSourceOptions: TBaseAudioBufferSourceOptions = {
+  playbackRate: 1,
+  detune: 0,
+  pitchCorrection: false,
+};
+
+export const AudioBufferSourceOptions: TAudioBufferSourceOptions = {
+  ...BaseAudioBufferSourceOptions,
+  loop: false,
+  loopStart: 0,
+  loopEnd: 0,
 };

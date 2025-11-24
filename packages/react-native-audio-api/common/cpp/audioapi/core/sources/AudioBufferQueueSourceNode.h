@@ -14,10 +14,13 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
+class BaseAudioBufferSourceOptions;
 
 class AudioBufferQueueSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferQueueSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  explicit AudioBufferQueueSourceNode(
+      BaseAudioContext *context,
+      std::shared_ptr<BaseAudioBufferSourceOptions> options);
   ~AudioBufferQueueSourceNode() override;
 
   void stop(double when) override;

@@ -43,10 +43,6 @@ export interface AudioRecorderOptions {
 
 export type WindowType = 'blackman' | 'hann';
 
-export interface AudioBufferBaseSourceNodeOptions {
-  pitchCorrection: boolean;
-}
-
 export type ProcessorMode = 'processInPlace' | 'processThrough';
 
 export interface TAudioNodeOptions {
@@ -85,8 +81,22 @@ export interface TOscillatorOptions {
   periodicWave?: PeriodicWave;
 }
 
+export interface TBaseAudioBufferSourceOptions {
+  detune?: number;
+  playbackRate?: number;
+  pitchCorrection?: boolean;
+}
+
+export interface TAudioBufferSourceOptions
+  extends TBaseAudioBufferSourceOptions {
+  buffer?: AudioBuffer;
+  loop?: boolean;
+  loopStart?: number;
+  loopEnd?: number;
+}
+
 export interface TConvolverOptions extends TAudioNodeOptions {
-  buffer?: AudioBuffer | null;
+  buffer?: AudioBuffer;
   disableNormalization?: boolean;
 }
 

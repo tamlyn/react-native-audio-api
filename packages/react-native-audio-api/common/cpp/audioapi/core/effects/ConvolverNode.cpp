@@ -23,8 +23,6 @@ ConvolverNode::ConvolverNode(
       intermediateBus_(nullptr),
       buffer_(nullptr),
       internalBuffer_(nullptr) {
-  channelCount_ = 2;
-  channelCountMode_ = ChannelCountMode::CLAMPED_MAX;
   normalize_ = !options->disableNormalization;
   gainCalibrationSampleRate_ = context->getSampleRate();
   setBuffer(options->bus);

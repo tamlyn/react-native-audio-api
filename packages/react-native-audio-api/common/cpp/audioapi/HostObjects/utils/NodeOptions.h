@@ -54,4 +54,17 @@ struct OscillatorOptions {
   float detune = 0.0f;
   OscillatorType type = OscillatorType::SINE;
 };
+
+struct BaseAudioBufferSourceOptions {
+  float detune = 0.0f;
+  bool pitchCorrection = false;
+  float playbackRate = 1.0f;
+};
+
+struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
+  std::shared_ptr<AudioBuffer> buffer = nullptr;
+  bool loop = false;
+  float loopStart = 0.0f;
+  float loopEnd = 0.0f;
+};
 } // namespace audioapi

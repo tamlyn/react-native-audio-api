@@ -42,6 +42,8 @@ class ConstantSourceOptions;
 class AnalyserOptions;
 class BiquadFilterOptions;
 class OscillatorOptions;
+class BaseAudioBufferSourceOptions;
+class AudioBufferSourceOptions;
 
 class BaseAudioContext {
  public:
@@ -80,8 +82,10 @@ class BaseAudioContext {
       std::shared_ptr<StereoPannerOptions> options);
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(
       std::shared_ptr<BiquadFilterOptions> options);
-  std::shared_ptr<AudioBufferSourceNode> createBufferSource(bool pitchCorrection);
-  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(bool pitchCorrection);
+  std::shared_ptr<AudioBufferSourceNode> createBufferSource(
+      std::shared_ptr<AudioBufferSourceOptions> options);
+  std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
+      std::shared_ptr<BaseAudioBufferSourceOptions> options);
   static std::shared_ptr<AudioBuffer>
   createBuffer(int numberOfChannels, size_t length, float sampleRate);
   std::shared_ptr<PeriodicWave> createPeriodicWave(

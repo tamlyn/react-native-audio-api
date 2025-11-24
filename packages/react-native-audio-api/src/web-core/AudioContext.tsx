@@ -1,6 +1,7 @@
 import {
   ContextState,
   AudioContextOptions,
+  // @ts-ignore only-for-this-commit
   AudioBufferBaseSourceNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';

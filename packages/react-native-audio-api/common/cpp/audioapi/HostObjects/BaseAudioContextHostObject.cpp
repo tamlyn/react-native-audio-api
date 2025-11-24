@@ -207,15 +207,19 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
-  auto pitchCorrection = args[0].asBool();
-  auto bufferSource = context_->createBufferSource(pitchCorrection);
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<AudioBufferSourceOptions> audioBufferSourceOptions =
+      audioapi::option_parser::parseAudioBufferSourceOptions(runtime, options);
+  auto bufferSource = context_->createBufferSource(audioBufferSourceOptions);
   auto bufferSourceHostObject = std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
   return jsi::Object::createFromHostObject(runtime, bufferSourceHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
-  auto pitchCorrection = args[0].asBool();
-  auto bufferSource = context_->createBufferQueueSource(pitchCorrection);
+  auto options = args[0].asObject(runtime);
+  std::shared_ptr<BaseAudioBufferSourceOptions> baseAudioBufferSourceOptions =
+      audioapi::option_parser::parseBaseAudioBufferSourceOptions(runtime, options);
+  auto bufferSource = context_->createBufferQueueSource(baseAudioBufferSourceOptions);
   auto bufferStreamSourceHostObject =
       std::make_shared<AudioBufferQueueSourceNodeHostObject>(bufferSource);
   return jsi::Object::createFromHostObject(runtime, bufferStreamSourceHostObject);

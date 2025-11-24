@@ -1,10 +1,6 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
-import {
-  AudioBufferBaseSourceNodeOptions,
-  ContextState,
-  AudioWorkletRuntime,
-} from '../types';
+import { ContextState, AudioWorkletRuntime } from '../types';
 import { assertWorkletsEnabled, workletsModule } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
 import WorkletProcessingNode from './WorkletProcessingNode';
@@ -202,26 +198,12 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this);
   }
 
-  createBufferSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): AudioBufferSourceNode {
-    const pitchCorrection = options?.pitchCorrection ?? false;
-
-    return new AudioBufferSourceNode(
-      this,
-      this.context.createBufferSource(pitchCorrection)
-    );
+  createBufferSource(): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(this);
   }
 
-  createBufferQueueSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): AudioBufferQueueSourceNode {
-    const pitchCorrection = options?.pitchCorrection ?? false;
-
-    return new AudioBufferQueueSourceNode(
-      this,
-      this.context.createBufferQueueSource(pitchCorrection)
-    );
+  createBufferQueueSource(): AudioBufferQueueSourceNode {
+    return new AudioBufferQueueSourceNode(this);
   }
 
   createBuffer(

@@ -13,10 +13,13 @@ namespace audioapi {
 
 class AudioBus;
 class AudioParam;
+class AudioBufferSourceOptions;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(BaseAudioContext *context, bool pitchCorrection);
+  explicit AudioBufferSourceNode(
+      BaseAudioContext *context,
+      std::shared_ptr<AudioBufferSourceOptions> options);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
