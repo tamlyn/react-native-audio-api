@@ -1,9 +1,13 @@
+extern "C" {
+#include <libavcodec/avcodec.h>
+}
+
+#include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 
 #include <audioapi/android/core/utils/FileOptions.h>
-#include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileUtils.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 
-namespace audioapi::android::ffmpeg::fileutils {
+namespace audioapi::android::ffmpeg {
 
 AVCodecID getPCMCodecID(
     const std::shared_ptr<AudioFileProperties> &properties) {
@@ -72,4 +76,14 @@ std::string getMuxerName(
   }
 }
 
-} // namespace audioapi::android::ffmpeg::fileutils
+std::string parseErrorCode(int errorCode) {
+  char errorBuffer[AV_ERROR_MAX_STRING_SIZE];
+
+  if (av_strerror(errorCode, errorBuffer, sizeof(errorBuffer)) < 0) {
+    return "Unknown FFmpeg error: " + std::to_string(errorCode);
+  }
+
+  return std::string(errorBuffer);
+}
+
+} // namespace audioapi::android::ffmpeg

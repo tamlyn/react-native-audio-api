@@ -1,77 +1,25 @@
 #pragma once
 
-extern "C" {
-#include <libavutil/opt.h>
-#include <libavcodec/avcodec.h>
-#include <libavutil/audio_fifo.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
-#include <libavutil/channel_layout.h>
-}
-
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
+#include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <string>
 #include <memory>
 #include <tuple>
+#include <audioapi/utils/ReturnStatus.hpp>
+
+struct AVCodecContext;
+struct AVFormatContext;
+struct AVFrame;
+struct AVPacket;
+struct AVAudioFifo;
+struct SwrContext;
+struct AVStream;
 
 namespace audioapi {
 
 class AudioFileProperties;
 
-struct AVCodecContextDTOR {
-  void operator()(AVCodecContext* ctx) const {
-    if (ctx) {
-      avcodec_free_context(&ctx);
-    }
-  }
-};
-
-struct AVFormatContextDTOR {
-  void operator()(AVFormatContext* ctx) const {
-    if (ctx) {
-      avformat_free_context(ctx);
-    }
-  }
-};
-
-struct AVFrameDTOR {
-  void operator()(AVFrame* frame) const {
-    if (frame) {
-      av_frame_free(&frame);
-    }
-  }
-};
-
-struct AVPacketDTOR {
-  void operator()(AVPacket* packet) const {
-    if (packet) {
-      av_packet_free(&packet);
-    }
-  }
-};
-
-struct SwrContextDTOR {
-  void operator()(SwrContext* ctx) const {
-    if (ctx) {
-      swr_free(&ctx);
-    }
-  }
-};
-
-struct AVAudioFifoDTOR {
-  void operator()(AVAudioFifo* fifo) const {
-    if (fifo) {
-      av_audio_fifo_free(fifo);
-    }
-  }
-};
-
-using AVCodecContextPtr = std::unique_ptr<AVCodecContext, AVCodecContextDTOR>;
-using AVFormatContextPtr = std::unique_ptr<AVFormatContext, AVFormatContextDTOR>;
-using AVFramePtr = std::unique_ptr<AVFrame, AVFrameDTOR>;
-using AVPacketPtr = std::unique_ptr<AVPacket, AVPacketDTOR>;
-using SwrContextPtr = std::unique_ptr<SwrContext, SwrContextDTOR>;
-using AVAudioFifoPtr = std::unique_ptr<AVAudioFifo, AVAudioFifoDTOR>;
+namespace android::ffmpeg {
 
 class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
  public:
@@ -87,20 +35,36 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   std::atomic<bool> isFileOpen_{false};
   std::atomic<bool> isConverterRequired_{false};
 
-  AVCodecContextPtr encoderCtx_{nullptr};
-  AVFormatContextPtr formatCtx_{nullptr};
-  SwrContextPtr resampleCtx_{nullptr};
-  AVPacketPtr packet_{nullptr};
-  AVFramePtr frame_{nullptr};
+  av_unique_ptr<AVCodecContext> encoderCtx_{nullptr};
+  av_unique_ptr<AVFormatContext> formatCtx_{nullptr};
+  av_unique_ptr<SwrContext> resampleCtx_{nullptr};
+  av_unique_ptr<AVPacket> packet_{nullptr};
+  av_unique_ptr<AVFrame> frame_{nullptr};
   AVStream* stream_{nullptr};
-  AVAudioFifoPtr audioFifo_{nullptr};
+  av_unique_ptr<AVAudioFifo> audioFifo_{nullptr};
   int64_t nextPts_;
 
   bool isFileOpen();
   bool isConverterRequired();
 
-  int flushFifoToEncoder();
-  // int flushFrameToEncoder();
+  // Initialization helper methods
+  ReturnStatus<void> initializeFormatContext(const AVCodec* codec);
+  ReturnStatus<void> configureAndOpenCodec(const AVCodec* codec);
+  ReturnStatus<void> initializeStream();
+  ReturnStatus<void> openIOAndWriteHeader();
+  ReturnStatus<void> initializeResampler(int32_t inputRate, int32_t inputChannels);
+  void initializeBuffers(int32_t maxBufferSize);
+
+  // Processing helper methods
+  bool resampleAndPushToFifo(void *data, int numFrames);
+  int processFifo(bool flush);
+  int writeEncodedPackets();
+  int prepareFrameForEncoding(int samplesToRead);
+
+  // Finalization helper methods
+  CloseFileStatus finalizeOutput();
 };
+
+} // namespace android::ffmpeg
 
 } // namespace audioapi

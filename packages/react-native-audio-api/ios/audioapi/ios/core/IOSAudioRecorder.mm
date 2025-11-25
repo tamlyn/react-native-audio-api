@@ -15,7 +15,7 @@
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 

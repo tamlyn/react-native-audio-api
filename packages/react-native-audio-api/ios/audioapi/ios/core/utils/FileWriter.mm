@@ -4,7 +4,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/FileWriter.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/ReturnStatus.hpp>
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;

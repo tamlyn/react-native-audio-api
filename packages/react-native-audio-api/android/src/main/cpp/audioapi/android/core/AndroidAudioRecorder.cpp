@@ -10,7 +10,7 @@
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
@@ -172,7 +172,8 @@ ReturnStatus<std::string> AndroidAudioRecorder::enableFileOutput(
   if (properties->format == AudioFileProperties::Format::WAV) {
     fileWriter_ = std::make_shared<MiniAudioFileWriter>(properties);
   } else {
-    fileWriter_ = std::make_shared<FFmpegAudioFileWriter>(properties);
+    fileWriter_ =
+        std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(properties);
   }
 
   if (!isIdle()) {

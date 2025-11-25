@@ -3,7 +3,7 @@
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 

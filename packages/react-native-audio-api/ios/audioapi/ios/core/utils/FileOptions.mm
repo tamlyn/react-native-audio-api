@@ -2,7 +2,7 @@
 #import <Foundation/Foundation.h>
 
 #include <audioapi/ios/core/utils/FileOptions.h>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 
 namespace audioapi::ios::fileoptions {
 

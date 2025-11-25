@@ -1,7 +1,7 @@
 #include <android/log.h>
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/system/NativeFileInfo.hpp>
-#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/AudioFileProperties.h>
 #include <chrono>
 #include <filesystem>
 #include <format>

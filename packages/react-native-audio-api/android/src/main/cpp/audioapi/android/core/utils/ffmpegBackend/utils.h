@@ -2,12 +2,8 @@
 
 extern "C" {
 #include <libavcodec/avcodec.h>
-#include <libavformat/avformat.h>
-#include <libswresample/swresample.h>
 }
 
-#include <cstddef>
-#include <cstdint>
 #include <string>
 #include <memory>
 
@@ -15,7 +11,15 @@ namespace audioapi {
 
 class AudioFileProperties;
 
-namespace android::ffmpeg::fileutils {
+namespace android::ffmpeg {
+
+template <typename AVT>
+struct AvDtor {
+  void operator()(AVT* ptr) const;
+};
+
+template<typename AVT>
+using av_unique_ptr = std::unique_ptr<AVT, AvDtor<AVT>>;
 
 AVCodecID getPCMCodecID(const std::shared_ptr<AudioFileProperties> &properties);
 AVCodecID getCodecID(const std::shared_ptr<AudioFileProperties> &properties);
@@ -23,6 +27,8 @@ AVSampleFormat getSampleFormat(const std::shared_ptr<AudioFileProperties> &prope
 const AVCodec* getCodec(const std::shared_ptr<AudioFileProperties> &properties);
 std::string getMuxerName(const std::shared_ptr<AudioFileProperties> &properties);
 
-} // namespace android::ffmpeg::fileutils
+std::string parseErrorCode(int errorCode);
+
+} // namespace android::ffmpeg
 
 } // namespace audioapi
