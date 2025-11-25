@@ -46,11 +46,15 @@ export default class AudioRecorder {
     this.recorder = global.createAudioRecorder();
   }
 
-  enableFileOutput(options: AudioRecorderFileOptions): void {
+  enableFileOutput(
+    options: AudioRecorderFileOptions
+  ): Result<{ path: string }> {
     this.options_ = options;
     const parsedOptions = withDefaultOptions(options);
-    this.recorder.enableFileOutput(parsedOptions);
+    const result = this.recorder.enableFileOutput(parsedOptions);
     this.isFileOutputEnabled = true;
+
+    return result;
   }
 
   public get options(): AudioRecorderFileOptions | null {
@@ -137,7 +141,7 @@ export default class AudioRecorder {
   onAudioReady(
     options: AudioRecorderCallbackOptions,
     callback: (event: OnAudioReadyEventType) => void
-  ): void {
+  ): Result<void> {
     if (this.onAudioReadySubscription) {
       this.recorder.clearOnAudioReady();
       this.onAudioReadySubscription.remove();
@@ -153,7 +157,7 @@ export default class AudioRecorder {
         });
       });
 
-    this.recorder.setOnAudioReady({
+    return this.recorder.setOnAudioReady({
       sampleRate: options.sampleRate,
       bufferLength: options.bufferLength,
       channelCount: options.channelCount,

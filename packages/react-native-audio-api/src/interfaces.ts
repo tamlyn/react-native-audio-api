@@ -302,7 +302,9 @@ export interface IAudioRecorder {
   isRecording: () => boolean;
   isPaused: () => boolean;
 
-  enableFileOutput: (options: IAudioRecorderFileOptions) => void;
+  enableFileOutput: (
+    options: IAudioRecorderFileOptions
+  ) => Result<{ path: string }>;
   disableFileOutput: () => void;
 
   // pause and resume methods for file recording
@@ -313,7 +315,7 @@ export interface IAudioRecorder {
   connect: (node: IRecorderAdapterNode) => void;
   disconnect: () => void;
 
-  setOnAudioReady: (options: IAudioRecorderCallbackOptions) => void;
+  setOnAudioReady: (options: IAudioRecorderCallbackOptions) => Result<void>;
   clearOnAudioReady: () => void;
 
   setOnError: (options: { callbackId: string }) => void;

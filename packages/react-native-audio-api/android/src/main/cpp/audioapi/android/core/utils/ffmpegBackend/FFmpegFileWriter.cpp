@@ -6,82 +6,84 @@ extern "C" {
 }
 
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
-#include <audioapi/android/core/utils/ffmpegBackend/FFmpegAudioFileOptions.h>
+#include <audioapi/android/core/utils/FileOptions.h>
+#include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileUtils.h>
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
+#include <audioapi/utils/AudioFileProperties.hpp>
+#include <audioapi/utils/ReturnStatus.hpp>
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
 
-FFmpegAudioFileWriter::FFmpegAudioFileWriter(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t androidFlags)
-    : AndroidFileWriterBackend(
-          sampleRate,
-          channelCount,
-          bitRate,
-          androidFlags) {
-  fileOptions_ = std::make_shared<FFmpegAudioFileOptions>(
-      sampleRate, channelCount, bitRate, androidFlags);
+inline std::string getFFmpegErrorString(int errorCode) {
+  char errorBuffer[AV_ERROR_MAX_STRING_SIZE];
+
+  if (av_strerror(errorCode, errorBuffer, sizeof(errorBuffer)) < 0) {
+    return "Unknown FFmpeg error: " + std::to_string(errorCode);
+    ;
+  }
+
+  return std::string(errorBuffer);
 }
+
+FFmpegAudioFileWriter::FFmpegAudioFileWriter(
+    std::shared_ptr<AudioFileProperties> properties)
+    : AndroidFileWriterBackend(properties) {}
 
 FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
   isFileOpen_.store(false);
-  fileOptions_.reset();
 }
 
-std::string FFmpegAudioFileWriter::openFile(
+OpenFileStatus FFmpegAudioFileWriter::openFile(
     int32_t streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
-  filePath_ = fileOptions_->getFilePath("audio");
+  filePath_ = android::fileoptions::getFilePath(properties_);
 
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
   framesWritten_.store(0);
   nextPts_ = 0;
+  int result = 0;
 
-  const AVCodec *codec = fileOptions_->getCodec();
+  const AVCodec *codec = android::ffmpeg::fileutils::getCodec(properties_);
   AVFormatContext *rawFormatCtx = nullptr;
 
-  if (avformat_alloc_output_context2(
-          &rawFormatCtx,
-          nullptr,
-          fileOptions_->getMuxerName().c_str(),
-          filePath_.c_str()) < 0 ||
-      !rawFormatCtx) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to allocate FFmpeg format context for file: %s",
-        filePath_.c_str());
-    return "";
+  result = avformat_alloc_output_context2(
+      &rawFormatCtx,
+      nullptr,
+      android::ffmpeg::fileutils::getMuxerName(properties_).c_str(),
+      filePath_.c_str());
+
+  if (result < 0) {
+    return OpenFileStatus::Error(
+        "Failed to allocate FFmpeg format context with error: " +
+        getFFmpegErrorString(result));
+  }
+
+  if (!rawFormatCtx) {
+    return OpenFileStatus::Error("Failed to allocate FFmpeg format context");
   }
 
   formatCtx_ = AVFormatContextPtr(rawFormatCtx);
   stream_ = avformat_new_stream(formatCtx_.get(), codec);
-
   encoderCtx_ = AVCodecContextPtr(avcodec_alloc_context3(codec));
 
   if (!encoderCtx_) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to allocate FFmpeg codec context for file");
-    return "";
+    return OpenFileStatus::Error("Failed to allocate FFmpeg codec context");
   }
 
   AVDictionary *codecOptions = nullptr;
-  size_t bitRate = fileOptions_->getBitRate();
-  int flacCompressionLevel = fileOptions_->getFlacCompressionLevel();
-  av_channel_layout_default(
-      &encoderCtx_->ch_layout, fileOptions_->getChannelCount());
+  size_t bitRate = properties_->bitRate;
+  int flacCompressionLevel = properties_->flacCompressionLevel;
 
-  encoderCtx_->sample_rate = fileOptions_->getSampleRate();
-  encoderCtx_->sample_fmt = fileOptions_->getSampleFormat();
+  av_channel_layout_default(&encoderCtx_->ch_layout, properties_->channelCount);
+
+  encoderCtx_->sample_rate = properties_->sampleRate;
+  encoderCtx_->sample_fmt =
+      android::ffmpeg::fileutils::getSampleFormat(properties_);
 
   if (bitRate > 0) {
     encoderCtx_->bit_rate = bitRate;
@@ -92,47 +94,43 @@ std::string FFmpegAudioFileWriter::openFile(
         &codecOptions, "compression_level", flacCompressionLevel, 0);
   }
 
-  if (avcodec_open2(encoderCtx_.get(), codec, &codecOptions) < 0) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to open FFmpeg codec for file");
+  result = avcodec_open2(encoderCtx_.get(), codec, &codecOptions);
+  if (result < 0) {
     av_dict_free(&codecOptions);
-    return "";
+    return OpenFileStatus::Error(
+        "Failed to open FFmpeg codec with error: " +
+        getFFmpegErrorString(result));
   }
 
   av_dict_free(&codecOptions);
 
-  if (avcodec_parameters_from_context(stream_->codecpar, encoderCtx_.get()) <
-      0) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to copy codec parameters to stream for file");
-    return "";
+  result =
+      avcodec_parameters_from_context(stream_->codecpar, encoderCtx_.get());
+
+  if (result < 0) {
+    return OpenFileStatus::Error(
+        "Failed to copy codec parameters to stream with error: " +
+        getFFmpegErrorString(result));
   }
 
   if (!(formatCtx_->oformat->flags & AVFMT_NOFILE)) {
-    if (avio_open(&formatCtx_->pb, filePath_.c_str(), AVIO_FLAG_WRITE) < 0) {
-      __android_log_print(
-          ANDROID_LOG_ERROR,
-          "FFmpegFileWriter",
-          "Failed to open output file: %s",
-          filePath_.c_str());
-      return "";
+    result = avio_open(&formatCtx_->pb, filePath_.c_str(), AVIO_FLAG_WRITE);
+
+    if (result < 0) {
+      return OpenFileStatus::Error(
+          "Failed to open output file with error: " +
+          getFFmpegErrorString(result));
     }
   }
 
   stream_->time_base =
       AVRational{1, static_cast<int>(encoderCtx_->sample_rate)};
 
-  if (avformat_write_header(formatCtx_.get(), nullptr) < 0) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to write header to file: %s",
-        filePath_.c_str());
-    return "";
+  result = avformat_write_header(formatCtx_.get(), nullptr);
+
+  if (result < 0) {
+    return OpenFileStatus::Error(
+        "Failed to write header to file: " + filePath_);
   }
 
   frame_ = AVFramePtr(av_frame_alloc());
@@ -159,16 +157,14 @@ std::string FFmpegAudioFileWriter::openFile(
   av_opt_set_sample_fmt(
       resampleCtx_.get(), "out_sample_fmt", encoderCtx_->sample_fmt, 0);
 
-  if (swr_init(resampleCtx_.get()) < 0) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to initialize resampler for file: %s",
-        filePath_.c_str());
-    return "";
+  result = swr_init(resampleCtx_.get());
+
+  if (result < 0) {
+    return OpenFileStatus::Error(
+        "Failed to initialize resampler for file: " + filePath_);
   }
 
-  int contextFrameRatio = 2;
+  int contextFrameRatio = 4;
 
   if (encoderCtx_->frame_size > 0) {
     contextFrameRatio = static_cast<int>(std::ceil(
@@ -177,30 +173,23 @@ std::string FFmpegAudioFileWriter::openFile(
   }
 
   int fifoSize = std::max(
-      encoderCtx_->frame_size > 0
-          ? encoderCtx_->frame_size * contextFrameRatio * 2
-          : streamMaxBufferSize_ * 2,
-      4096);
+      encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size * contextFrameRatio
+                                  : streamMaxBufferSize_ * contextFrameRatio,
+      8192);
 
   audioFifo_ = AVAudioFifoPtr(av_audio_fifo_alloc(
       encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
 
-  __android_log_print(
-      ANDROID_LOG_INFO,
-      "FFmpegFileWriter",
-      "Using audio FIFO size of %d frames",
-      fifoSize);
-
   isFileOpen_.store(true);
-
-  return filePath_;
+  return OpenFileStatus::Success(filePath_);
 }
 
-std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
+CloseFileStatus FFmpegAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return {0.0, 0.0};
+    return CloseFileStatus::Error("File is not open");
   }
 
+  int result = 0;
   isFileOpen_.store(false);
 
   const int frameSize =
@@ -215,35 +204,31 @@ std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
     frame_->format = encoderCtx_->sample_fmt;
     frame_->sample_rate = encoderCtx_->sample_rate;
 
-    if (av_frame_get_buffer(frame_.get(), 0) < 0) {
-      __android_log_print(
-          ANDROID_LOG_ERROR,
-          "FFmpegFileWriter",
-          "Failed to allocate audio frame buffer during flushing");
-      break;
+    result = av_frame_get_buffer(frame_.get(), 0);
+
+    if (result < 0) {
+      return CloseFileStatus::Error(
+          "Failed to allocate audio frame buffer during flushing with error:" +
+          getFFmpegErrorString(result));
     }
 
     int fifoReadFrameCount =
         av_audio_fifo_read(audioFifo_.get(), (void **)frame_->data, chunkSize);
 
     if (fifoReadFrameCount != chunkSize) {
-      __android_log_print(
-          ANDROID_LOG_ERROR,
-          "FFmpegFileWriter",
+      return CloseFileStatus::Error(
           "Failed to read audio samples from FIFO during flushing");
-      break;
     }
 
     frame_->pts = nextPts_;
     nextPts_ += chunkSize;
 
-    if (avcodec_send_frame(encoderCtx_.get(), frame_.get()) < 0) {
-      __android_log_print(
-          ANDROID_LOG_ERROR,
-          "FFmpegFileWriter",
-          "Failed to send audio frame to encoder during flushing");
-      av_frame_unref(frame_.get());
-      break;
+    result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
+
+    if (result < 0) {
+      return CloseFileStatus::Error(
+          "Failed to send audio frame to encoder during flushing with error: " +
+          getFFmpegErrorString(result));
     }
 
     av_frame_unref(frame_.get());
@@ -261,12 +246,11 @@ std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
     av_packet_unref(packet_.get());
   }
 
-  if (av_write_trailer(formatCtx_.get()) < 0) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FFmpegFileWriter",
-        "Failed to write trailer to file: %s",
-        filePath_.c_str());
+  result = av_write_trailer(formatCtx_.get());
+
+  if (result < 0) {
+    return CloseFileStatus::Error(
+        "Failed to write trailer with error: " + getFFmpegErrorString(result));
   }
 
   double fileSizeInMB = avio_size(formatCtx_->pb) / BYTES_TO_MB;
@@ -276,19 +260,16 @@ std::tuple<double, double> FFmpegAudioFileWriter::closeFile() {
     avio_closep(&formatCtx_->pb);
   }
 
-  resampleCtx_.reset();
-  frame_.reset();
-  packet_.reset();
-  encoderCtx_.reset();
-  formatCtx_.reset();
-  audioFifo_.reset();
-
   filePath_ = "";
-  return {fileSizeInMB, durationInSeconds};
+  return CloseFileStatus::Success({fileSizeInMB, durationInSeconds});
 }
 
 bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
   if (!isFileOpen()) {
+    return false;
+  }
+
+  if (flushFifoToEncoder() < 0) {
     return false;
   }
 
@@ -341,8 +322,18 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
   }
 
   av_frame_unref(frame_.get());
-  const int frameSize =
-      encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
+
+  if (flushFifoToEncoder() < 0) {
+    return false;
+  }
+
+  framesWritten_.fetch_add(numFrames);
+  return true;
+}
+
+int FFmpegAudioFileWriter::flushFifoToEncoder() {
+  int frameSize = encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
+  int result = 0;
 
   while (av_audio_fifo_size(audioFifo_.get()) >= frameSize) {
     frame_->nb_samples = frameSize;
@@ -350,12 +341,14 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
     frame_->format = encoderCtx_->sample_fmt;
     frame_->sample_rate = encoderCtx_->sample_rate;
 
-    if (av_frame_get_buffer(frame_.get(), 0) < 0) {
+    result = av_frame_get_buffer(frame_.get(), 0);
+
+    if (result < 0) {
       __android_log_print(
           ANDROID_LOG_ERROR,
           "FFmpegFileWriter",
-          "Failed to allocate audio frame buffer");
-      return false;
+          "Failed to allocate audio frame buffer during flushing");
+      return result;
     }
 
     int fifoReadFrameCount =
@@ -365,20 +358,22 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
       __android_log_print(
           ANDROID_LOG_ERROR,
           "FFmpegFileWriter",
-          "Failed to read audio samples from FIFO");
-      return false;
+          "Failed to read audio samples from FIFO during flushing");
+      return -1;
     }
 
     frame_->pts = nextPts_;
     nextPts_ += frameSize;
 
-    if (avcodec_send_frame(encoderCtx_.get(), frame_.get()) < 0) {
+    result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
+
+    if (result < 0) {
       __android_log_print(
           ANDROID_LOG_ERROR,
           "FFmpegFileWriter",
-          "Failed to send audio frame to encoder");
+          "Failed to send audio frame to encoder during flushing");
       av_frame_unref(frame_.get());
-      return false;
+      return result;
     }
 
     while (avcodec_receive_packet(encoderCtx_.get(), packet_.get()) == 0) {
@@ -386,18 +381,18 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
           packet_.get(),
           AVRational{1, encoderCtx_->sample_rate},
           stream_->time_base);
-
       packet_->stream_index = stream_->index;
 
-      if (av_interleaved_write_frame(formatCtx_.get(), packet_.get()) < 0) {
+      result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
+
+      if (result < 0) {
         __android_log_print(
             ANDROID_LOG_ERROR,
             "FFmpegFileWriter",
-            "Failed to write audio packet to file");
-
+            "Failed to write audio packet to file during flushing");
         av_packet_unref(packet_.get());
         av_frame_unref(frame_.get());
-        return false;
+        return result;
       }
 
       avio_flush(formatCtx_.get()->pb);
@@ -407,16 +402,7 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
     av_frame_unref(frame_.get());
   }
 
-  framesWritten_.fetch_add(numFrames);
-  return true;
-}
-
-bool FFmpegAudioFileWriter::initializeConverterIfNeeded() {
-  return false;
-}
-
-bool FFmpegAudioFileWriter::initializeEncoder() {
-  return false;
+  return 0;
 }
 
 bool FFmpegAudioFileWriter::isFileOpen() {

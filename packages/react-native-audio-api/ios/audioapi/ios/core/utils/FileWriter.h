@@ -18,10 +18,13 @@ typedef struct objc_object AVAudioConverter;
 namespace audioapi {
 
 class AudioFileProperties;
+class AudioEventHandlerRegistry;
 
 class FileWriter {
  public:
-  FileWriter(const std::shared_ptr<AudioFileProperties> &fileProperties);
+  FileWriter(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~FileWriter();
 
   ReturnStatus<std::string> openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
@@ -32,10 +35,15 @@ class FileWriter {
   double getCurrentDuration() const;
   std::string getFilePath() const;
 
+  void setOnErrorCallback(uint64_t callbackId);
+  void clearOnErrorCallback();
+  void invokeOnErrorCallback(const std::string &message);
+
  private:
   size_t converterInputBufferSize_;
   size_t converterOutputBufferSize_;
   std::atomic<size_t> framesWritten_{0};
+  std::atomic<uint64_t> errorCallbackId_{0};
 
   std::shared_ptr<AudioFileProperties> fileProperties_;
   AVAudioFile *audioFile_;
@@ -45,6 +53,8 @@ class FileWriter {
 
   AVAudioPCMBuffer *converterInputBuffer_;
   AVAudioPCMBuffer *converterOutputBuffer_;
+
+  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 
 } // namespace audioapi

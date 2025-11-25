@@ -6,7 +6,8 @@
 
 namespace audioapi {
 
-struct AudioFileProperties {
+class AudioFileProperties {
+ public:
   enum class Format {
     WAV = 1,
     CAF = 2,

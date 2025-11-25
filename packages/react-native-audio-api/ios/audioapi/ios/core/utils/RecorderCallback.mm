@@ -9,6 +9,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <audioapi/utils/ReturnStatus.hpp>
 #include <algorithm>
 
 namespace audioapi {
@@ -32,6 +33,7 @@ RecorderCallback::RecorderCallback(
     auto busAudioArray = std::make_shared<CircularAudioArray>(ringBufferSize_);
     circularBus_[i] = busAudioArray;
   }
+
   isInitialized_.store(true);
 }
 
@@ -51,11 +53,19 @@ RecorderCallback::~RecorderCallback()
   }
 }
 
-void RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+ReturnStatus<void> RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
 {
   @autoreleasepool {
     bufferFormat_ = bufferFormat;
     converterInputBufferSize_ = maxInputBufferLength;
+
+    if (bufferFormat.sampleRate <= 0 || bufferFormat.channelCount == 0) {
+      return ReturnStatus<void>::Error("Invalid input format: sampleRate and channelCount must be greater than 0");
+    }
+
+    if (sampleRate_ <= 0 || channelCount_ == 0) {
+      return ReturnStatus<void>::Error("Invalid callback format: sampleRate and channelCount must be greater than 0");
+    }
 
     converterOutputBufferSize_ =
         std::max((double)maxInputBufferLength, sampleRate_ / bufferFormat.sampleRate * maxInputBufferLength);
@@ -75,6 +85,8 @@ void RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBuffe
     converterOutputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
                                                            frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
   }
+
+  return ReturnStatus<void>::Success();
 }
 
 void RecorderCallback::cleanup()
@@ -144,7 +156,8 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
     converterOutputBuffer_.frameLength = sampleRate_ / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
-      NSLog(@"Error during audio conversion: %@", [error debugDescription]);
+      invokeOnErrorCallback(
+          std::string("Error during audio conversion, native error: ") + [[error debugDescription] UTF8String]);
       return;
     }
 
@@ -196,6 +209,32 @@ void RecorderCallback::sendRemainingData()
   }
 
   invokeCallback(bus, numberOfFrames);
+}
+
+void RecorderCallback::setOnErrorCallback(uint64_t callbackId)
+{
+  errorCallbackId_.store(callbackId);
+}
+
+void RecorderCallback::clearOnErrorCallback()
+{
+  errorCallbackId_.store(0);
+}
+
+void RecorderCallback::invokeOnErrorCallback(const std::string &message)
+{
+  uint64_t callbackId = errorCallbackId_.load();
+
+  // TODO: only the line above is atomic, which means that between reading the callbackId and invoking the callback,
+  // the callback could be cleared. We need to ensure that the callback is still valid when invoking it.
+  // TL;DR: atomic szpont
+  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+    return;
+  }
+
+  std::unordered_map<std::string, EventValue> eventPayload = {};
+  eventPayload.insert({"message", message});
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody("error", callbackId, eventPayload);
 }
 
 } // namespace audioapi

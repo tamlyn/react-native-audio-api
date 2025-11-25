@@ -10,7 +10,7 @@ namespace audioapi {
 
 class AudioFileProperties;
 
-namespace fileoptions {
+namespace ios::fileoptions {
 
 AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties);
 NSInteger getQuality(const std::shared_ptr<AudioFileProperties> &properties);
@@ -26,6 +26,6 @@ NSSearchPathDirectory getDirectory(const std::shared_ptr<AudioFileProperties> &p
 NSString *getDateString();
 NSString *getTimestampString();
 
-} // namespace fileoptions
+} // namespace ios::fileoptions
 
 } // namespace audioapi

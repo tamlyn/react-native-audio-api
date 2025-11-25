@@ -1,14 +1,13 @@
 #pragma once
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-
 #include <oboe/Oboe.h>
 #include <functional>
 #include <memory>
 #include <string>
 #include <tuple>
 #include <mutex>
-
+#include <audioapi/utils/ReturnStatus.hpp>
 #include <audioapi/android/core/NativeAudioRecorder.hpp>
 
 namespace audioapi {
@@ -17,6 +16,7 @@ using namespace oboe;
 
 class AudioBus;
 class CircularAudioArray;
+class AudioFileProperties;
 class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
@@ -28,15 +28,10 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
   ~AndroidAudioRecorder() override;
   void cleanup();
 
-  std::string start() override;
-  std::tuple<std::string, double, double> stop() override;
+  ReturnStatus<std::string> start() override;
+  ReturnStatus<std::tuple<std::string, double, double>> stop() override;
 
-  void enableFileOutput(
-      float sampleRate,
-      size_t channelCount,
-      size_t bitRate,
-      size_t iosFlags,
-      size_t androidFlags) override;
+  ReturnStatus<std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
   void pause() override;
@@ -45,9 +40,12 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
   bool isPaused() const override;
   bool isIdle() const override;
 
-  void setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
+  ReturnStatus<void> setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
       override;
   void clearOnAudioReadyCallback() override;
+
+  void setOnErrorCallback(uint64_t callbackId) override;
+  void clearOnErrorCallback() override;
 
   double getCurrentDuration() const override;
 
@@ -73,7 +71,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
 
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
-  bool openAudioStream();
+  ReturnStatus<void> openAudioStream();
 };
 
 } // namespace audioapi

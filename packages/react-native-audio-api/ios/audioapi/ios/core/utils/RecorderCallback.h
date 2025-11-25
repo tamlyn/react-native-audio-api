@@ -6,6 +6,7 @@ typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
 #endif
 
+#include <audioapi/utils/ReturnStatus.hpp>
 #include <memory>
 #include <vector>
 
@@ -25,7 +26,7 @@ class RecorderCallback {
       uint64_t callbackId);
   ~RecorderCallback();
 
-  void prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
+  ReturnStatus<void> prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
   void cleanup();
 
   void receiveAudioData(const AudioBufferList *audioBufferList, int numFrames);
@@ -33,6 +34,10 @@ class RecorderCallback {
 
   void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
   void sendRemainingData();
+
+  void setOnErrorCallback(uint64_t callbackId);
+  void clearOnErrorCallback();
+  void invokeOnErrorCallback(const std::string &message);
 
  private:
   std::atomic<bool> isInitialized_{false};
@@ -44,6 +49,8 @@ class RecorderCallback {
   size_t ringBufferSize_;
   size_t converterInputBufferSize_;
   size_t converterOutputBufferSize_;
+
+  std::atomic<uint64_t> errorCallbackId_{0};
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;

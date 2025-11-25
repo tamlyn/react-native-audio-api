@@ -1,30 +1,43 @@
 #include <android/log.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
-#include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileOptions.h>
+#include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/utils/AudioFileProperties.hpp>
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
 
-MiniAudioFileWriter::MiniAudioFileWriter(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t androidFlags)
-    : AndroidFileWriterBackend(
-          sampleRate,
-          channelCount,
-          bitRate,
-          androidFlags) {
-  fileOptions_ = std::make_shared<MiniAudioFileOptions>(
-      sampleRate, channelCount, bitRate, androidFlags);
+inline ma_encoding_format getFormat(
+    const std::shared_ptr<AudioFileProperties> &properties) {
+  return ma_encoding_format_wav;
 }
+
+inline ma_format getDataFormat(
+    const std::shared_ptr<AudioFileProperties> &properties) {
+  switch (properties->bitDepth) {
+    case AudioFileProperties::BitDepth::Bit16:
+      return ma_format_s16;
+
+    case AudioFileProperties::BitDepth::Bit24:
+      return ma_format_s24;
+
+    case AudioFileProperties::BitDepth::Bit32:
+      return ma_format_f32;
+
+    default:
+      return ma_format_f32;
+  }
+}
+
+MiniAudioFileWriter::MiniAudioFileWriter(
+    std::shared_ptr<AudioFileProperties> properties)
+    : AndroidFileWriterBackend(properties) {}
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
   isFileOpen_.store(false);
-  fileOptions_.reset();
+  properties_.reset();
 
   if (encoder_ != nullptr) {
     ma_encoder_uninit(encoder_.get());
@@ -43,40 +56,43 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
   }
 }
 
-std::string MiniAudioFileWriter::openFile(
+OpenFileStatus MiniAudioFileWriter::openFile(
     int32_t streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
-  bool success = false;
+  ma_result result;
 
   isConverterRequired_.store(
-      (streamSampleRate_ != fileOptions_->getSampleRate()) ||
-      (streamChannelCount_ != fileOptions_->getChannelCount()) ||
-      (fileOptions_->getDataFormat() != ma_format_f32));
+      (streamSampleRate_ != properties_->sampleRate) ||
+      (streamChannelCount_ != properties_->channelCount) ||
+      (getDataFormat(properties_) != ma_format_f32));
 
-  success = initializeConverterIfNeeded();
+  result = initializeConverterIfNeeded();
 
-  if (!success) {
-    return "";
+  if (result != MA_SUCCESS) {
+    return OpenFileStatus::Error(
+        "Failed to initialize converter" +
+        std::string(ma_result_description(result)));
   }
 
-  success = initializeEncoder();
+  result = initializeEncoder();
 
-  if (!success) {
-    return "";
+  if (result != MA_SUCCESS) {
+    return OpenFileStatus::Error(
+        "Failed to initialize encoder" +
+        std::string(ma_result_description(result)));
   }
 
   isFileOpen_.store(true);
-
-  return filePath_;
+  return OpenFileStatus::Success(filePath_);
 }
 
-std::tuple<double, double> MiniAudioFileWriter::closeFile() {
+CloseFileStatus MiniAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return {0.0, 0.0};
+    return CloseFileStatus::Error("File is not open");
   }
 
   isFileOpen_.store(false);
@@ -126,7 +142,7 @@ std::tuple<double, double> MiniAudioFileWriter::closeFile() {
   }
 
   filePath_ = "";
-  return {fileSizeInMB, durationInSeconds};
+  return CloseFileStatus::Success({fileSizeInMB, durationInSeconds});
 }
 
 bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
@@ -194,68 +210,58 @@ ma_uint64 MiniAudioFileWriter::convertBuffer(void *data, int numFrames) {
   return outputFrameCount;
 }
 
-bool MiniAudioFileWriter::initializeConverterIfNeeded() {
+ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
   if (!isConverterRequired_) {
-    return true;
+    return MA_SUCCESS;
   }
 
   ma_result result;
+  ma_format dataFormat = getDataFormat(properties_);
 
   ma_data_converter_config converterConfig = ma_data_converter_config_init(
       ma_format_f32,
-      fileOptions_->getDataFormat(),
+      dataFormat,
       streamChannelCount_,
-      fileOptions_->getChannelCount(),
+      properties_->channelCount,
       streamSampleRate_,
-      fileOptions_->getSampleRate());
+      properties_->sampleRate);
 
   converter_ = std::make_unique<ma_data_converter>();
   result = ma_data_converter_init(&converterConfig, NULL, converter_.get());
 
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "MiniAudioFileWriter",
-        "Failed to initialize miniaudio data converter for file: %s",
-        filePath_.c_str());
-    return false;
+    return result;
   }
 
   ma_data_converter_get_expected_output_frame_count(
       converter_.get(), streamMaxBufferSize_, &processingBufferLength_);
 
   processingBuffer_ = ma_malloc(
-      processingBufferLength_ * fileOptions_->getChannelCount() *
-          ma_get_bytes_per_sample(fileOptions_->getDataFormat()),
+      processingBufferLength_ * properties_->channelCount *
+          ma_get_bytes_per_sample(dataFormat),
       NULL);
 
-  return true;
+  return MA_SUCCESS;
 }
 
-bool MiniAudioFileWriter::initializeEncoder() {
-  filePath_ = fileOptions_->getFilePath("audio");
-
+ma_result MiniAudioFileWriter::initializeEncoder() {
   ma_result result;
+  filePath_ = android::fileoptions::getFilePath(properties_);
 
   ma_encoder_config config = ma_encoder_config_init(
-      fileOptions_->getFormat(),
-      fileOptions_->getDataFormat(),
-      fileOptions_->getChannelCount(),
-      fileOptions_->getSampleRate());
+      getFormat(properties_),
+      getDataFormat(properties_),
+      properties_->channelCount,
+      properties_->sampleRate);
 
   encoder_ = std::make_unique<ma_encoder>();
   result = ma_encoder_init_file(filePath_.c_str(), &config, encoder_.get());
 
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "MiniAudioFileWriter",
-        "Failed to initialize miniaudio encoder for file: %s",
-        filePath_.c_str());
-    return false;
+    return result;
   }
 
-  return true;
+  return MA_SUCCESS;
 }
 
 bool MiniAudioFileWriter::isFileOpen() {

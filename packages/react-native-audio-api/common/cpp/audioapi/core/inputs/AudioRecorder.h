@@ -1,12 +1,10 @@
 #pragma once
 
-
 #include <memory>
 #include <atomic>
 #include <mutex>
 #include <string>
 #include <tuple>
-
 #include <audioapi/utils/ReturnStatus.hpp>
 
 namespace audioapi {
@@ -19,7 +17,7 @@ class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
-  enum RecorderState { Idle, Recording, Paused };
+  enum class RecorderState { Idle = 0, Recording, Paused };
   explicit AudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry):
       audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
@@ -27,7 +25,7 @@ class AudioRecorder {
   virtual ReturnStatus<std::string> start() = 0;
   virtual ReturnStatus<std::tuple<std::string, double, double>> stop() = 0;
 
-  virtual void enableFileOutput(std::shared_ptr<AudioFileProperties> properties) = 0;
+  virtual ReturnStatus<std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
   virtual void pause() = 0;
@@ -36,7 +34,7 @@ class AudioRecorder {
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) {}
   void disconnect() {}
 
-  virtual void setOnAudioReadyCallback(
+  virtual ReturnStatus<void> setOnAudioReadyCallback(
     float sampleRate,
     size_t bufferLength,
     size_t channelCount,

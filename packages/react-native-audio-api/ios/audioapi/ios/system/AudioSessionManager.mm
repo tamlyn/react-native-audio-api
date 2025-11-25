@@ -365,4 +365,9 @@ static AudioSessionManager *_sharedInstance = nil;
   return options;
 }
 
+- (bool)isSessionActive
+{
+  return self.isActive;
+}
+
 @end

@@ -3,21 +3,23 @@
 #include <tuple>
 #include <string>
 #include <memory>
+#include <audioapi/utils/ReturnStatus.hpp>
 
 namespace audioapi {
 
+class AudioFileProperties;
+
+typedef ReturnStatus<std::string> OpenFileStatus;
+typedef ReturnStatus<std::tuple<double, double>> CloseFileStatus;
+
 class AndroidFileWriterBackend {
  public:
-  AndroidFileWriterBackend(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t androidFlags) {}
+  explicit AndroidFileWriterBackend(std::shared_ptr<AudioFileProperties> properties) : properties_(properties) {}
 
   virtual ~AndroidFileWriterBackend() = default;
 
-  virtual std::string openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
-  virtual std::tuple<double, double> closeFile() = 0;
+  virtual OpenFileStatus openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
+  virtual CloseFileStatus closeFile() = 0;
 
   virtual bool writeAudioData(void *data, int numFrames) = 0;
 
@@ -26,6 +28,8 @@ class AndroidFileWriterBackend {
   double getCurrentDuration() const { return static_cast<double>(framesWritten_.load()) / streamSampleRate_; }
 
  protected:
+  std::shared_ptr<AudioFileProperties> properties_;
+
   std::string filePath_{""};
   std::atomic<size_t> framesWritten_{0};
 

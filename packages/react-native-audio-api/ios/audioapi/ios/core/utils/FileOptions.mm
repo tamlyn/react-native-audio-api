@@ -4,7 +4,7 @@
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.hpp>
 
-namespace audioapi::fileoptions {
+namespace audioapi::ios::fileoptions {
 
 AudioFormatID getFormat(const std::shared_ptr<AudioFileProperties> &properties)
 {
@@ -87,7 +87,7 @@ NSInteger getBitDepth(const std::shared_ptr<AudioFileProperties> &properties)
       return 32;
 
     default:
-      return 24;
+      return 32;
   }
 }
 
@@ -172,4 +172,4 @@ NSString *getTimestampString()
   return [fmt stringFromDate:[NSDate date]];
 }
 
-} // namespace audioapi::fileoptions
+} // namespace audioapi::ios::fileoptions

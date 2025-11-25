@@ -10,14 +10,13 @@ extern "C" {
 }
 
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
-
 #include <string>
 #include <memory>
 #include <tuple>
 
 namespace audioapi {
 
-class FFmpegAudioFileOptions;
+class AudioFileProperties;
 
 struct AVCodecContextDTOR {
   void operator()(AVCodecContext* ctx) const {
@@ -76,21 +75,15 @@ using AVAudioFifoPtr = std::unique_ptr<AVAudioFifo, AVAudioFifoDTOR>;
 
 class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
  public:
-  FFmpegAudioFileWriter(
-    float sampleRate,
-    size_t channelCount,
-    size_t bitRate,
-    size_t androidFlags);
+  explicit FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
   ~FFmpegAudioFileWriter() override;
 
-  std::string openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
-  std::tuple<double, double> closeFile() override;
+  OpenFileStatus openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
+  CloseFileStatus closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
 
  private:
-  std::shared_ptr<FFmpegAudioFileOptions> fileOptions_;
-
   std::atomic<bool> isFileOpen_{false};
   std::atomic<bool> isConverterRequired_{false};
 
@@ -103,11 +96,11 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   AVAudioFifoPtr audioFifo_{nullptr};
   int64_t nextPts_;
 
-  bool initializeConverterIfNeeded();
-  bool initializeEncoder();
-
   bool isFileOpen();
   bool isConverterRequired();
+
+  int flushFifoToEncoder();
+  // int flushFrameToEncoder();
 };
 
 } // namespace audioapi

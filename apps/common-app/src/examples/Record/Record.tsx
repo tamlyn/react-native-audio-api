@@ -23,6 +23,7 @@ const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);
 
 enum ExampleState {
   Idle = 'Idle',
+  Loading = 'Loading',
   Recording = 'Recording',
   Paused = 'Paused',
   Playing = 'Playing',
@@ -39,10 +40,10 @@ const Record: FC = () => {
   const [hasPermissions, setHasPermissions] = useState<boolean>(false);
   const [state, setState] = useState<ExampleState>(ExampleState.Idle);
   const [lastOutput, setLastOutput] = useState<string | null>(null);
-  const durationStringSV = useSharedValue('00:00:00:00');
+  const durationStringSV = useSharedValue('00:00:00');
 
   useEffect(() => {
-    recorder.onAudioReady(
+    const results = recorder.onAudioReady(
       {
         bufferLength: 2048,
         sampleRate: 16000,
@@ -56,9 +57,34 @@ const Record: FC = () => {
         );
       }
     );
+
+    if (results.status === 'error') {
+      console.error('Failed to set onAudioReady:', results.message);
+    }
+
+    return () => {
+      recorder.clearOnAudioReady();
+    };
+  }, []);
+
+  useEffect(() => {
+    recorder.onError((error) => {
+      console.error('Recorder error:', error);
+      Alert.alert('Recorder Error', error.message);
+    });
+
+    return () => {
+      recorder.clearOnError();
+    };
   }, []);
 
   const onStartRecording = useCallback(async () => {
+    if (state !== ExampleState.Idle) {
+      return;
+    }
+
+    setState(ExampleState.Loading);
+
     await AudioManager.setAudioSessionActivity(true);
 
     if (!hasPermissions) {
@@ -76,22 +102,34 @@ const Record: FC = () => {
     }
 
     const result = recorder.start();
-    setState(ExampleState.Recording);
 
     if (result.status === 'success') {
       setLastOutput(result.path);
+      setState(ExampleState.Recording);
     } else {
+      setState(ExampleState.Idle);
       Alert.alert('Error', `Failed to start recording: ${result.message}`);
     }
-  }, [hasPermissions]);
+  }, [hasPermissions, state]);
 
   const onStopRecording = useCallback(async () => {
-    setState(ExampleState.Idle);
-    const fileInfo = recorder.stop();
+    const result = recorder.stop();
 
-    console.log('Recording stopped, file info:', fileInfo);
+    if (result.status === 'error') {
+      Alert.alert('Error', `Failed to stop recording: ${result.message}`);
+    } else {
+      console.log(
+        'Recording stopped, file at:',
+        result.path,
+        'with size:',
+        result.size,
+        'and duration:',
+        result.duration
+      );
+    }
 
     await AudioManager.setAudioSessionActivity(false);
+    setState(ExampleState.Idle);
   }, []);
 
   const onPauseRecording = useCallback(() => {
@@ -167,6 +205,10 @@ const Record: FC = () => {
   }, [state, durationStringSV]);
 
   const status = useMemo(() => {
+    if (state === ExampleState.Loading) {
+      return '⏳ Loading...';
+    }
+
     if (state === ExampleState.Recording) {
       return '🔴 Recording...';
     }
@@ -185,11 +227,15 @@ const Record: FC = () => {
   const animatedText = useAnimatedProps(() => {
     return {
       text: durationStringSV.value,
-      defaultValue: '00:00:00:00',
+      defaultValue: '00:00:00',
     };
   });
 
   const buttons = useMemo(() => {
+    if (state === ExampleState.Loading) {
+      return null;
+    }
+
     if (state === ExampleState.Recording) {
       return (
         <>

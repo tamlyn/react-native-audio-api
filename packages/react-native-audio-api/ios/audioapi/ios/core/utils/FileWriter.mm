@@ -1,6 +1,7 @@
 #import <AVFoundation/AVFoundation.h>
 #import <Foundation/Foundation.h>
 
+#include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/FileWriter.h>
 #include <audioapi/utils/AudioFileProperties.hpp>
@@ -9,7 +10,12 @@
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
-FileWriter::FileWriter(const std::shared_ptr<AudioFileProperties> &fileProperties) : fileProperties_(fileProperties) {}
+FileWriter::FileWriter(
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<AudioFileProperties> &fileProperties)
+    : audioEventHandlerRegistry_(audioEventHandlerRegistry), fileProperties_(fileProperties)
+{
+}
 
 FileWriter::~FileWriter()
 {
@@ -30,8 +36,8 @@ ReturnStatus<std::string> FileWriter::openFile(AVAudioFormat *bufferFormat, size
     bufferFormat_ = bufferFormat;
 
     NSError *error = nil;
-    NSDictionary *settings = fileoptions::getFileSettings(fileProperties_);
-    fileURL_ = fileoptions::getFileURL(fileProperties_);
+    NSDictionary *settings = ios::fileoptions::getFileSettings(fileProperties_);
+    fileURL_ = ios::fileoptions::getFileURL(fileProperties_);
 
     if (fileProperties_->sampleRate == 0 || fileProperties_->channelCount == 0) {
       return ReturnStatus<std::string>::Error(
@@ -115,7 +121,7 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
 bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numFrames)
 {
   if (audioFile_ == nil) {
-    NSLog(@"⚠️ writeAudioData: audioFile is nil, cannot write data");
+    invokeOnErrorCallback("Attempted to write audio data when file is not open");
     return false;
   }
 
@@ -137,7 +143,8 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
       [audioFile_ writeFromBuffer:converterInputBuffer_ error:&error];
 
       if (error != nil) {
-        NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
+        invokeOnErrorCallback(
+            std::string("Error writing audio data to file, native error: ") + [[error debugDescription] UTF8String]);
         return false;
       }
 
@@ -172,14 +179,16 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
     converterOutputBuffer_.frameLength = fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
-      NSLog(@"Error during audio conversion: %@", [error debugDescription]);
+      invokeOnErrorCallback(
+          std::string("Error during audio conversion, native error: ") + [[error debugDescription] UTF8String]);
       return false;
     }
 
     [audioFile_ writeFromBuffer:converterOutputBuffer_ error:&error];
 
     if (error != nil) {
-      NSLog(@"Error writing audio data to file: %@", [error debugDescription]);
+      invokeOnErrorCallback(
+          std::string("Error writing audio data to file, native error: ") + [[error debugDescription] UTF8String]);
       return false;
     }
 
@@ -196,6 +205,32 @@ double FileWriter::getCurrentDuration() const
 std::string FileWriter::getFilePath() const
 {
   return [[fileURL_ path] UTF8String];
+}
+
+void FileWriter::setOnErrorCallback(uint64_t callbackId)
+{
+  errorCallbackId_.store(callbackId);
+}
+
+void FileWriter::clearOnErrorCallback()
+{
+  errorCallbackId_.store(0);
+}
+
+void FileWriter::invokeOnErrorCallback(const std::string &message)
+{
+  uint64_t callbackId = errorCallbackId_.load();
+
+  // TODO: only the line above is atomic, which means that between reading the callbackId and invoking the callback,
+  // the callback could be cleared. We need to ensure that the callback is still valid when invoking it.
+  // TL;DR: atomic szpont
+  if (audioEventHandlerRegistry_ == nullptr || callbackId == 0) {
+    return;
+  }
+
+  std::unordered_map<std::string, EventValue> eventPayload = {};
+  eventPayload.insert({"message", message});
+  audioEventHandlerRegistry_->invokeHandlerWithEventBody("error", callbackId, eventPayload);
 }
 
 } // namespace audioapi
