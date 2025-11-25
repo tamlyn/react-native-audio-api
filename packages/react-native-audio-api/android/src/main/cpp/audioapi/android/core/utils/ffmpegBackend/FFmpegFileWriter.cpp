@@ -1,6 +1,5 @@
 
 #include <android/log.h>
-// #include <cmath>
 
 extern "C" {
 #include <libavcodec/avcodec.h>
@@ -351,7 +350,7 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
     nextPts_ += chunkSize;
 
     int result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
-    av_frame_unref(frame_.get()); // Done with this frame
+    av_frame_unref(frame_.get());
 
     if (result < 0) {
       LOGE("Send frame failed: %s", parseErrorCode(result).c_str());
@@ -385,10 +384,8 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
         stream_->time_base);
     packet_->stream_index = stream_->index;
 
-    // Write to container
     result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
 
-    // Flush IO buffer (optional, but good for real-time safety)
     if (formatCtx_->pb) {
       avio_flush(formatCtx_->pb);
     }
