@@ -171,7 +171,7 @@ export default class BaseAudioContext {
   }
 
   createRecorderAdapter(): RecorderAdapterNode {
-    return new RecorderAdapterNode(this, this.context.createRecorderAdapter());
+    return new RecorderAdapterNode(this);
   }
 
   createOscillator(): OscillatorNode {
