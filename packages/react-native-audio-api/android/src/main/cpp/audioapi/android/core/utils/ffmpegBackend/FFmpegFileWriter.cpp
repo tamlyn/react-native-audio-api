@@ -1,6 +1,3 @@
-
-#include <android/log.h>
-
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -18,18 +15,17 @@ extern "C" {
 
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
-#define LOG_TAG "FFmpegFileWriter"
-#define LOGE(...) __android_log_print(ANDROID_LOG_ERROR, LOG_TAG, __VA_ARGS__)
-#define LOGD(...) __android_log_print(ANDROID_LOG_DEBUG, LOG_TAG, __VA_ARGS__)
-#define LOGW(...) __android_log_print(ANDROID_LOG_WARN, LOG_TAG, __VA_ARGS__)
-
 namespace audioapi::android::ffmpeg {
 
 FFmpegAudioFileWriter::FFmpegAudioFileWriter(
     std::shared_ptr<AudioFileProperties> properties)
     : AndroidFileWriterBackend(properties) {}
 
-FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {}
+FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
+  if (isFileOpen()) {
+    closeFile();
+  }
+}
 
 OpenFileStatus FFmpegAudioFileWriter::openFile(
     int32_t streamSampleRate,
@@ -86,15 +82,25 @@ OpenFileStatus FFmpegAudioFileWriter::openFile(
 }
 
 CloseFileStatus FFmpegAudioFileWriter::closeFile() {
+  int result = 0;
+
   if (!isFileOpen()) {
     return CloseFileStatus::Error("File is not open");
   }
 
-  if (processFifo(true) < 0) {
-    return CloseFileStatus::Error("Failed to flush FIFO to encoder");
+  result = processFifo(true);
+
+  if (result < 0) {
+    auto finalStatus = finalizeOutput();
+
+    return CloseFileStatus::Error(
+        "Failed to flush FIFO to encoder. error code: " +
+        parseErrorCode(result) + ", finalization status: " +
+        (finalStatus.isSuccess() ? "success" : finalStatus.getMessage()));
   }
 
-  int result = avcodec_send_frame(encoderCtx_.get(), nullptr);
+  result = avcodec_send_frame(encoderCtx_.get(), nullptr);
+
   if (result < 0) {
     return CloseFileStatus::Error("Failed to send EOF to encoder");
   }
@@ -293,14 +299,16 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 bool FFmpegAudioFileWriter::resampleAndPushToFifo(
     void *inputData,
     int inputFrameCount) {
+  int result = 0;
   int outputLength = av_rescale_rnd(
       inputFrameCount,
       encoderCtx_->sample_rate,
       streamSampleRate_,
       AV_ROUND_UP);
 
-  if (prepareFrameForEncoding(outputLength) < 0) {
-    LOGE("Failed to alloc conversion frame");
+  result = prepareFrameForEncoding(outputLength);
+
+  if (result < 0) {
     return false;
   }
 
@@ -310,8 +318,6 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(
       resampleCtx_.get(), frame_->data, outputLength, inputs, inputFrameCount);
 
   if (convertedSamples < 0) {
-    LOGE("Swr conversion failed");
-
     av_frame_unref(frame_.get());
     return false;
   }
@@ -319,10 +325,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(
   int written = av_audio_fifo_write(
       audioFifo_.get(), (void **)frame_->data, convertedSamples);
 
-  av_frame_unref(frame_.get());
-
   if (written < convertedSamples) {
-    LOGE("FIFO write failed");
     return false;
   }
 
@@ -330,6 +333,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(
 }
 
 int FFmpegAudioFileWriter::processFifo(bool flush) {
+  int result = 0;
   int frameSize = encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
 
   while (av_audio_fifo_size(audioFifo_.get()) >= (flush ? 1 : frameSize)) {
@@ -342,23 +346,22 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
 
     if (av_audio_fifo_read(
             audioFifo_.get(), (void **)frame_->data, chunkSize) != chunkSize) {
-      LOGE("FIFO read failed");
       return -1;
     }
 
     frame_->pts = nextPts_;
     nextPts_ += chunkSize;
 
-    int result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
-    av_frame_unref(frame_.get());
+    result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
 
     if (result < 0) {
-      LOGE("Send frame failed: %s", parseErrorCode(result).c_str());
       return result;
     }
 
-    if (writeEncodedPackets() < 0) {
-      return -1;
+    result = writeEncodedPackets();
+
+    if (result < 0) {
+      return result;
     }
   }
 
@@ -374,49 +377,69 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
     if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
       return 0;
     } else if (result < 0) {
-      LOGE("Receive packet failed");
       return result;
     }
 
     av_packet_rescale_ts(
-        packet_.get(),
-        AVRational{1, encoderCtx_->sample_rate},
-        stream_->time_base);
+        packet_.get(), encoderCtx_->time_base, stream_->time_base);
     packet_->stream_index = stream_->index;
 
     result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
 
-    if (formatCtx_->pb) {
+    auto now = std::chrono::steady_clock::now();
+    auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
+                         now - lastFlushTime_)
+                         .count();
+
+    if (formatCtx_->pb && elapsedMs >= flushIntervalMs_) {
       avio_flush(formatCtx_->pb);
+      lastFlushTime_ = now;
     }
 
-    av_packet_unref(packet_.get());
-
     if (result < 0) {
-      LOGE("Write frame failed");
       return result;
     }
   }
 }
 
 int FFmpegAudioFileWriter::prepareFrameForEncoding(int samplesToRead) {
+  int result = 0;
+
+  if (frame_->data[0] && frame_->nb_samples == samplesToRead &&
+      av_frame_is_writable(frame_.get())) {
+    return 0;
+  }
+
   frame_->nb_samples = samplesToRead;
   frame_->format = encoderCtx_->sample_fmt;
   frame_->sample_rate = encoderCtx_->sample_rate;
 
-  int ret = av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
+  if (av_channel_layout_compare(&frame_->ch_layout, &encoderCtx_->ch_layout) !=
+      0) {
+    av_channel_layout_uninit(&frame_->ch_layout);
 
-  if (ret < 0) {
-    return ret;
+    result =
+        av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
+
+    if (result < 0) {
+      return result;
+    }
   }
 
-  ret = av_frame_get_buffer(frame_.get(), 0);
+  result = av_frame_make_writable(frame_.get());
 
-  if (ret < 0) {
-    LOGE("Frame alloc failed");
+  if (result < 0) {
+    av_frame_unref(frame_.get());
+
+    frame_->nb_samples = samplesToRead;
+    frame_->format = encoderCtx_->sample_fmt;
+    frame_->sample_rate = encoderCtx_->sample_rate;
+    av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
+
+    result = av_frame_get_buffer(frame_.get(), 0);
   }
 
-  return ret;
+  return result;
 }
 
 CloseFileStatus FFmpegAudioFileWriter::finalizeOutput() {

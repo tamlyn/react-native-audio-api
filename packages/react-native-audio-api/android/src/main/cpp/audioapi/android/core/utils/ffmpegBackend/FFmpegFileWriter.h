@@ -5,6 +5,7 @@
 #include <string>
 #include <memory>
 #include <tuple>
+#include <chrono>
 #include <audioapi/utils/ReturnStatus.hpp>
 
 struct AVCodecContext;
@@ -42,7 +43,10 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   av_unique_ptr<AVFrame> frame_{nullptr};
   AVStream* stream_{nullptr};
   av_unique_ptr<AVAudioFifo> audioFifo_{nullptr};
-  int64_t nextPts_;
+  unsigned int nextPts_;
+
+  std::chrono::steady_clock::time_point lastFlushTime_ = std::chrono::steady_clock::now();
+  uint32_t flushIntervalMs_ = 500;
 
   bool isFileOpen();
   bool isConverterRequired();
