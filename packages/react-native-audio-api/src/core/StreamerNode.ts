@@ -1,8 +1,33 @@
 import { IStreamerNode } from '../interfaces';
 import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import { TStreamerOptions } from '../types';
+import { InvalidStateError } from '../errors';
+import BaseAudioContext from './BaseAudioContext';
 
 export default class StreamerNode extends AudioScheduledSourceNode {
+  private hasBeenSetup: boolean = false;
+  constructor(context: BaseAudioContext, options?: TStreamerOptions) {
+    const node = context.context.createStreamer(options);
+    super(context, node);
+    if (options?.streamPath) {
+      if (this.initialize(options.streamPath)) {
+        this.hasBeenSetup = true;
+      }
+    }
+  }
+
   public initialize(streamPath: string): boolean {
-    return (this.node as IStreamerNode).initialize(streamPath);
+    if (this.hasBeenSetup) {
+      throw new InvalidStateError('Node is already setup');
+    }
+    const res = (this.node as IStreamerNode).initialize(streamPath);
+    if (res) {
+      this.hasBeenSetup = true;
+    }
+    return res;
+  }
+
+  public get streamPath(): string {
+    return (this.node as IStreamerNode).streamPath;
   }
 }

@@ -44,6 +44,7 @@ class BiquadFilterOptions;
 class OscillatorOptions;
 class BaseAudioBufferSourceOptions;
 class AudioBufferSourceOptions;
+class StreamerOptions;
 
 class BaseAudioContext {
  public:
@@ -76,7 +77,7 @@ class BaseAudioContext {
   std::shared_ptr<OscillatorNode> createOscillator(std::shared_ptr<OscillatorOptions> options);
   std::shared_ptr<ConstantSourceNode> createConstantSource(
       std::shared_ptr<ConstantSourceOptions> options);
-  std::shared_ptr<StreamerNode> createStreamer();
+  std::shared_ptr<StreamerNode> createStreamer(std::shared_ptr<StreamerOptions> options);
   std::shared_ptr<GainNode> createGain(std::shared_ptr<GainOptions> options);
   std::shared_ptr<StereoPannerNode> createStereoPanner(
       std::shared_ptr<StereoPannerOptions> options);

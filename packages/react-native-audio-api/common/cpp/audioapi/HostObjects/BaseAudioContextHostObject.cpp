@@ -163,7 +163,12 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
-  auto streamer = context_->createStreamer();
+  std::shared_ptr<StreamerOptions> streamerOptions = std::make_shared<StreamerOptions>();
+  if (!args[0].isUndefined()) {
+    auto options = args[0].asObject(runtime);
+    streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
+  }
+  auto streamer = context_->createStreamer(streamerOptions);
   auto streamerHostObject = std::make_shared<StreamerNodeHostObject>(streamer);
   auto object = jsi::Object::createFromHostObject(runtime, streamerHostObject);
   object.setExternalMemoryPressure(runtime, StreamerNodeHostObject::getSizeInBytes());

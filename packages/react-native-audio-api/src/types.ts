@@ -109,6 +109,10 @@ export interface TConstantSourceOptions {
   offset?: number;
 }
 
+export interface TStreamerOptions {
+  streamPath?: string;
+}
+
 export interface TPeriodicWaveConstraints {
   disableNormalization?: boolean;
 }

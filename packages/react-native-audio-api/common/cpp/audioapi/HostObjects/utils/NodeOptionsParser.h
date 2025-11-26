@@ -7,7 +7,7 @@
 #include <utility>
 #include <vector>
 
-#include <audioapi/HostObjects/PeriodicWaveHostObject.h>
+#include <audioapi/HostObjects/effects/PeriodicWaveHostObject.h>
 #include <audioapi/HostObjects/sources/AudioBufferHostObject.h>
 #include <audioapi/HostObjects/utils/NodeOptions.h>
 
@@ -198,5 +198,16 @@ std::shared_ptr<AudioBufferSourceOptions> parseAudioBufferSourceOptions(
       static_cast<float>(optionsObject.getProperty(runtime, "loopStart").getNumber());
   options.loopEnd = static_cast<float>(optionsObject.getProperty(runtime, "loopEnd").getNumber());
   return std::make_shared<AudioBufferSourceOptions>(options);
+}
+
+std::shared_ptr<StreamerOptions> parseStreamerOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  auto options = StreamerOptions();
+  if (optionsObject.hasProperty(runtime, "streamPath")) {
+    options.streamPath =
+        optionsObject.getProperty(runtime, "streamPath").asString(runtime).utf8(runtime);
+  }
+  return std::make_shared<StreamerOptions>(options);
 }
 } // namespace audioapi::option_parser

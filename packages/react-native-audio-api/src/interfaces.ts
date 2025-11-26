@@ -14,6 +14,7 @@ import {
   TOscillatorOptions,
   TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
+  TStreamerOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -94,7 +95,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
-  createStreamer: () => IStreamerNode;
+  createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -175,6 +176,7 @@ export interface IOscillatorNode extends IAudioScheduledSourceNode {
 }
 
 export interface IStreamerNode extends IAudioNode {
+  readonly streamPath: string;
   initialize(streamPath: string): boolean;
 }
 

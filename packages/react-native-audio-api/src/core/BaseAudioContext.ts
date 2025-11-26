@@ -179,7 +179,7 @@ export default class BaseAudioContext {
   }
 
   createStreamer(): StreamerNode {
-    return new StreamerNode(this, this.context.createStreamer());
+    return new StreamerNode(this);
   }
 
   createConstantSource(): ConstantSourceNode {

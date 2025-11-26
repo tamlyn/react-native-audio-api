@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <string>
 
 #include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -67,4 +68,9 @@ struct AudioBufferSourceOptions : BaseAudioBufferSourceOptions {
   float loopStart = 0.0f;
   float loopEnd = 0.0f;
 };
+
+struct StreamerOptions {
+  std::string streamPath = "";
+};
+
 } // namespace audioapi

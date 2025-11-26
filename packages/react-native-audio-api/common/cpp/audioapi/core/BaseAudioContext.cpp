@@ -125,8 +125,9 @@ std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
 }
 
 #ifndef AUDIO_API_TEST_SUITE
-std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
-  auto streamer = std::make_shared<StreamerNode>(this);
+std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(
+    std::shared_ptr<StreamerOptions> options) {
+  auto streamer = std::make_shared<StreamerNode>(this, options);
   nodeManager_->addSourceNode(streamer);
   return streamer;
 }
