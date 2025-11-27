@@ -53,6 +53,11 @@ std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
 
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   std::lock_guard<std::mutex> lock(curveMutex_);
+  if (!curve) {
+    curve_ = std::shared_ptr<AudioArray>(nullptr);
+    return;
+  }
+
   curve_ = curve;
 }
 

@@ -51,6 +51,11 @@ JSI_PROPERTY_SETTER_IMPL(WaveShaperNodeHostObject, oversample) {
 JSI_HOST_FUNCTION_IMPL(WaveShaperNodeHostObject, setCurve) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
 
+  if (args[0].isNull()) {
+    waveShaperNode->setCurve(std::shared_ptr<AudioArray>(nullptr));
+    return jsi::Value::undefined();
+  }
+
   auto arrayBuffer =
       args[0].getObject(runtime).getPropertyAsObject(runtime, "buffer").getArrayBuffer(runtime);
 

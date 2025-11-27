@@ -46,6 +46,12 @@ TEST_F(WaveShaperNodeTest, WaveShaperNodeCanBeCreated) {
   ASSERT_NE(waveShaper, nullptr);
 }
 
+TEST_F(WaveShaperNodeTest, NullCanBeAsignedToCurve) {
+  auto waveShaper = context->createWaveShaper();
+  ASSERT_NO_THROW(waveShaper->setCurve(nullptr));
+  ASSERT_EQ(waveShaper->getCurve(), nullptr);
+}
+
 TEST_F(WaveShaperNodeTest, NoneOverSamplingProcessesCorrectly) {
   static constexpr int FRAMES_TO_PROCESS = 5;
   auto waveShaper = std::make_shared<TestableWaveShaperNode>(context.get());
