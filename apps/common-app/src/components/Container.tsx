@@ -1,8 +1,7 @@
 import React, { PropsWithChildren } from 'react';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { StyleProp, StyleSheet, ViewStyle } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
-import BGGradient from './BGGradient';
 import { colors } from '../styles';
 
 type ContainerProps = PropsWithChildren<{
@@ -19,8 +18,13 @@ const Container: React.FC<ContainerProps> = (props) => {
   return (
     <SafeAreaView
       edges={['bottom', 'left', 'right']}
-      style={[styles.basic, centered && styles.centered, !disablePadding && styles.padding, style]}>
-      <BGGradient />
+      style={[
+        styles.basic,
+        centered && styles.centered,
+        !disablePadding && styles.padding,
+        style,
+      ]}
+    >
       {children}
     </SafeAreaView>
   );
