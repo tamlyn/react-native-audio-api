@@ -24,7 +24,7 @@ const Distorted: FC = () => {
     setIsLoading(true);
 
     if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext({ sampleRate: 44100 });
+      aCtxRef.current = new AudioContext();
     }
     const audioContext = aCtxRef.current;
 
