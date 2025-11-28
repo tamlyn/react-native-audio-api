@@ -26,7 +26,7 @@ JSI_PROPERTY_GETTER_IMPL(WaveShaperNodeHostObject, curve) {
   auto waveShaperNode = std::static_pointer_cast<WaveShaperNode>(node_);
   auto curve = waveShaperNode->getCurve();
 
-  if (!curve) {
+  if (curve == nullptr) {
     return jsi::Value::null();
   }
 
