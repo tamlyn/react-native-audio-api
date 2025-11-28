@@ -44,12 +44,12 @@ namespace audioapi {
 static constexpr float PI = std::numbers::pi_v<float>;
 
 // https://en.wikipedia.org/wiki/Window_function
-static float blackmanWindow(int index) {
+static float blackmanWindow(double x) {
   double alpha = 0.16;
   double a0 = 0.5 * (1.0 - alpha);
   double a1 = 0.5;
   double a2 = 0.5 * alpha;
-  double n = static_cast<double>(index) / KERNEL_SIZE;
+  double n = x / KERNEL_SIZE;
   return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
 }
 
@@ -101,17 +101,18 @@ UpSampler::UpSampler() : Resampler() {
 void UpSampler::initializeKernel() {
   auto kData = kernel_->getData();
   int halfSize = KERNEL_SIZE / 2;
+  double subSampleOffset = -0.5;
 
   for (int i = 0; i < KERNEL_SIZE; ++i) {
     // we want to sample the sinc function halfway between integer points
-    auto x = static_cast<double>(i - halfSize) - 0.5;
+    auto x = static_cast<double>(i - halfSize) - subSampleOffset;
 
     // https://en.wikipedia.org/wiki/Sinc_filter
     // sets cutoff frequency to nyquist
     double sinc = (std::abs(x) < 1e-9) ? 1.0 : std::sin(x * PI) / (x * PI);
 
     // apply window in order smooth out the edges, because sinc extends to infinity in both directions
-    kData[i] = static_cast<float>(sinc * blackmanWindow(i));
+    kData[i] = static_cast<float>(sinc * blackmanWindow(i - subSampleOffset));
   }
 
   // reverse kernel to match convolution implementation
@@ -205,5 +206,4 @@ void DownSampler::process(
     outputData[i] = computeConvolution(&state[centerIdx - halfKernel], kernel);
   }
 }
-
 } // namespace audioapi

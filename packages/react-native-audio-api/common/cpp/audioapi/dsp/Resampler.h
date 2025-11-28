@@ -5,7 +5,7 @@
 #include <vector>
 
 namespace audioapi {
-constexpr int KERNEL_SIZE = 64;
+constexpr int KERNEL_SIZE = 128;
 constexpr int MAX_BLOCK_SIZE = 1024;
 
 class Resampler {
