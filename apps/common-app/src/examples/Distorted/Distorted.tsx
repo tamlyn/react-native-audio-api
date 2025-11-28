@@ -9,11 +9,7 @@ import {
 import { Container, Button } from '../../components';
 import { presetEffects } from '../../utils/effects';
 
-// const URL =
-//   'http://localhost:3000/react-native-audio-api/audio/music/guitar-sample.flac';
-
-const URL =
-  'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
+const URL = 'https://files.catbox.moe/s2i1wn.flac';
 
 const Distorted: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -28,7 +24,7 @@ const Distorted: FC = () => {
     setIsLoading(true);
 
     if (!aCtxRef.current) {
-      aCtxRef.current = new AudioContext();
+      aCtxRef.current = new AudioContext({ sampleRate: 44100 });
     }
     const audioContext = aCtxRef.current;
 

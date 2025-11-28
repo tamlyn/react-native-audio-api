@@ -8,36 +8,46 @@ namespace audioapi {
 constexpr int KERNEL_SIZE = 64;
 constexpr int MAX_BLOCK_SIZE = 1024;
 
-class UpSampler {
+class Resampler {
  public:
-  UpSampler();
+  Resampler();
+  virtual ~Resampler() = default;
 
-  // N -> 2N
-  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output);
-
+  virtual void process(
+      const std::shared_ptr<AudioArray> &input,
+      const std::shared_ptr<AudioArray> &output) = 0;
   void reset();
 
- private:
-  void initializeKernel();
+ protected:
+  static float computeConvolution(const float *stateStart, const float *kernelStart);
+  virtual void initializeKernel() = 0;
 
   std::shared_ptr<AudioArray> kernel_;
   std::shared_ptr<AudioArray> stateBuffer_;
 };
 
-class DownSampler {
+class UpSampler : public Resampler {
+ public:
+  UpSampler();
+
+  // N -> 2N
+  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output)
+      override;
+
+ protected:
+  void initializeKernel() final;
+};
+
+class DownSampler : public Resampler {
  public:
   DownSampler();
 
   // N -> N / 2
-  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output);
+  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output)
+      override;
 
-  void reset();
-
- private:
-  void initializeKernel();
-
-  std::shared_ptr<AudioArray> kernel_;
-  std::shared_ptr<AudioArray> stateBuffer_;
+ protected:
+  void initializeKernel() final;
 };
 
 } // namespace audioapi

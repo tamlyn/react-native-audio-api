@@ -1,3 +1,31 @@
+/*
+ * Copyright (C) 2010 Google Inc. All rights reserved.
+ *
+ * Redistribution and use in source and binary forms, with or without
+ * modification, are permitted provided that the following conditions
+ * are met:
+ *
+ * 1.  Redistributions of source code must retain the above copyright
+ *     notice, this list of conditions and the following disclaimer.
+ * 2.  Redistributions in binary form must reproduce the above copyright
+ *     notice, this list of conditions and the following disclaimer in the
+ *     documentation and/or other materials provided with the distribution.
+ * 3.  Neither the name of Apple Computer, Inc. ("Apple") nor the names of
+ *     its contributors may be used to endorse or promote products derived
+ *     from this software without specific prior written permission.
+ *
+ * THIS SOFTWARE IS PROVIDED BY APPLE AND ITS CONTRIBUTORS "AS IS" AND ANY
+ * EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+ * WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+ * DISCLAIMED. IN NO EVENT SHALL APPLE OR ITS CONTRIBUTORS BE LIABLE FOR ANY
+ * DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+ * (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+ * LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ * ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+ * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+ * THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ */
+
 #include <audioapi/dsp/Resampler.h>
 #include <algorithm>
 #include <cmath>
@@ -9,10 +37,13 @@
 #include <arm_neon.h>
 #endif
 
+// based on WebKit UpSampler and DownSampler implementation
+
 namespace audioapi {
 
 static constexpr float PI = std::numbers::pi_v<float>;
 
+// https://en.wikipedia.org/wiki/Window_function
 static float blackmanWindow(int index) {
   double alpha = 0.16;
   double a0 = 0.5 * (1.0 - alpha);
@@ -22,10 +53,48 @@ static float blackmanWindow(int index) {
   return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
 }
 
-UpSampler::UpSampler() {
+Resampler::Resampler() {
   kernel_ = std::make_shared<AudioArray>(KERNEL_SIZE);
   stateBuffer_ = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
   stateBuffer_->zero();
+}
+
+float Resampler::computeConvolution(const float *stateStart, const float *kernelStart) {
+  float sum = 0.0f;
+  int k = 0;
+
+#ifdef __ARM_NEON
+  float32x4_t vSum = vdupq_n_f32(0.0f);
+
+  // process 4 samples at a time
+  for (; k <= KERNEL_SIZE - 4; k += 4) {
+    float32x4_t vState = vld1q_f32(stateStart + k);
+    float32x4_t vKernel = vld1q_f32(kernelStart + k);
+
+    // fused multiply-add: vSum += vState * vKernel
+    vSum = vmlaq_f32(vSum, vState, vKernel);
+  }
+
+  // horizontal reduction: Sum the 4 lanes of vSum into a single float
+  sum += vgetq_lane_f32(vSum, 0);
+  sum += vgetq_lane_f32(vSum, 1);
+  sum += vgetq_lane_f32(vSum, 2);
+  sum += vgetq_lane_f32(vSum, 3);
+#endif
+  for (; k < KERNEL_SIZE; ++k) {
+    sum += stateStart[k] * kernelStart[k];
+  }
+
+  return sum;
+}
+
+void Resampler::reset() {
+  if (stateBuffer_) {
+    stateBuffer_->zero();
+  }
+}
+
+UpSampler::UpSampler() : Resampler() {
   initializeKernel();
 }
 
@@ -34,15 +103,19 @@ void UpSampler::initializeKernel() {
   int halfSize = KERNEL_SIZE / 2;
 
   for (int i = 0; i < KERNEL_SIZE; ++i) {
-    auto x = static_cast<double>(i - halfSize);
-    double sinc = (std::abs(x) < 1e-9) ? 1.0 : std::sin(x * PI * 0.5) / (x * PI * 0.5);
+    // we want to sample the sinc function halfway between integer points
+    auto x = static_cast<double>(i - halfSize) - 0.5;
+
+    // https://en.wikipedia.org/wiki/Sinc_filter
+    // sets cutoff frequency to nyquist
+    double sinc = (std::abs(x) < 1e-9) ? 1.0 : std::sin(x * PI) / (x * PI);
+
+    // apply window in order smooth out the edges, because sinc extends to infinity in both directions
     kData[i] = static_cast<float>(sinc * blackmanWindow(i));
   }
-}
 
-void UpSampler::reset() {
-  if (stateBuffer_)
-    stateBuffer_->zero();
+  // reverse kernel to match convolution implementation
+  std::reverse(kData, kData + KERNEL_SIZE);
 }
 
 void UpSampler::process(
@@ -71,43 +144,14 @@ void UpSampler::process(
     int centerIdx = KERNEL_SIZE + i;
 
     // direct copy for even samples
-    outputData[2 * i] = state[centerIdx];
-
-    float sum = 0.0f;
-    int k = 0;
+    outputData[2 * i] = state[centerIdx - halfKernel];
 
     // convolution for odd samples
-#ifdef __ARM_NEON
-    float32x4_t vSum = vdupq_n_f32(0.0f);
-
-    // process 4 samples at a time
-    // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
-    for (; k <= KERNEL_SIZE - 4; k += 4) {
-      float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
-      float32x4_t vKernel = vld1q_f32(&kernel[k]);
-
-      // fused multiply-add: vSum += vState * vKernel
-      vSum = vmlaq_f32(vSum, vState, vKernel);
-    }
-
-    // horizontal reduction: Sum the 4 lanes of vSum into a single float
-    sum += vgetq_lane_f32(vSum, 0);
-    sum += vgetq_lane_f32(vSum, 1);
-    sum += vgetq_lane_f32(vSum, 2);
-    sum += vgetq_lane_f32(vSum, 3);
-#endif
-
-    for (; k < KERNEL_SIZE; ++k) {
-      sum += state[centerIdx - halfKernel + k] * kernel[KERNEL_SIZE - 1 - k];
-    }
-    outputData[2 * i + 1] = sum;
+    outputData[2 * i + 1] = computeConvolution(&state[centerIdx - halfKernel], kernel);
   }
 }
 
-DownSampler::DownSampler() {
-  kernel_ = std::make_shared<AudioArray>(KERNEL_SIZE);
-  stateBuffer_ = std::make_shared<AudioArray>(KERNEL_SIZE + (MAX_BLOCK_SIZE * 2));
-  stateBuffer_->zero();
+DownSampler::DownSampler() : Resampler() {
   initializeKernel();
 }
 
@@ -116,15 +160,20 @@ void DownSampler::initializeKernel() {
   int halfSize = KERNEL_SIZE / 2;
 
   for (int i = 0; i < KERNEL_SIZE; ++i) {
+    // we want to sample the sinc function halfway between integer points
     auto x = static_cast<double>(i - halfSize);
+
+    // https://en.wikipedia.org/wiki/Sinc_filter
+    // sets cutoff frequency to nyquist / 2
     double sinc = (std::abs(x) < 1e-9) ? 1.0 : std::sin(x * PI * 0.5) / (x * PI * 0.5);
+    sinc *= 0.5;
+
+    // apply window in order smooth out the edges, because sinc extends to infinity in both directions
     kData[i] = static_cast<float>(sinc * blackmanWindow(i));
   }
-}
 
-void DownSampler::reset() {
-  if (stateBuffer_)
-    stateBuffer_->zero();
+  // reverse kernel to match convolution implementation
+  std::reverse(kData, kData + KERNEL_SIZE);
 }
 
 void DownSampler::process(
@@ -152,32 +201,8 @@ void DownSampler::process(
   for (int i = 0; i < outputCount; ++i) {
     int centerIdx = KERNEL_SIZE + (2 * i);
 
-    float sum = 0.0f;
-    int k = 0;
-
     // convolution for downsampled samples
-#ifdef __ARM_NEON
-    float32x4_t vSum = vdupq_n_f32(0.0f);
-
-    // process 4 samples at a time
-    // relies on: kernel[KERNEL_SIZE - 1 - k] == kernel[k]
-    for (; k <= KERNEL_SIZE - 4; k += 4) {
-      float32x4_t vState = vld1q_f32(&state[centerIdx - halfKernel + k]);
-      float32x4_t vKernel = vld1q_f32(&kernel[k]);
-      // fused multiply-add: vSum += vState * vKernel
-      vSum = vmlaq_f32(vSum, vState, vKernel);
-    }
-
-    sum += vgetq_lane_f32(vSum, 0);
-    sum += vgetq_lane_f32(vSum, 1);
-    sum += vgetq_lane_f32(vSum, 2);
-    sum += vgetq_lane_f32(vSum, 3);
-#endif
-
-    for (; k < KERNEL_SIZE; ++k) {
-      sum += state[centerIdx - halfKernel + k] * kernel[KERNEL_SIZE - 1 - k];
-    }
-    outputData[i] = sum;
+    outputData[i] = computeConvolution(&state[centerIdx - halfKernel], kernel);
   }
 }
 

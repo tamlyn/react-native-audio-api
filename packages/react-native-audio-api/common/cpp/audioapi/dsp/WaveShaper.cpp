@@ -1,0 +1,105 @@
+#include <audioapi/core/utils/Constants.h>
+#include <audioapi/dsp/VectorMath.h>
+#include <audioapi/dsp/WaveShaper.h>
+#include <audioapi/utils/AudioArray.h>
+#include <audioapi/utils/AudioBus.h>
+
+#include <algorithm>
+#include <memory>
+#include <string>
+
+namespace audioapi {
+
+WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve) : curve_(curve) {
+  tempBuffer2x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 2);
+  tempBuffer2x_->zero();
+  tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
+  tempBuffer4x_->zero();
+
+  upSampler_ = std::make_unique<UpSampler>();
+  downSampler_ = std::make_unique<DownSampler>();
+  upSampler2_ = std::make_unique<UpSampler>();
+  downSampler2_ = std::make_unique<DownSampler>();
+}
+
+void WaveShaper::setCurve(const std::shared_ptr<AudioArray> &curve) {
+  curve_ = curve;
+}
+
+void WaveShaper::setOversample(OverSampleType type) {
+  oversample_ = type;
+
+  if (upSampler_) {
+    upSampler_->reset();
+  }
+
+  if (downSampler_) {
+    downSampler_->reset();
+  }
+
+  if (upSampler2_) {
+    upSampler2_->reset();
+  }
+
+  if (downSampler2_) {
+    downSampler2_->reset();
+  }
+}
+
+void WaveShaper::process(const std::shared_ptr<AudioArray> &channelData) {
+  if (curve_ == nullptr) {
+    return;
+  }
+
+  switch (oversample_) {
+    case OverSampleType::OVERSAMPLE_2X:
+      process2x(channelData);
+      break;
+    case OverSampleType::OVERSAMPLE_4X:
+      process4x(channelData);
+      break;
+    case OverSampleType::OVERSAMPLE_NONE:
+    default:
+      processNone(channelData);
+      break;
+  }
+}
+
+// based on https://webaudio.github.io/web-audio-api/#WaveShaperNode
+void WaveShaper::processNone(const std::shared_ptr<AudioArray> &channelData) {
+  auto curveArray = curve_->getData();
+  auto curveSize = curve_->getSize();
+
+  auto data = channelData->getData();
+
+  for (int i = 0; i < channelData->getSize(); i += 1) {
+    float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
+
+    if (v <= 0) {
+      data[i] = curveArray[0];
+    } else if (v >= static_cast<float>(curveSize) - 1) {
+      data[i] = curveArray[curveSize - 1];
+    } else {
+      auto k = std::floor(v);
+      auto f = v - k;
+      auto kIndex = static_cast<size_t>(k);
+      data[i] = (1 - f) * curveArray[kIndex] + f * curveArray[kIndex + 1];
+    }
+  }
+}
+
+void WaveShaper::process2x(const std::shared_ptr<AudioArray> &channelData) {
+  upSampler_->process(channelData, tempBuffer2x_);
+  processNone(tempBuffer2x_);
+  downSampler_->process(tempBuffer2x_, channelData);
+}
+
+void WaveShaper::process4x(const std::shared_ptr<AudioArray> &channelData) {
+  upSampler_->process(channelData, tempBuffer2x_);
+  upSampler2_->process(tempBuffer2x_, tempBuffer4x_);
+  processNone(tempBuffer4x_);
+  downSampler2_->process(tempBuffer4x_, tempBuffer2x_);
+  downSampler_->process(tempBuffer2x_, channelData);
+}
+
+} // namespace audioapi
