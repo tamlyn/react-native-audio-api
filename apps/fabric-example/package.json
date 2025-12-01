@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "common-app": "workspace:*",
+    "lucide-react-native": "^0.555.0",
     "react": "19.1.1",
     "react-native": "0.82.0"
   },

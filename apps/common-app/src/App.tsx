@@ -1,43 +1,51 @@
-import React from 'react';
-import type { FC } from 'react';
-import Animated from 'react-native-reanimated';
+import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
+import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import type { FC } from 'react';
+import React from 'react';
 import {
   FlatList,
+  ListRenderItem,
+  Pressable,
   StyleSheet,
   Text,
-  Pressable,
-  ListRenderItem,
+  View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { NavigationContainer, useNavigation } from '@react-navigation/native';
+import { runOnUISync } from 'react-native-worklets';
 
-import Container from './components/Container';
-import { Example, Examples, MainStackProps } from './examples';
-import { layout, colors } from './styles';
 import { Spacer } from './components';
+import Container from './components/Container';
+import { demos, DemoScreen } from './demos';
+import { Example, Examples, MainStackProps } from './examples';
+import { colors, layout } from './styles';
 
 const Stack = createStackNavigator();
 
-// Our slider component uses the text prop to display shared value
-// We need it whitelisted in order to have it "animated".
-Animated.addWhitelistedNativeProps({ text: true });
-
 const ItemSeparatorComponent = () => <Spacer.Vertical size={16} />;
 
-const HomeScreen: FC = () => {
+const ItemSeparatorComponent2 = () => (
+  <View>
+    <Spacer.Vertical size={12} />
+    <View style={styles.hr} />
+    <Spacer.Vertical size={12} />
+  </View>
+);
+
+const ExamplesScreen: FC = () => {
   const navigation = useNavigation<MainStackProps>();
 
-  const renderItem: ListRenderItem<Example> = ({ item }) => (
+  const renderItem: ListRenderItem<Example> = ({
+    item: { Icon, key, subtitle, title },
+  }) => (
     <Pressable
-      onPress={() => navigation.navigate(item.key)}
-      key={item.key}
-      style={({ pressed }) => [
-        styles.button,
-        { borderStyle: pressed ? 'solid' : 'dashed' },
-      ]}>
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.subtitle}>{item.subtitle}</Text>
+      key={key}
+      style={styles.buttonSmall}
+      onPress={() => navigation.navigate(key)}
+    >
+      {/* <Icon /> */}
+      <Text style={styles.subtitleSmall}>{subtitle}</Text>
+      <Text style={styles.titleSmall}>{title}</Text>
     </Pressable>
   );
 
@@ -48,9 +56,92 @@ const HomeScreen: FC = () => {
         renderItem={renderItem}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.scrollView}
+        ItemSeparatorComponent={ItemSeparatorComponent2}
+      />
+    </Container>
+  );
+};
+
+const DemoAppsScreen: FC = () => {
+  const navigation = useNavigation<MainStackProps>();
+
+  const renderItem: ListRenderItem<DemoScreen> = ({ item }) => (
+    <Pressable
+      onPress={() => navigation.navigate(item.key)}
+      key={item.key}
+      style={({ pressed }) => [
+        styles.button,
+        { borderStyle: pressed ? 'solid' : 'dashed' },
+      ]}
+    >
+      <Text style={styles.title}>{item.title}</Text>
+      <Text style={styles.subtitle}>{item.subtitle}</Text>
+    </Pressable>
+  );
+
+  return (
+    <Container>
+      <FlatList
+        data={demos}
+        renderItem={renderItem}
+        keyExtractor={(item) => item.key}
+        contentContainerStyle={styles.scrollView}
         ItemSeparatorComponent={ItemSeparatorComponent}
       />
     </Container>
+  );
+};
+
+const BenchmarksScreen: FC = () => {
+  return <Container />;
+};
+
+const MainTabs = createNativeBottomTabNavigator<MainStackProps>({
+  screens: {
+    Examples: ExamplesScreen,
+    DemoApps: DemoAppsScreen,
+    Benchmarks: BenchmarksScreen,
+  },
+});
+
+const MainTabsScreen: FC = () => {
+  return (
+    <MainTabs.Navigator>
+      <MainTabs.Screen
+        name="Examples"
+        component={ExamplesScreen}
+        options={{
+          title: 'Examples',
+          tabBarIcon: {
+            type: 'sfSymbol',
+            name: 'list.number',
+          },
+        }}
+      />
+      <MainTabs.Screen
+        name="DemoApps"
+        component={DemoAppsScreen}
+        options={{
+          title: 'Demo Apps',
+          tabBarIcon: {
+            type: 'sfSymbol',
+            name: 'waveform.path',
+          },
+        }}
+      />
+      <MainTabs.Screen
+        name="Benchmarks"
+        component={BenchmarksScreen}
+        options={{
+          title: 'Benchmarks',
+
+          tabBarIcon: {
+            type: 'sfSymbol',
+            name: 'gauge',
+          },
+        }}
+      />
+    </MainTabs.Navigator>
   );
 };
 
@@ -66,15 +157,24 @@ const App: FC = () => {
               backgroundColor: 'transparent',
             },
             headerTintColor: colors.white,
-            headerBackTitle: ' ',
+            headerBackTitle: 'Back',
             headerBackAccessibilityLabel: 'Go back',
-          }}>
+          }}
+        >
           <Stack.Screen
-            name="Home"
-            component={HomeScreen}
-            options={{ title: 'Audio API examples' }}
+            name="MainTabs"
+            component={MainTabsScreen}
+            options={{ headerShown: false }}
           />
           {Examples.map((item) => (
+            <Stack.Screen
+              key={item.key}
+              name={item.key}
+              component={item.screen}
+              options={{ title: item.title }}
+            />
+          ))}
+          {demos.map((item) => (
             <Stack.Screen
               key={item.key}
               name={item.key}
@@ -87,6 +187,8 @@ const App: FC = () => {
     </GestureHandlerRootView>
   );
 };
+
+export default App;
 
 const styles = StyleSheet.create({
   container: {
@@ -108,9 +210,23 @@ const styles = StyleSheet.create({
     paddingVertical: layout.spacing * 2,
     paddingHorizontal: layout.spacing * 2,
   },
-  scrollView: {
-    padding: layout.spacing * 2,
+  buttonSmall: {
+    paddingVertical: layout.spacing,
+    paddingHorizontal: layout.spacing * 2,
+  },
+  titleSmall: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  subtitleSmall: {
+    opacity: 0.6,
+    color: colors.white,
+  },
+  scrollView: {},
+  hr: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border,
+    marginHorizontal: 64,
   },
 });
-
-export default App;

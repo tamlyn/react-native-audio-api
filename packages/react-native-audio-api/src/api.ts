@@ -1,3 +1,4 @@
+import { TurboModuleRegistry } from 'react-native';
 import type {
   IAudioContext,
   IAudioDecoder,
@@ -42,6 +43,11 @@ if (
   global.createAudioStretcher == null ||
   global.AudioEventEmitter == null
 ) {
+  if (TurboModuleRegistry.get('WorkletsModule')) {
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    require('react-native-worklets');
+  }
+
   if (!NativeAudioAPIModule) {
     throw new Error(
       `Failed to install react-native-audio-api: The native module could not be found.`
