@@ -89,10 +89,101 @@ TEST_F(ResamplerTest, DownSamplerKernelSum) {
 
 TEST_F(ResamplerTest, UpSamplerProcess) {
   auto upSampler = std::make_unique<TestableUpSampler>();
-  //TODO: Implement process test
+  auto kernel = upSampler->getKernel();
+
+  auto stateBuffer = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
+  stateBuffer->zero();
+
+  auto inputArray = std::make_shared<AudioArray>(4);
+  (*inputArray)[0] = 1.0f;
+  (*inputArray)[1] = 0.0f;
+  (*inputArray)[2] = -1.0f;
+  (*inputArray)[3] = 1.0f;
+
+  auto outputArray = std::make_shared<AudioArray>(8);
+
+  // update history buffer
+  memmove(stateBuffer->getData(), stateBuffer->getData() + inputArray->getSize(), KERNEL_SIZE * sizeof(float));
+  memcpy(stateBuffer->getData() + KERNEL_SIZE, inputArray->getData(), inputArray->getSize() * sizeof(float));
+
+  upSampler->process(inputArray, outputArray);
+
+  for (size_t i = 0; i < outputArray->getSize(); ++i) {
+    auto idx = KERNEL_SIZE - KERNEL_SIZE / 2 + i / 2;
+
+    if (i % 2 == 0) {
+      EXPECT_FLOAT_EQ(outputArray->getData()[i], stateBuffer->getData()[idx]);
+    } else {
+      float sum = 0.0f;
+
+      for (size_t k = 0; k < kernel->getSize(); ++k) {
+        sum += stateBuffer->getData()[idx + k] * kernel->getData()[k];
+      }
+
+      EXPECT_FLOAT_EQ(outputArray->getData()[i], sum);
+    }
+  }
 }
 
 TEST_F(ResamplerTest, DownSamplerProcess) {
   auto downSampler = std::make_unique<TestableDownSampler>();
-  //TODO: Implement process test
+  auto kernel = downSampler->getKernel();
+
+  auto stateBuffer = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
+  stateBuffer->zero();
+
+  auto inputArray = std::make_shared<AudioArray>(8);
+  (*inputArray)[0] = 1.0f;
+  (*inputArray)[1] = 0.0f;
+  (*inputArray)[2] = -1.0f;
+  (*inputArray)[3] = 1.0f;
+  (*inputArray)[4] = 0.5f;
+  (*inputArray)[5] = -0.5f;
+  (*inputArray)[6] = 0.25f;
+  (*inputArray)[7] = -0.25f;
+
+  auto outputArray = std::make_shared<AudioArray>(4);
+
+  // update history buffer
+  memmove(
+      stateBuffer->getData(),
+      stateBuffer->getData() + inputArray->getSize(),
+      KERNEL_SIZE * sizeof(float));
+  memcpy(
+      stateBuffer->getData() + KERNEL_SIZE,
+      inputArray->getData(),
+      inputArray->getSize() * sizeof(float));
+
+  downSampler->process(inputArray, outputArray);
+
+  for (size_t i = 0; i < outputArray->getSize() / 8; ++i) {
+    auto idx = KERNEL_SIZE + i * 2;
+    float sum = 0.0f;
+
+    for (size_t k = 0; k < kernel->getSize(); ++k) {
+      sum += stateBuffer->getData()[idx + k] * kernel->getData()[k];
+    }
+
+    EXPECT_FLOAT_EQ(outputArray->getData()[i], sum);
+  }
+}
+
+TEST_F(ResamplerTest, UpDownSamplingProcessThrowsNoErrors) {
+  auto upSampler = std::make_unique<TestableUpSampler>();
+  auto downSampler = std::make_unique<TestableDownSampler>();
+
+  auto inputArray = std::make_shared<AudioArray>(4);
+  (*inputArray)[0] = 1.0f;
+  (*inputArray)[1] = 0.0f;
+  (*inputArray)[2] = -1.0f;
+  (*inputArray)[3] = 1.0f;
+
+  auto outputArray = std::make_shared<AudioArray>(8);
+
+  EXPECT_NO_THROW(upSampler->process(inputArray, outputArray));
+  EXPECT_NO_THROW(downSampler->process(outputArray, inputArray));
+
+  for (size_t i = 0; i < inputArray->getSize(); ++i) {
+    ASSERT_NE(inputArray->getData()[i], 0.0f);
+  }
 }
