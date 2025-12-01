@@ -9,8 +9,12 @@
   "types": "lib/typescript/src/index.d.ts",
   "exports": {
     ".": {
-      "source": "./src/index.tsx",
+      "react-native": "./src/index.ts",
+      "web": "./src/index.web.ts",
+      "source": "./src/index.ts",
       "types": "./lib/typescript/src/index.d.ts",
+      "import": "./lib/module/index.js",
+      "require": "./lib/commonjs/index.js",
       "default": "./lib/module/index.js"
     },
     "./package.json": "./package.json"
