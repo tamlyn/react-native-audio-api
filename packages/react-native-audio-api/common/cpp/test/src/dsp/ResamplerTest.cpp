@@ -103,8 +103,14 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
   auto outputArray = std::make_shared<AudioArray>(8);
 
   // update history buffer
-  memmove(stateBuffer->getData(), stateBuffer->getData() + inputArray->getSize(), KERNEL_SIZE * sizeof(float));
-  memcpy(stateBuffer->getData() + KERNEL_SIZE, inputArray->getData(), inputArray->getSize() * sizeof(float));
+  memmove(
+      stateBuffer->getData(),
+      stateBuffer->getData() + inputArray->getSize(),
+      KERNEL_SIZE * sizeof(float));
+  memcpy(
+      stateBuffer->getData() + KERNEL_SIZE,
+      inputArray->getData(),
+      inputArray->getSize() * sizeof(float));
 
   upSampler->process(inputArray, outputArray);
 
