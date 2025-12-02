@@ -53,8 +53,8 @@ export default class PeriodicWave {
       options
     );
     this.periodicWave = context.context.createPeriodicWave(
-      finalOptions.real,
-      finalOptions.imag,
+      finalOptions.real!,
+      finalOptions.imag!,
       finalOptions.disableNormalization!
     );
   }

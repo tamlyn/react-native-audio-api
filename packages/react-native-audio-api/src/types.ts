@@ -118,8 +118,8 @@ export interface TPeriodicWaveConstraints {
 }
 
 export interface TPeriodicWaveOptions extends TPeriodicWaveConstraints {
-  real: Float32Array;
-  imag: Float32Array;
+  real?: Float32Array;
+  imag?: Float32Array;
 }
 
 export interface TAudioBufferOptions {
