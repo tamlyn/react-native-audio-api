@@ -2853,12 +2853,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-navigation/core@npm:^7.12.4":
-  version: 7.12.4
-  resolution: "@react-navigation/core@npm:7.12.4"
+"@react-navigation/core@npm:^7.13.3":
+  version: 7.13.3
+  resolution: "@react-navigation/core@npm:7.13.3"
   dependencies:
-    "@react-navigation/routers": "npm:^7.5.1"
+    "@react-navigation/routers": "npm:^7.5.2"
     escape-string-regexp: "npm:^4.0.0"
+    fast-deep-equal: "npm:^3.1.3"
     nanoid: "npm:^3.3.11"
     query-string: "npm:^7.1.3"
     react-is: "npm:^19.1.0"
@@ -2866,7 +2867,7 @@ __metadata:
     use-sync-external-store: "npm:^1.5.0"
   peerDependencies:
     react: ">= 18.2.0"
-  checksum: 10/6258d645be5d3b29293a7f82a7fbcfbefec93f974b332e7b1c510b4557f772955f227be50d020679d5ea3ba764a34ad3ff3ada531a4b85d9b4395ee02cdc3777
+  checksum: 10/5d45d209d63602a7b74e56e783a5b318408183cf8eb71f62d3304e9210ffc6e578c85694ecf5dea9d0b1dd156bf11aa0ec44fc9192b633483bf5089be0ebce6f
   languageName: node
   linkType: hard
 
@@ -2926,11 +2927,11 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@react-navigation/native@npm:7.1.18":
-  version: 7.1.18
-  resolution: "@react-navigation/native@npm:7.1.18"
+"@react-navigation/native@npm:7.1.22":
+  version: 7.1.22
+  resolution: "@react-navigation/native@npm:7.1.22"
   dependencies:
-    "@react-navigation/core": "npm:^7.12.4"
+    "@react-navigation/core": "npm:^7.13.3"
     escape-string-regexp: "npm:^4.0.0"
     fast-deep-equal: "npm:^3.1.3"
     nanoid: "npm:^3.3.11"
@@ -2938,16 +2939,16 @@ __metadata:
   peerDependencies:
     react: ">= 18.2.0"
     react-native: "*"
-  checksum: 10/b867e9c5164943cd22a3d39d563dd8986b7f012ea9dac6b2df0b0321c42b2c00a1ab3692a372fa31c77a5335f3a78cf6967ee7186fe5322237f8f95035f1f0c5
+  checksum: 10/28347cff9eb04338dc03b7cafb6f0e80e2c45c21c834831937ebfff1efb6b936f7b0742cab00f1f32b1f75302ab76b80083fead262a742550bd9329109b1efc2
   languageName: node
   linkType: hard
 
-"@react-navigation/routers@npm:^7.5.1":
-  version: 7.5.1
-  resolution: "@react-navigation/routers@npm:7.5.1"
+"@react-navigation/routers@npm:^7.5.2":
+  version: 7.5.2
+  resolution: "@react-navigation/routers@npm:7.5.2"
   dependencies:
     nanoid: "npm:^3.3.11"
-  checksum: 10/b2f41b084d9ff69ac934e798fabca149a7d2cfc6ca1899d9ffbb68f8378c02277752e68783c264ea5068be9c8738d0d5112abb177c00c0365cfd2a133d560a8c
+  checksum: 10/b490b9bf9865cc419dfe9a7c3aa99041e7495b4b48e385716c1f9ce815fb59677c9c667de7e3b17d7e1fad6f9a7da5e26ace6f2ca8cb0be5e65178e9b9cc31a9
   languageName: node
   linkType: hard
 
@@ -4911,7 +4912,7 @@ __metadata:
     "@react-native/metro-config": "npm:0.82.0"
     "@react-native/typescript-config": "npm:0.82.0"
     "@react-navigation/bottom-tabs": "npm:^7.8.7"
-    "@react-navigation/native": "npm:7.1.18"
+    "@react-navigation/native": "npm:7.1.22"
     "@react-navigation/native-stack": "npm:7.3.28"
     "@react-navigation/stack": "npm:7.4.10"
     "@shopify/react-native-skia": "npm:2.3.0"
@@ -6462,6 +6463,7 @@ __metadata:
     prettier: "npm:^3.3.3"
     react: "npm:19.1.1"
     react-native: "npm:0.82.0"
+    react-native-svg: "npm:15.14.0"
   languageName: unknown
   linkType: soft
 
