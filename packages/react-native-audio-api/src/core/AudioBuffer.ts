@@ -19,25 +19,22 @@ export default class AudioBuffer {
     contextOrBuffer: BaseAudioContext | IAudioBuffer,
     options?: TAudioBufferOptions
   ) {
+    let buf: IAudioBuffer;
     if (contextOrBuffer instanceof BaseAudioContext) {
       const finalOptions = {
         ...AudioBufferOptions,
         ...options,
       };
-      const buffer = contextOrBuffer.context.createBuffer(finalOptions);
-      this.buffer = buffer;
-      this.length = buffer.length;
-      this.duration = buffer.duration;
-      this.sampleRate = buffer.sampleRate;
-      this.numberOfChannels = buffer.numberOfChannels;
+      const context = contextOrBuffer;
+      buf = context.context.createBuffer(finalOptions);
     } else {
-      const buffer = contextOrBuffer;
-      this.buffer = buffer;
-      this.length = buffer.length;
-      this.duration = buffer.duration;
-      this.sampleRate = buffer.sampleRate;
-      this.numberOfChannels = buffer.numberOfChannels;
+      buf = contextOrBuffer;
     }
+    this.buffer = buf;
+    this.length = buf.length;
+    this.duration = buf.duration;
+    this.sampleRate = buf.sampleRate;
+    this.numberOfChannels = buf.numberOfChannels;
   }
 
   public getChannelData(channel: number): Float32Array {

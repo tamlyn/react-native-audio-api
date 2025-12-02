@@ -100,13 +100,13 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createBuffer(
-    numOfChannels: number,
+    numberOfChannels: number,
     length: number,
     sampleRate: number
   ): AudioBuffer {
-    if (numOfChannels < 1 || numOfChannels >= 32) {
+    if (numberOfChannels < 1 || numberOfChannels >= 32) {
       throw new NotSupportedError(
-        `The number of channels provided (${numOfChannels}) is outside the range [1, 32]`
+        `The number of channels provided (${numberOfChannels}) is outside the range [1, 32]`
       );
     }
 
@@ -122,9 +122,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
       );
     }
 
-    return new AudioBuffer(
-      this.context.createBuffer(numOfChannels, length, sampleRate)
-    );
+    return new AudioBuffer(this, { numberOfChannels, length, sampleRate });
   }
 
   createPeriodicWave(
