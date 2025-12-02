@@ -1,7 +1,7 @@
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
 import { ContextState, AudioWorkletRuntime } from '../types';
-import { assertWorkletsEnabled, workletsModule } from '../utils';
+import { assertWorkletsEnabled } from '../utils';
 import WorkletSourceNode from './WorkletSourceNode';
 import WorkletProcessingNode from './WorkletProcessingNode';
 import AnalyserNode from './AnalyserNode';
@@ -81,23 +81,12 @@ export default class BaseAudioContext {
       );
     }
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (audioBuffers: Array<ArrayBuffer>, channelCount: number) => {
-        'worklet';
-        const floatAudioData: Array<Float32Array> = audioBuffers.map(
-          (buffer) => new Float32Array(buffer)
-        );
-        callback(floatAudioData, channelCount);
-      }
-    );
     return new WorkletNode(
       this,
-      this.context.createWorkletNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime',
-        bufferLength,
-        inputChannelCount
-      )
+      workletRuntime,
+      callback,
+      bufferLength,
+      inputChannelCount
     );
   }
 
@@ -111,30 +100,7 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletProcessingNode {
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (
-        inputBuffers: Array<ArrayBuffer>,
-        outputBuffers: Array<ArrayBuffer>,
-        framesToProcess: number,
-        currentTime: number
-      ) => {
-        'worklet';
-        const inputData: Array<Float32Array> = inputBuffers.map(
-          (buffer) => new Float32Array(buffer, 0, framesToProcess)
-        );
-        const outputData: Array<Float32Array> = outputBuffers.map(
-          (buffer) => new Float32Array(buffer, 0, framesToProcess)
-        );
-        callback(inputData, outputData, framesToProcess, currentTime);
-      }
-    );
-    return new WorkletProcessingNode(
-      this,
-      this.context.createWorkletProcessingNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime'
-      )
-    );
+    return new WorkletProcessingNode(this, workletRuntime, callback);
   }
 
   createWorkletSourceNode(
@@ -147,27 +113,7 @@ export default class BaseAudioContext {
     workletRuntime: AudioWorkletRuntime = 'AudioRuntime'
   ): WorkletSourceNode {
     assertWorkletsEnabled();
-    const shareableWorklet = workletsModule.makeShareableCloneRecursive(
-      (
-        audioBuffers: Array<ArrayBuffer>,
-        framesToProcess: number,
-        currentTime: number,
-        startOffset: number
-      ) => {
-        'worklet';
-        const floatAudioData: Array<Float32Array> = audioBuffers.map(
-          (buffer) => new Float32Array(buffer)
-        );
-        callback(floatAudioData, framesToProcess, currentTime, startOffset);
-      }
-    );
-    return new WorkletSourceNode(
-      this,
-      this.context.createWorkletSourceNode(
-        shareableWorklet,
-        workletRuntime === 'UIRuntime'
-      )
-    );
+    return new WorkletSourceNode(this, workletRuntime, callback);
   }
 
   createRecorderAdapter(): RecorderAdapterNode {
