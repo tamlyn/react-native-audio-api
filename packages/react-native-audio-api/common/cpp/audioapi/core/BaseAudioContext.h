@@ -45,6 +45,7 @@ class OscillatorOptions;
 class BaseAudioBufferSourceOptions;
 class AudioBufferSourceOptions;
 class StreamerOptions;
+class AudioBufferOptions;
 
 class BaseAudioContext {
  public:
@@ -87,8 +88,7 @@ class BaseAudioContext {
       std::shared_ptr<AudioBufferSourceOptions> options);
   std::shared_ptr<AudioBufferQueueSourceNode> createBufferQueueSource(
       std::shared_ptr<BaseAudioBufferSourceOptions> options);
-  static std::shared_ptr<AudioBuffer>
-  createBuffer(int numberOfChannels, size_t length, float sampleRate);
+  static std::shared_ptr<AudioBuffer> createBuffer(std::shared_ptr<AudioBufferOptions> options);
   std::shared_ptr<PeriodicWave> createPeriodicWave(
       const std::vector<std::complex<float>> &complexData,
       bool disableNormalization,

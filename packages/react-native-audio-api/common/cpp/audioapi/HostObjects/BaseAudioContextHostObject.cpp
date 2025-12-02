@@ -155,15 +155,14 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createRecorderAdapter) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<OscillatorOptions> oscillatorOptions =
-      audioapi::option_parser::parseOscillatorOptions(runtime, options);
+  auto oscillatorOptions = audioapi::option_parser::parseOscillatorOptions(runtime, options);
   auto oscillator = context_->createOscillator(oscillatorOptions);
   auto oscillatorHostObject = std::make_shared<OscillatorNodeHostObject>(oscillator);
   return jsi::Object::createFromHostObject(runtime, oscillatorHostObject);
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
-  std::shared_ptr<StreamerOptions> streamerOptions = std::make_shared<StreamerOptions>();
+  auto streamerOptions = std::make_shared<StreamerOptions>();
   if (!args[0].isUndefined()) {
     auto options = args[0].asObject(runtime);
     streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
@@ -177,7 +176,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<ConstantSourceOptions> constantSourceOptions =
+  auto constantSourceOptions =
       audioapi::option_parser::parseConstantSourceOptions(runtime, options);
   auto constantSource = context_->createConstantSource(constantSourceOptions);
   auto constantSourceHostObject = std::make_shared<ConstantSourceNodeHostObject>(constantSource);
@@ -186,8 +185,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<GainOptions> gainOptions =
-      audioapi::option_parser::parseGainOptions(runtime, options);
+  auto gainOptions = audioapi::option_parser::parseGainOptions(runtime, options);
   auto gain = context_->createGain(gainOptions);
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
@@ -195,8 +193,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<StereoPannerOptions> stereoPannerOptions =
-      audioapi::option_parser::parseStereoPannerOptions(runtime, options);
+  auto stereoPannerOptions = audioapi::option_parser::parseStereoPannerOptions(runtime, options);
   auto stereoPanner = context_->createStereoPanner(stereoPannerOptions);
   auto stereoPannerHostObject = std::make_shared<StereoPannerNodeHostObject>(stereoPanner);
   return jsi::Object::createFromHostObject(runtime, stereoPannerHostObject);
@@ -204,8 +201,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStereoPanner) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<BiquadFilterOptions> biquadFilterOptions =
-      audioapi::option_parser::parseBiquadFilterOptions(runtime, options);
+  auto biquadFilterOptions = audioapi::option_parser::parseBiquadFilterOptions(runtime, options);
   auto biquadFilter = context_->createBiquadFilter(biquadFilterOptions);
   auto biquadFilterHostObject = std::make_shared<BiquadFilterNodeHostObject>(biquadFilter);
   return jsi::Object::createFromHostObject(runtime, biquadFilterHostObject);
@@ -213,7 +209,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<AudioBufferSourceOptions> audioBufferSourceOptions =
+  auto audioBufferSourceOptions =
       audioapi::option_parser::parseAudioBufferSourceOptions(runtime, options);
   auto bufferSource = context_->createBufferSource(audioBufferSourceOptions);
   auto bufferSourceHostObject = std::make_shared<AudioBufferSourceNodeHostObject>(bufferSource);
@@ -222,7 +218,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferSource) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<BaseAudioBufferSourceOptions> baseAudioBufferSourceOptions =
+  auto baseAudioBufferSourceOptions =
       audioapi::option_parser::parseBaseAudioBufferSourceOptions(runtime, options);
   auto bufferSource = context_->createBufferQueueSource(baseAudioBufferSourceOptions);
   auto bufferStreamSourceHostObject =
@@ -231,10 +227,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBufferQueueSource) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBuffer) {
-  auto numberOfChannels = static_cast<int>(args[0].getNumber());
-  auto length = static_cast<size_t>(args[1].getNumber());
-  auto sampleRate = static_cast<float>(args[2].getNumber());
-  auto buffer = BaseAudioContext::createBuffer(numberOfChannels, length, sampleRate);
+  auto options = args[0].asObject(runtime);
+  auto audioBufferOptions = audioapi::option_parser::parseAudioBufferOptions(runtime, options);
+  auto buffer = BaseAudioContext::createBuffer(audioBufferOptions);
   auto bufferHostObject = std::make_shared<AudioBufferHostObject>(buffer);
 
   auto jsiObject = jsi::Object::createFromHostObject(runtime, bufferHostObject);
@@ -269,8 +264,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createPeriodicWave) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<AnalyserOptions> analyserOptions =
-      audioapi::option_parser::parseAnalyserOptions(runtime, options);
+  auto analyserOptions = audioapi::option_parser::parseAnalyserOptions(runtime, options);
   auto analyser = context_->createAnalyser(analyserOptions);
   auto analyserHostObject = std::make_shared<AnalyserNodeHostObject>(analyser);
   return jsi::Object::createFromHostObject(runtime, analyserHostObject);
@@ -278,8 +272,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createAnalyser) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConvolver) {
   auto options = args[0].asObject(runtime);
-  std::shared_ptr<ConvolverOptions> convolverOptions =
-      audioapi::option_parser::parseConvolverOptions(runtime, options);
+  auto convolverOptions = audioapi::option_parser::parseConvolverOptions(runtime, options);
   auto convolver = context_->createConvolver(convolverOptions);
   auto convolverHostObject = std::make_shared<ConvolverNodeHostObject>(convolver);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, convolverHostObject);

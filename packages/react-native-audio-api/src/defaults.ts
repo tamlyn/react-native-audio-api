@@ -10,6 +10,7 @@ import {
   TOscillatorOptions,
   TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
+  TAudioBufferOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -77,4 +78,10 @@ export const AudioBufferSourceOptions: TAudioBufferSourceOptions = {
   loop: false,
   loopStart: 0,
   loopEnd: 0,
+};
+
+export const AudioBufferOptions: TAudioBufferOptions = {
+  numberOfChannels: 1,
+  length: 0, // always overwritten by provided value, only placeholder
+  sampleRate: 44100, // always overwritten by provided value, only placeholder
 };

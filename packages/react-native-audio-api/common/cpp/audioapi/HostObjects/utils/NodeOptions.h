@@ -73,4 +73,10 @@ struct StreamerOptions {
   std::string streamPath = "";
 };
 
+struct AudioBufferOptions {
+  int numberOfChannels = 1;
+  size_t length = 0;
+  float sampleRate = 44100.0f;
+};
+
 } // namespace audioapi

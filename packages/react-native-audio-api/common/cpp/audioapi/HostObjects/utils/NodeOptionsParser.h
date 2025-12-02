@@ -210,4 +210,17 @@ std::shared_ptr<StreamerOptions> parseStreamerOptions(
   }
   return std::make_shared<StreamerOptions>(options);
 }
+
+std::shared_ptr<AudioBufferOptions> parseAudioBufferOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  AudioBufferOptions options;
+  options.numberOfChannels =
+      static_cast<int>(optionsObject.getProperty(runtime, "numberOfChannels").getNumber());
+  options.length = static_cast<size_t>(optionsObject.getProperty(runtime, "length").getNumber());
+  options.sampleRate =
+      static_cast<float>(optionsObject.getProperty(runtime, "sampleRate").getNumber());
+  return std::make_shared<AudioBufferOptions>(options);
+}
+
 } // namespace audioapi::option_parser

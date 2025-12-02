@@ -167,9 +167,9 @@ std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueS
   return bufferSource;
 }
 
-std::shared_ptr<AudioBuffer>
-BaseAudioContext::createBuffer(int numberOfChannels, size_t length, float sampleRate) {
-  return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
+std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
+    std::shared_ptr<AudioBufferOptions> options) {
+  return std::make_shared<AudioBuffer>(options);
 }
 
 std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(

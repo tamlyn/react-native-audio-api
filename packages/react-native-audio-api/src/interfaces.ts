@@ -15,6 +15,7 @@ import {
   TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
   TStreamerOptions,
+  TAudioBufferOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -83,11 +84,7 @@ export interface IBaseAudioContext {
   createBufferQueueSource: (
     audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
-  createBuffer: (
-    channels: number,
-    length: number,
-    sampleRate: number
-  ) => IAudioBuffer;
+  createBuffer: (audioBufferOptions: TAudioBufferOptions) => IAudioBuffer;
   createPeriodicWave: (
     real: Float32Array,
     imag: Float32Array,
