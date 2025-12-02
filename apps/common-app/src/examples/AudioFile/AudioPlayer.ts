@@ -17,7 +17,7 @@ class AudioPlayer {
   private onPositionChanged: ((offset: number) => void) | null = null;
 
   constructor() {
-    this.audioContext = new AudioContext({ initSuspended: true });
+    this.audioContext = new AudioContext();
   }
 
   play = async () => {

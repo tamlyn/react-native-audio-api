@@ -35,7 +35,6 @@ export interface PeriodicWaveConstraints {
 
 export interface AudioContextOptions {
   sampleRate?: number;
-  initSuspended?: boolean;
 }
 
 export interface OfflineAudioContextOptions {
@@ -141,4 +140,9 @@ export interface AudioRecorderCallbackOptions {
    * for stereo recordings.
    */
   channelCount: number;
+}
+
+export interface IIRFilterNodeOptions {
+  feedforward: number[];
+  feedback: number[];
 }

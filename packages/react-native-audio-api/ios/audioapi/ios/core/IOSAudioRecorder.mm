@@ -21,7 +21,8 @@
 
 namespace audioapi {
 
-IOSAudioRecorder::IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+IOSAudioRecorder::IOSAudioRecorder(
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
@@ -73,17 +74,20 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
     auto fileResult = fileWriter_->openFile([nativeRecorder_ getInputFormat], maxInputBufferLength);
 
     if (!fileResult.isSuccess()) {
-      return ReturnStatus<std::string>::Error("Failed to open file for writing: " + fileResult.getMessage());
+      return ReturnStatus<std::string>::Error(
+          "Failed to open file for writing: " + fileResult.getMessage());
     }
 
     filePath_ = fileResult.getValue();
   }
 
   if (usesCallback()) {
-    auto callbackResult = callback_->prepare([nativeRecorder_ getInputFormat], maxInputBufferLength);
+    auto callbackResult =
+        callback_->prepare([nativeRecorder_ getInputFormat], maxInputBufferLength);
 
     if (!callbackResult.isSuccess()) {
-      return ReturnStatus<std::string>::Error("Failed to prepare callback: " + callbackResult.getMessage());
+      return ReturnStatus<std::string>::Error(
+          "Failed to prepare callback: " + callbackResult.getMessage());
     }
   }
 
@@ -134,16 +138,19 @@ ReturnStatus<std::tuple<std::string, double, double>> IOSAudioRecorder::stop()
       std::make_tuple(filePath, outputFileSize, outputDuration));
 }
 
-ReturnStatus<std::string> IOSAudioRecorder::enableFileOutput(std::shared_ptr<AudioFileProperties> properties)
+ReturnStatus<std::string> IOSAudioRecorder::enableFileOutput(
+    std::shared_ptr<AudioFileProperties> properties)
 {
   Locker lock(fileWriterMutex_);
   fileWriter_ = std::make_shared<FileWriter>(audioEventHandlerRegistry_, properties);
 
   if (!isIdle()) {
-    auto result = fileWriter_->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    auto result =
+        fileWriter_->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (!result.isSuccess()) {
-      return ReturnStatus<std::string>::Error("Failed to open file for writing: " + result.getMessage());
+      return ReturnStatus<std::string>::Error(
+          "Failed to open file for writing: " + result.getMessage());
     }
 
     filePath_ = result.getValue();
@@ -201,7 +208,8 @@ bool IOSAudioRecorder::isPaused() const
     return false;
   }
 
-  return currentState == RecorderState::Paused && [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
+  return currentState == RecorderState::Paused &&
+      [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
 }
 
 bool IOSAudioRecorder::isIdle() const
@@ -221,7 +229,8 @@ ReturnStatus<void> IOSAudioRecorder::setOnAudioReadyCallback(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    auto result = callback_->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    auto result =
+        callback_->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (!result.isSuccess()) {
       return ReturnStatus<void>::Error(result.getMessage());

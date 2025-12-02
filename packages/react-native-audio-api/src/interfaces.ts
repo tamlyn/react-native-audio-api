@@ -69,6 +69,10 @@ export interface IBaseAudioContext {
   createGain(): IGainNode;
   createStereoPanner(): IStereoPannerNode;
   createBiquadFilter: () => IBiquadFilterNode;
+  createIIRFilter: (
+    feedforward: number[],
+    feedback: number[]
+  ) => IIIRFilterNode;
   createBufferSource: (pitchCorrection: boolean) => IAudioBufferSourceNode;
   createBufferQueueSource: (
     pitchCorrection: boolean
@@ -88,7 +92,7 @@ export interface IBaseAudioContext {
     buffer: IAudioBuffer | undefined,
     disableNormalization: boolean
   ) => IConvolverNode;
-  createStreamer: () => IStreamerNode;
+  createStreamer: () => IStreamerNode | null; // null when FFmpeg is not enabled
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -137,6 +141,14 @@ export interface IBiquadFilterNode extends IAudioNode {
   ): void;
 }
 
+export interface IIIRFilterNode extends IAudioNode {
+  getFrequencyResponse(
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
+  ): void;
+}
+
 export interface IAudioDestinationNode extends IAudioNode {}
 
 export interface IAudioScheduledSourceNode extends IAudioNode {
@@ -150,6 +162,9 @@ export interface IAudioScheduledSourceNode extends IAudioNode {
 export interface IAudioBufferBaseSourceNode extends IAudioScheduledSourceNode {
   detune: IAudioParam;
   playbackRate: IAudioParam;
+
+  getInputLatency: () => number;
+  getOutputLatency: () => number;
 
   // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
   onPositionChanged: string;
@@ -194,12 +209,15 @@ export interface IAudioBufferQueueSourceNode
 
   // returns bufferId
   enqueueBuffer: (audioBuffer: IAudioBuffer) => string;
+  start: (when?: number, offset?: number) => void;
   pause: () => void;
 }
 
 export interface IConvolverNode extends IAudioNode {
-  buffer: IAudioBuffer | null;
+  readonly buffer: IAudioBuffer | null;
   normalize: boolean;
+
+  setBuffer: (audioBuffer: IAudioBuffer | null) => void;
 }
 
 export interface IAudioBuffer {

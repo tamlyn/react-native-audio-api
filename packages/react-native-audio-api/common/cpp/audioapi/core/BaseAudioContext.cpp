@@ -4,6 +4,7 @@
 #include <audioapi/core/effects/BiquadFilterNode.h>
 #include <audioapi/core/effects/ConvolverNode.h>
 #include <audioapi/core/effects/GainNode.h>
+#include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/effects/StereoPannerNode.h>
 #include <audioapi/core/effects/WorkletNode.h>
 #include <audioapi/core/effects/WorkletProcessingNode.h>
@@ -13,7 +14,9 @@
 #include <audioapi/core/sources/ConstantSourceNode.h>
 #include <audioapi/core/sources/OscillatorNode.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/StreamerNode.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/core/sources/WorkletSourceNode.h>
 #include <audioapi/core/utils/AudioDecoder.h>
 #include <audioapi/core/utils/AudioNodeManager.h>
@@ -22,12 +25,15 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
+#include <memory>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace audioapi {
 
 BaseAudioContext::BaseAudioContext(
-    const std::shared_ptr<IAudioEventHandlerRegistry>
-        &audioEventHandlerRegistry,
+    const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry) {
   nodeManager_ = std::make_shared<AudioNodeManager>();
   destination_ = std::make_shared<AudioDestinationNode>(this);
@@ -71,8 +77,7 @@ std::shared_ptr<WorkletSourceNode> BaseAudioContext::createWorkletSourceNode(
     std::weak_ptr<worklets::WorkletRuntime> runtime,
     bool shouldLockRuntime) {
   WorkletsRunner workletRunner(runtime, shareableWorklet, shouldLockRuntime);
-  auto workletSourceNode =
-      std::make_shared<WorkletSourceNode>(this, std::move(workletRunner));
+  auto workletSourceNode = std::make_shared<WorkletSourceNode>(this, std::move(workletRunner));
   nodeManager_->addSourceNode(workletSourceNode);
   return workletSourceNode;
 }
@@ -90,8 +95,7 @@ std::shared_ptr<WorkletNode> BaseAudioContext::createWorkletNode(
   return workletNode;
 }
 
-std::shared_ptr<WorkletProcessingNode>
-BaseAudioContext::createWorkletProcessingNode(
+std::shared_ptr<WorkletProcessingNode> BaseAudioContext::createWorkletProcessingNode(
     std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
     std::weak_ptr<worklets::WorkletRuntime> runtime,
     bool shouldLockRuntime) {
@@ -120,13 +124,15 @@ std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource() {
   return constantSource;
 }
 
-#ifndef AUDIO_API_TEST_SUITE
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   auto streamer = std::make_shared<StreamerNode>(this);
   nodeManager_->addSourceNode(streamer);
   return streamer;
+#else
+  return nullptr;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
-#endif
 
 std::shared_ptr<GainNode> BaseAudioContext::createGain() {
   auto gain = std::make_shared<GainNode>(this);
@@ -146,26 +152,29 @@ std::shared_ptr<BiquadFilterNode> BaseAudioContext::createBiquadFilter() {
   return biquadFilter;
 }
 
-std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
+std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
+    const std::vector<float> &feedforward,
+    const std::vector<float> &feedback) {
+  auto iirFilter = std::make_shared<IIRFilterNode>(this, feedforward, feedback);
+  nodeManager_->addProcessingNode(iirFilter);
+  return iirFilter;
+}
+
+std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(bool pitchCorrection) {
+  auto bufferSource = std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+  nodeManager_->addSourceNode(bufferSource);
+  return bufferSource;
+}
+
+std::shared_ptr<AudioBufferQueueSourceNode> BaseAudioContext::createBufferQueueSource(
     bool pitchCorrection) {
-  auto bufferSource =
-      std::make_shared<AudioBufferSourceNode>(this, pitchCorrection);
+  auto bufferSource = std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
   nodeManager_->addSourceNode(bufferSource);
   return bufferSource;
 }
 
-std::shared_ptr<AudioBufferQueueSourceNode>
-BaseAudioContext::createBufferQueueSource(bool pitchCorrection) {
-  auto bufferSource =
-      std::make_shared<AudioBufferQueueSourceNode>(this, pitchCorrection);
-  nodeManager_->addSourceNode(bufferSource);
-  return bufferSource;
-}
-
-std::shared_ptr<AudioBuffer> BaseAudioContext::createBuffer(
-    int numberOfChannels,
-    size_t length,
-    float sampleRate) {
+std::shared_ptr<AudioBuffer>
+BaseAudioContext::createBuffer(int numberOfChannels, size_t length, float sampleRate) {
   return std::make_shared<AudioBuffer>(numberOfChannels, length, sampleRate);
 }
 
@@ -173,8 +182,7 @@ std::shared_ptr<PeriodicWave> BaseAudioContext::createPeriodicWave(
     const std::vector<std::complex<float>> &complexData,
     bool disableNormalization,
     int length) {
-  return std::make_shared<PeriodicWave>(
-      sampleRate_, complexData, length, disableNormalization);
+  return std::make_shared<PeriodicWave>(sampleRate_, complexData, length, disableNormalization);
 }
 
 std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
@@ -186,8 +194,7 @@ std::shared_ptr<AnalyserNode> BaseAudioContext::createAnalyser() {
 std::shared_ptr<ConvolverNode> BaseAudioContext::createConvolver(
     std::shared_ptr<AudioBuffer> buffer,
     bool disableNormalization) {
-  auto convolver =
-      std::make_shared<ConvolverNode>(this, buffer, disableNormalization);
+  auto convolver = std::make_shared<ConvolverNode>(this, buffer, disableNormalization);
   nodeManager_->addProcessingNode(convolver);
   return convolver;
 }
@@ -225,36 +232,30 @@ std::string BaseAudioContext::toString(ContextState state) {
   }
 }
 
-std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(
-    OscillatorType type) {
+std::shared_ptr<PeriodicWave> BaseAudioContext::getBasicWaveForm(OscillatorType type) {
   switch (type) {
     case OscillatorType::SINE:
       if (cachedSineWave_ == nullptr) {
-        cachedSineWave_ =
-            std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSineWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSineWave_;
     case OscillatorType::SQUARE:
       if (cachedSquareWave_ == nullptr) {
-        cachedSquareWave_ =
-            std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSquareWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSquareWave_;
     case OscillatorType::SAWTOOTH:
       if (cachedSawtoothWave_ == nullptr) {
-        cachedSawtoothWave_ =
-            std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedSawtoothWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedSawtoothWave_;
     case OscillatorType::TRIANGLE:
       if (cachedTriangleWave_ == nullptr) {
-        cachedTriangleWave_ =
-            std::make_shared<PeriodicWave>(sampleRate_, type, false);
+        cachedTriangleWave_ = std::make_shared<PeriodicWave>(sampleRate_, type, false);
       }
       return cachedTriangleWave_;
     case OscillatorType::CUSTOM:
-      throw std::invalid_argument(
-          "You can't get a custom wave form. You need to create it.");
+      throw std::invalid_argument("You can't get a custom wave form. You need to create it.");
       break;
   }
 }

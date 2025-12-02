@@ -25,7 +25,9 @@ FileWriter::~FileWriter()
   bufferFormat_ = nil;
 }
 
-ReturnStatus<std::string> FileWriter::openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+ReturnStatus<std::string> FileWriter::openFile(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
@@ -57,24 +59,30 @@ ReturnStatus<std::string> FileWriter::openFile(AVAudioFormat *bufferFormat, size
 
     if (error != nil) {
       return ReturnStatus<std::string>::Error(
-          std::string("Error creating audio file for writing: ") + [[error debugDescription] UTF8String]);
+          std::string("Error creating audio file for writing: ") +
+          [[error debugDescription] UTF8String]);
     }
 
-    converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat toFormat:[audioFile_ processingFormat]];
+    converter_ = [[AVAudioConverter alloc] initFromFormat:bufferFormat
+                                                 toFormat:[audioFile_ processingFormat]];
     converter_.sampleRateConverterAlgorithm = AVSampleRateConverterAlgorithm_Normal;
     converter_.sampleRateConverterQuality = AVAudioQualityMax;
     converter_.primeMethod = AVAudioConverterPrimeMethod_None;
 
     converterInputBufferSize_ = maxInputBufferLength;
     converterOutputBufferSize_ = std::max(
-        (double)maxInputBufferLength, fileProperties_->sampleRate / bufferFormat.sampleRate * maxInputBufferLength);
+        (double)maxInputBufferLength,
+        fileProperties_->sampleRate / bufferFormat.sampleRate * maxInputBufferLength);
 
-    converterInputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat
-                                                          frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
-    converterOutputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile_ processingFormat]
-                                                           frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
+    converterInputBuffer_ =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat
+                                      frameCapacity:(AVAudioFrameCount)maxInputBufferLength];
+    converterOutputBuffer_ =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:[audioFile_ processingFormat]
+                                      frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
 
-    if (converterInputBuffer_ == nil || converterOutputBuffer_ == nil || audioFile_ == nil || converter_ == nil) {
+    if (converterInputBuffer_ == nil || converterOutputBuffer_ == nil || audioFile_ == nil ||
+        converter_ == nil) {
       audioFile_ = nil;
       converter_ = nil;
       converterInputBuffer_ = nil;
@@ -100,10 +108,11 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
     // AVAudioFile automatically finalizes the file when deallocated
     audioFile_ = nil;
 
-    double fileDuration = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL_ options:nil] duration]);
-    double fileSizeBytesMb =
-        static_cast<double>([[[NSFileManager defaultManager] attributesOfItemAtPath:fileURL_.path
-                                                                              error:&error] fileSize]) /
+    double fileDuration = CMTimeGetSeconds([[AVURLAsset URLAssetWithURL:fileURL_
+                                                                options:nil] duration]);
+    double fileSizeBytesMb = static_cast<double>([[[NSFileManager defaultManager]
+                                 attributesOfItemAtPath:fileURL_.path
+                                                  error:&error] fileSize]) /
         BYTES_TO_MB;
 
     if (error != nil) {
@@ -114,7 +123,8 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
     fileURL_ = nil;
     framesWritten_.store(0);
 
-    return ReturnStatus<std::tuple<double, double>>::Success(std::make_tuple(fileDuration, fileSizeBytesMb));
+    return ReturnStatus<std::tuple<double, double>>::Success(
+        std::make_tuple(fileDuration, fileSizeBytesMb));
   }
 }
 
@@ -129,7 +139,8 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
     NSError *error = nil;
     AVAudioFormat *fileFormat = [audioFile_ processingFormat];
 
-    if (bufferFormat_.sampleRate == fileFormat.sampleRate && bufferFormat_.channelCount == fileFormat.channelCount &&
+    if (bufferFormat_.sampleRate == fileFormat.sampleRate &&
+        bufferFormat_.channelCount == fileFormat.channelCount &&
         bufferFormat_.isInterleaved == fileFormat.isInterleaved) {
       // We can use the converter input buffer as a "transport" layer to the file
       for (size_t i = 0; i < bufferFormat_.channelCount; ++i) {
@@ -144,7 +155,8 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
 
       if (error != nil) {
         invokeOnErrorCallback(
-            std::string("Error writing audio data to file, native error: ") + [[error debugDescription] UTF8String]);
+            std::string("Error writing audio data to file, native error: ") +
+            [[error debugDescription] UTF8String]);
         return false;
       }
 
@@ -162,8 +174,8 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
-    AVAudioConverterInputBlock inputBlock =
-        ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+    AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
+        AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
     {
       if (handedOff) {
         *outStatus = AVAudioConverterInputStatus_NoDataNow;
@@ -176,11 +188,13 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
     };
 
     [converter_ convertToBuffer:converterOutputBuffer_ error:&error withInputFromBlock:inputBlock];
-    converterOutputBuffer_.frameLength = fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
+    converterOutputBuffer_.frameLength =
+        fileProperties_->sampleRate / bufferFormat_.sampleRate * numFrames;
 
     if (error != nil) {
       invokeOnErrorCallback(
-          std::string("Error during audio conversion, native error: ") + [[error debugDescription] UTF8String]);
+          std::string("Error during audio conversion, native error: ") +
+          [[error debugDescription] UTF8String]);
       return false;
     }
 
@@ -188,7 +202,8 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
 
     if (error != nil) {
       invokeOnErrorCallback(
-          std::string("Error writing audio data to file, native error: ") + [[error debugDescription] UTF8String]);
+          std::string("Error writing audio data to file, native error: ") +
+          [[error debugDescription] UTF8String]);
       return false;
     }
 

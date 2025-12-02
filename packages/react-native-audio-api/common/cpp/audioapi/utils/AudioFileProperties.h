@@ -1,15 +1,15 @@
 #pragma once
 
-#include <string>
-#include <memory>
 #include <cstddef>
+#include <memory>
+#include <string>
 
 namespace facebook {
 namespace jsi {
 class Runtime;
 class Value;
-}
-}
+} // namespace jsi
+} // namespace facebook
 
 namespace audioapi {
 
@@ -42,22 +42,21 @@ class AudioFileProperties {
   };
 
   AudioFileProperties(
-    FileDirectory directory,
-    const std::string &subDirectory,
-    const std::string &fileNamePrefix,
-    size_t channelCount,
-    size_t batchDurationSeconds,
-    Format format,
-    size_t sampleRate,
-    size_t bitRate,
-    BitDepth bitDepth,
-    int flacCompressionLevel,
-    IOSAudioQuality iosAudioQuality);
+      FileDirectory directory,
+      const std::string &subDirectory,
+      const std::string &fileNamePrefix,
+      size_t channelCount,
+      size_t batchDurationSeconds,
+      Format format,
+      size_t sampleRate,
+      size_t bitRate,
+      BitDepth bitDepth,
+      int flacCompressionLevel,
+      IOSAudioQuality iosAudioQuality);
 
   static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(
       facebook::jsi::Runtime &runtime,
       const facebook::jsi::Value &value);
-
 
   FileDirectory directory;
   std::string subDirectory;

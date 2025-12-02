@@ -34,10 +34,12 @@
 
 - (NSNumber *)getDevicePreferredSampleRate;
 
-- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject;
 - (NSString *)requestRecordingPermissions;
 
-- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject;
 - (NSString *)checkRecordingPermissions;
 
 - (void)getDevicesInfo:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject;

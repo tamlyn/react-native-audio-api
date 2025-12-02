@@ -53,22 +53,26 @@ RecorderCallback::~RecorderCallback()
   }
 }
 
-ReturnStatus<void> RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength)
+ReturnStatus<void> RecorderCallback::prepare(
+    AVAudioFormat *bufferFormat,
+    size_t maxInputBufferLength)
 {
   @autoreleasepool {
     bufferFormat_ = bufferFormat;
     converterInputBufferSize_ = maxInputBufferLength;
 
     if (bufferFormat.sampleRate <= 0 || bufferFormat.channelCount == 0) {
-      return ReturnStatus<void>::Error("Invalid input format: sampleRate and channelCount must be greater than 0");
+      return ReturnStatus<void>::Error(
+          "Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
     if (sampleRate_ <= 0 || channelCount_ == 0) {
-      return ReturnStatus<void>::Error("Invalid callback format: sampleRate and channelCount must be greater than 0");
+      return ReturnStatus<void>::Error(
+          "Invalid callback format: sampleRate and channelCount must be greater than 0");
     }
 
-    converterOutputBufferSize_ =
-        std::max((double)maxInputBufferLength, sampleRate_ / bufferFormat.sampleRate * maxInputBufferLength);
+    converterOutputBufferSize_ = std::max(
+        (double)maxInputBufferLength, sampleRate_ / bufferFormat.sampleRate * maxInputBufferLength);
 
     callbackFormat_ = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
                                                        sampleRate:sampleRate_
@@ -80,10 +84,12 @@ ReturnStatus<void> RecorderCallback::prepare(AVAudioFormat *bufferFormat, size_t
     converter_.sampleRateConverterQuality = AVAudioQualityMax;
     converter_.primeMethod = AVAudioConverterPrimeMethod_None;
 
-    converterInputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat_
-                                                          frameCapacity:(AVAudioFrameCount)converterInputBufferSize_];
-    converterOutputBuffer_ = [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
-                                                           frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
+    converterInputBuffer_ =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:bufferFormat_
+                                      frameCapacity:(AVAudioFrameCount)converterInputBufferSize_];
+    converterOutputBuffer_ =
+        [[AVAudioPCMBuffer alloc] initWithPCMFormat:callbackFormat_
+                                      frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
   }
 
   return ReturnStatus<void>::Success();
@@ -139,8 +145,8 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
     converterInputBuffer_.frameLength = numFrames;
 
     __block BOOL handedOff = false;
-    AVAudioConverterInputBlock inputBlock =
-        ^AVAudioBuffer *_Nullable(AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
+    AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
+        AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
     {
       if (handedOff) {
         *outStatus = AVAudioConverterInputStatus_NoDataNow;
@@ -157,12 +163,14 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
 
     if (error != nil) {
       invokeOnErrorCallback(
-          std::string("Error during audio conversion, native error: ") + [[error debugDescription] UTF8String]);
+          std::string("Error during audio conversion, native error: ") +
+          [[error debugDescription] UTF8String]);
       return;
     }
 
     for (size_t i = 0; i < channelCount_; ++i) {
-      auto *inputChannel = static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
+      auto *inputChannel =
+          static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
       circularBus_[i]->push_back(inputChannel, outputFrameCount);
     }
 
@@ -201,7 +209,8 @@ void RecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int 
 void RecorderCallback::sendRemainingData()
 {
   auto numberOfFrames = circularBus_[0]->getNumberOfAvailableFrames();
-  auto bus = std::make_shared<AudioBus>(circularBus_[0]->getNumberOfAvailableFrames(), channelCount_, sampleRate_);
+  auto bus = std::make_shared<AudioBus>(
+      circularBus_[0]->getNumberOfAvailableFrames(), channelCount_, sampleRate_);
 
   for (size_t i = 0; i < channelCount_; ++i) {
     auto *outputChannel = bus->getChannel(i)->getData();

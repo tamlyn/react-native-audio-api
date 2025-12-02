@@ -12,7 +12,6 @@ import {
   View,
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { runOnUISync } from 'react-native-worklets';
 
 import { Spacer } from './components';
 import Container from './components/Container';

@@ -6,6 +6,8 @@
 #include <filesystem>
 #include <format>
 #include <iostream>
+#include <memory>
+#include <string>
 
 namespace audioapi::android::fileoptions {
 
@@ -45,12 +47,10 @@ bool createDirectoryIfNotExists(const std::string &directoryPath) {
 
 std::string getTimestampString() {
   auto tNow = std::chrono::system_clock::now();
-  return std::format(
-      "{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(tNow));
+  return std::format("{:%Y%m%d_%H%M%S}", std::chrono::floor<std::chrono::seconds>(tNow));
 }
 
-std::string getDirectory(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+std::string getDirectory(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->directory) {
     case AudioFileProperties::FileDirectory::Document:
       return NativeFileInfo::getFilesDir();
@@ -61,8 +61,7 @@ std::string getDirectory(
   }
 }
 
-std::string getFileExtension(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->format) {
     case AudioFileProperties::Format::WAV:
       return "wav";
@@ -77,11 +76,9 @@ std::string getFileExtension(
   }
 }
 
-std::string getFilePath(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+std::string getFilePath(const std::shared_ptr<AudioFileProperties> &properties) {
   std::string directory = getDirectory(properties);
-  std::string subDirectory =
-      std::format("{}/{}", directory, properties->subDirectory);
+  std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
   std::string fileTimestamp = getTimestampString();
   std::string extension = getFileExtension(properties);
 
@@ -90,11 +87,7 @@ std::string getFilePath(
   }
 
   return std::format(
-      "{}/{}_{}.{}",
-      subDirectory,
-      properties->fileNamePrefix,
-      fileTimestamp,
-      extension);
+      "{}/{}_{}.{}", subDirectory, properties->fileNamePrefix, fileTimestamp, extension);
 }
 
 } // namespace audioapi::android::fileoptions

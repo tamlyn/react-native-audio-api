@@ -29,7 +29,8 @@ class IOSAudioRecorder : public AudioRecorder {
   ReturnStatus<std::string> start() override;
   ReturnStatus<std::tuple<std::string, double, double>> stop() override;
 
-  ReturnStatus<std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) override;
+  ReturnStatus<std::string> enableFileOutput(
+      std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
   void pause() override;
@@ -39,8 +40,11 @@ class IOSAudioRecorder : public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  ReturnStatus<void>
-  setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId) override;
+  ReturnStatus<void> setOnAudioReadyCallback(
+      float sampleRate,
+      size_t bufferLength,
+      size_t channelCount,
+      uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
   void setOnErrorCallback(uint64_t callbackId) override;

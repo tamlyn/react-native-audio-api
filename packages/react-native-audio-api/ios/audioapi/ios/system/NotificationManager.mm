@@ -37,7 +37,9 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   if (!enabled) {
     [self stopPollingSecondaryAudioHint];
 
-    [self.notificationCenter removeObserver:self name:AVAudioSessionSilenceSecondaryAudioHintNotification object:nil];
+    [self.notificationCenter removeObserver:self
+                                       name:AVAudioSessionSilenceSecondaryAudioHintNotification
+                                     object:nil];
     return;
   }
 
@@ -46,12 +48,11 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
                                   name:AVAudioSessionSilenceSecondaryAudioHintNotification
                                 object:nil];
 
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [self startPollingSecondaryAudioHint];
-  });
+  dispatch_async(dispatch_get_main_queue(), ^{ [self startPollingSecondaryAudioHint]; });
 }
 
-// WARNING: this does not work in a simulator environment, test it on a real device
+// WARNING: this does not work in a simulator environment, test it on a real
+// device
 - (void)observeVolumeChanges:(BOOL)enabled
 {
   if (self.volumeChangesObserved == enabled) {
@@ -112,8 +113,10 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
 
-  NSInteger interruptionType = [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
-  NSInteger interruptionOption = [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
+  NSInteger interruptionType =
+      [notification.userInfo[AVAudioSessionInterruptionTypeKey] integerValue];
+  NSInteger interruptionOption =
+      [notification.userInfo[AVAudioSessionInterruptionOptionKey] integerValue];
 
   if (interruptionType == AVAudioSessionInterruptionTypeBegan) {
     [audioEngine onInterruptionBegin];
@@ -141,7 +144,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
   NSLog(@"handleSecondaryAudio");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
-  NSInteger secondaryAudioType = [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
+  NSInteger secondaryAudioType =
+      [notification.userInfo[AVAudioSessionSilenceSecondaryAudioHintTypeKey] integerValue];
 
   if (secondaryAudioType == AVAudioSessionSilenceSecondaryAudioHintTypeBegin) {
     [sessionManager markInactive];
@@ -165,7 +169,8 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
 - (void)handleRouteChange:(NSNotification *)notification
 {
-  NSInteger routeChangeReason = [notification.userInfo[AVAudioSessionRouteChangeReasonKey] integerValue];
+  NSInteger routeChangeReason =
+      [notification.userInfo[AVAudioSessionRouteChangeReasonKey] integerValue];
   NSString *reasonStr;
 
   switch (routeChangeReason) {
@@ -205,12 +210,11 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
 - (void)handleMediaServicesReset:(NSNotification *)notification
 {
-  NSLog(@"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
+  NSLog(
+      @"[NotificationManager] Media services have been reset, tearing down and rebuilding everything.");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
 
-  dispatch_async(dispatch_get_main_queue(), ^{
-    [audioEngine restartAudioEngine];
-  });
+  dispatch_async(dispatch_get_main_queue(), ^{ [audioEngine restartAudioEngine]; });
 }
 
 - (void)handleEngineConfigurationChange:(NSNotification *)notification

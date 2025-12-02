@@ -36,7 +36,8 @@ static AudioSessionManager *_sharedInstance = nil;
 - (bool)areDesiredOptionsSet
 {
   return (
-      self.audioSession.category == self.desiredCategory && self.audioSession.mode == self.desiredMode &&
+      self.audioSession.category == self.desiredCategory &&
+      self.audioSession.mode == self.desiredMode &&
       self.audioSession.categoryOptions == self.desiredOptions &&
       self.audioSession.allowHapticsAndSystemSoundsDuringRecording == self.allowHapticsAndSounds);
 }
@@ -49,7 +50,10 @@ static AudioSessionManager *_sharedInstance = nil;
     return true;
   }
 
-  [self.audioSession setCategory:self.desiredCategory mode:self.desiredMode options:self.desiredOptions error:&error];
+  [self.audioSession setCategory:self.desiredCategory
+                            mode:self.desiredMode
+                         options:self.desiredOptions
+                           error:&error];
 
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
@@ -57,10 +61,13 @@ static AudioSessionManager *_sharedInstance = nil;
   }
 
   if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording != self.allowHapticsAndSounds) {
-    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds error:&error];
+    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
+                                                               error:&error];
 
     if (error != nil) {
-      NSLog(@"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@", [error debugDescription]);
+      NSLog(
+          @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+          [error debugDescription]);
       return false;
     }
   }
@@ -78,8 +85,8 @@ static AudioSessionManager *_sharedInstance = nil;
   AVAudioSessionCategoryOptions options = [self optionsFromArray:optionsArray];
   bool configChanged = false;
 
-  if (category != self.desiredCategory || mode != self.desiredMode || options != self.desiredOptions ||
-      allowHaptics != self.allowHapticsAndSounds) {
+  if (category != self.desiredCategory || mode != self.desiredMode ||
+      options != self.desiredOptions || allowHaptics != self.allowHapticsAndSounds) {
     configChanged = true;
   }
 
@@ -147,10 +154,12 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
-- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+- (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                             reject:(RCTPromiseRejectBlock)reject
 {
   id value = [[NSBundle mainBundle] objectForInfoDictionaryKey:@"NSMicrophoneUsageDescription"];
-  // if there is no entry NSMicrophoneUsageDescription calling requestRecordPermission will quit an app
+  // if there is no entry NSMicrophoneUsageDescription calling
+  // requestRecordPermission will quit an app
   if (value == nil) {
     reject(
         nil,
@@ -199,7 +208,8 @@ static AudioSessionManager *_sharedInstance = nil;
 #endif
 }
 
-- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve reject:(RCTPromiseRejectBlock)reject
+- (void)checkRecordingPermissions:(RCTPromiseResolveBlock)resolve
+                           reject:(RCTPromiseRejectBlock)reject
 {
   resolve([self checkRecordingPermissions]);
 }
@@ -254,10 +264,14 @@ static AudioSessionManager *_sharedInstance = nil;
 {
   NSMutableDictionary *devicesInfo = [[NSMutableDictionary alloc] init];
 
-  [devicesInfo setValue:[self parseDeviceList:[self.audioSession availableInputs]] forKey:@"availableInputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] inputs]] forKey:@"currentInputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"availableOutputs"];
-  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]] forKey:@"currentOutputs"];
+  [devicesInfo setValue:[self parseDeviceList:[self.audioSession availableInputs]]
+                 forKey:@"availableInputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] inputs]]
+                 forKey:@"currentInputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]]
+                 forKey:@"availableOutputs"];
+  [devicesInfo setValue:[self parseDeviceList:[[self.audioSession currentRoute] outputs]]
+                 forKey:@"currentOutputs"];
 
   resolve(devicesInfo);
 }

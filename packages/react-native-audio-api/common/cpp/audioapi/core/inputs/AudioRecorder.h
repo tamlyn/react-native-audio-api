@@ -1,11 +1,11 @@
 #pragma once
 
-#include <memory>
+#include <audioapi/utils/ReturnStatus.hpp>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <string>
 #include <tuple>
-#include <audioapi/utils/ReturnStatus.hpp>
 
 namespace audioapi {
 
@@ -18,14 +18,16 @@ class AudioEventHandlerRegistry;
 class AudioRecorder {
  public:
   enum class RecorderState { Idle = 0, Recording, Paused };
-  explicit AudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry):
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
+  explicit AudioRecorder(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+      : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
 
   virtual ReturnStatus<std::string> start() = 0;
   virtual ReturnStatus<std::tuple<std::string, double, double>> stop() = 0;
 
-  virtual ReturnStatus<std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) = 0;
+  virtual ReturnStatus<std::string> enableFileOutput(
+      std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
   virtual void pause() = 0;
@@ -35,10 +37,10 @@ class AudioRecorder {
   void disconnect() {}
 
   virtual ReturnStatus<void> setOnAudioReadyCallback(
-    float sampleRate,
-    size_t bufferLength,
-    size_t channelCount,
-    uint64_t callbackId) = 0;
+      float sampleRate,
+      size_t bufferLength,
+      size_t channelCount,
+      uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
 
   virtual void setOnErrorCallback(uint64_t callbackId) = 0;
@@ -63,7 +65,7 @@ class AudioRecorder {
   virtual bool isIdle() const = 0;
 
  protected:
-  std::atomic<RecorderState> state_{ RecorderState::Idle };
+  std::atomic<RecorderState> state_{RecorderState::Idle};
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
   std::atomic<bool> isConnected_{false};

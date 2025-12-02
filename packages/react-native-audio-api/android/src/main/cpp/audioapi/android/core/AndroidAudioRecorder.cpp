@@ -14,6 +14,9 @@
 #include <audioapi/utils/CircularAudioArray.h>
 #include <audioapi/utils/CircularOverflowableAudioArray.h>
 
+#include <memory>
+#include <string>
+
 namespace audioapi {
 
 AndroidAudioRecorder::AndroidAudioRecorder(
@@ -55,8 +58,7 @@ ReturnStatus<void> AndroidAudioRecorder::openAudioStream() {
 
   if (result != oboe::Result::OK || mStream_ == nullptr) {
     return ReturnStatus<void>::Error(
-        "Failed to open audio stream: " +
-        std::string(oboe::convertToText(result)));
+        "Failed to open audio stream: " + std::string(oboe::convertToText(result)));
   }
 
   streamSampleRate_ = mStream_->getSampleRate();
@@ -71,8 +73,7 @@ ReturnStatus<std::string> AndroidAudioRecorder::start() {
   Locker fileWriterLock(fileWriterMutex_);
 
   if (isRecording()) {
-    return ReturnStatus<std::string>::Success(
-        std::format("file://{}", filePath_));
+    return ReturnStatus<std::string>::Success(std::format("file://{}", filePath_));
   }
 
   auto streamResult = openAudioStream();
@@ -86,8 +87,8 @@ ReturnStatus<std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesFileOutput()) {
-    auto fileResult = fileWriter_->openFile(
-        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    auto fileResult =
+        fileWriter_->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.isSuccess()) {
       return ReturnStatus<std::string>::Error(
@@ -98,8 +99,7 @@ ReturnStatus<std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesCallback()) {
-    callback_->prepare(
-        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    callback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   if (isConnected()) {
@@ -113,16 +113,13 @@ ReturnStatus<std::string> AndroidAudioRecorder::start() {
         "Failed to start stream: " + std::string(oboe::convertToText(result)));
   }
 
-  jni::ThreadScope::WithClassLoader(
-      [this]() { nativeAudioRecorder_->start(); });
+  jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->start(); });
 
   state_.store(RecorderState::Recording);
-  return ReturnStatus<std::string>::Success(
-      std::format("file://{}", filePath_));
+  return ReturnStatus<std::string>::Success(std::format("file://{}", filePath_));
 }
 
-ReturnStatus<std::tuple<std::string, double, double>>
-AndroidAudioRecorder::stop() {
+ReturnStatus<std::tuple<std::string, double, double>> AndroidAudioRecorder::stop() {
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
 
@@ -172,13 +169,12 @@ ReturnStatus<std::string> AndroidAudioRecorder::enableFileOutput(
   if (properties->format == AudioFileProperties::Format::WAV) {
     fileWriter_ = std::make_shared<MiniAudioFileWriter>(properties);
   } else {
-    fileWriter_ =
-        std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(properties);
+    fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(properties);
   }
 
   if (!isIdle()) {
-    auto fileResult = fileWriter_->openFile(
-        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    auto fileResult =
+        fileWriter_->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.isSuccess()) {
       return ReturnStatus<std::string>::Error(
@@ -223,15 +219,10 @@ ReturnStatus<void> AndroidAudioRecorder::setOnAudioReadyCallback(
     uint64_t callbackId) {
   Locker callbackLock(callbackMutex_);
   callback_ = std::make_shared<AndroidRecorderCallback>(
-      audioEventHandlerRegistry_,
-      sampleRate,
-      bufferLength,
-      channelCount,
-      callbackId);
+      audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    callback_->prepare(
-        streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    callback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   callbackOutputEnabled_.store(true);
@@ -306,9 +297,7 @@ void AndroidAudioRecorder::cleanup() {
   }
 }
 
-void AndroidAudioRecorder::onErrorAfterClose(
-    oboe::AudioStream *stream,
-    oboe::Result error) {
+void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Result error) {
   if (error == oboe::Result::ErrorDisconnected) {
     cleanup();
 

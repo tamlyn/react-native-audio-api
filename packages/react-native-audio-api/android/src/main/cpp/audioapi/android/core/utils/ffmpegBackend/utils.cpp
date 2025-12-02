@@ -7,10 +7,12 @@ extern "C" {
 #include <audioapi/android/core/utils/FileOptions.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#include <memory>
+#include <string>
+
 namespace audioapi::android::ffmpeg {
 
-AVCodecID getPCMCodecID(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+AVCodecID getPCMCodecID(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->bitDepth) {
     case AudioFileProperties::BitDepth::Bit16:
       return AV_CODEC_ID_PCM_S16LE;
@@ -37,8 +39,7 @@ AVCodecID getCodecID(const std::shared_ptr<AudioFileProperties> &properties) {
   }
 }
 
-AVSampleFormat getSampleFormat(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+AVSampleFormat getSampleFormat(const std::shared_ptr<AudioFileProperties> &properties) {
   if (properties->format == AudioFileProperties::Format::M4A) {
     return AV_SAMPLE_FMT_FLTP;
   }
@@ -55,13 +56,11 @@ AVSampleFormat getSampleFormat(
   }
 }
 
-const AVCodec *getCodec(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+const AVCodec *getCodec(const std::shared_ptr<AudioFileProperties> &properties) {
   return avcodec_find_encoder(getCodecID(properties));
 }
 
-std::string getMuxerName(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+std::string getMuxerName(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->format) {
     case AudioFileProperties::Format::WAV:
       return "wav";

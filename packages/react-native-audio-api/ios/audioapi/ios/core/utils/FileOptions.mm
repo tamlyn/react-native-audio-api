@@ -128,7 +128,8 @@ NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties)
   NSSearchPathDirectory directory = getDirectory(properties);
   NSString *subDirectory = [NSString stringWithUTF8String:properties->subDirectory.c_str()];
 
-  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:directory inDomains:NSUserDomainMask] firstObject];
+  NSURL *baseURL = [[[NSFileManager defaultManager] URLsForDirectory:directory
+                                                           inDomains:NSUserDomainMask] firstObject];
   NSURL *directoryURL = [baseURL URLByAppendingPathComponent:subDirectory isDirectory:YES];
 
   [[NSFileManager defaultManager] createDirectoryAtURL:directoryURL
@@ -145,7 +146,8 @@ NSURL *getFileURL(const std::shared_ptr<AudioFileProperties> &properties)
   NSString *timestamp = getTimestampString();
   NSString *fileExtension = getFileExtension(properties);
 
-  NSString *fileName = [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
+  NSString *fileName =
+      [NSString stringWithFormat:@"%@_%@.%@", fileNamePrefix, timestamp, fileExtension];
   return [directoryURL URLByAppendingPathComponent:fileName];
 }
 

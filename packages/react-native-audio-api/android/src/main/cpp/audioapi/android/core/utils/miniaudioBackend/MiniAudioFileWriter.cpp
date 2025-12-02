@@ -5,17 +5,19 @@
 #include <audioapi/libs/miniaudio/miniaudio.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#include <cstdio>
+#include <memory>
+#include <string>
+
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi {
 
-inline ma_encoding_format getFormat(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+inline ma_encoding_format getFormat(const std::shared_ptr<AudioFileProperties> &properties) {
   return ma_encoding_format_wav;
 }
 
-inline ma_format getDataFormat(
-    const std::shared_ptr<AudioFileProperties> &properties) {
+inline ma_format getDataFormat(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->bitDepth) {
     case AudioFileProperties::BitDepth::Bit16:
       return ma_format_s16;
@@ -31,8 +33,7 @@ inline ma_format getDataFormat(
   }
 }
 
-MiniAudioFileWriter::MiniAudioFileWriter(
-    std::shared_ptr<AudioFileProperties> properties)
+MiniAudioFileWriter::MiniAudioFileWriter(std::shared_ptr<AudioFileProperties> properties)
     : AndroidFileWriterBackend(properties) {}
 
 MiniAudioFileWriter::~MiniAudioFileWriter() {
@@ -74,16 +75,14 @@ OpenFileStatus MiniAudioFileWriter::openFile(
 
   if (result != MA_SUCCESS) {
     return OpenFileStatus::Error(
-        "Failed to initialize converter" +
-        std::string(ma_result_description(result)));
+        "Failed to initialize converter" + std::string(ma_result_description(result)));
   }
 
   result = initializeEncoder();
 
   if (result != MA_SUCCESS) {
     return OpenFileStatus::Error(
-        "Failed to initialize encoder" +
-        std::string(ma_result_description(result)));
+        "Failed to initialize encoder" + std::string(ma_result_description(result)));
   }
 
   isFileOpen_.store(true);
@@ -123,10 +122,8 @@ CloseFileStatus MiniAudioFileWriter::closeFile() {
   if (ma_decoder_init_file(filePath_.c_str(), NULL, &decoder) == MA_SUCCESS) {
     ma_uint64 frameCount = 0;
 
-    if (ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount) ==
-        MA_SUCCESS) {
-      durationInSeconds =
-          static_cast<double>(frameCount) / decoder.outputSampleRate;
+    if (ma_decoder_get_length_in_pcm_frames(&decoder, &frameCount) == MA_SUCCESS) {
+      durationInSeconds = static_cast<double>(frameCount) / decoder.outputSampleRate;
     }
 
     ma_decoder_uninit(&decoder);
@@ -136,7 +133,7 @@ CloseFileStatus MiniAudioFileWriter::closeFile() {
 
   if (file != nullptr) {
     fseek(file, 0, SEEK_END);
-    long fileSizeInBytes = ftell(file);
+    uint64_t fileSizeInBytes = ftell(file);
     fclose(file);
     fileSizeInMB = static_cast<double>(fileSizeInBytes) / BYTES_TO_MB;
   }
@@ -154,8 +151,7 @@ bool MiniAudioFileWriter::writeAudioData(void *data, int numFrames) {
   }
 
   if (!isConverterRequired()) {
-    result = ma_encoder_write_pcm_frames(
-        encoder_.get(), data, numFrames, &framesWritten);
+    result = ma_encoder_write_pcm_frames(encoder_.get(), data, numFrames, &framesWritten);
 
     __android_log_print(
         ANDROID_LOG_DEBUG,
@@ -201,11 +197,7 @@ ma_uint64 MiniAudioFileWriter::convertBuffer(void *data, int numFrames) {
       converter_.get(), inputFrameCount, &outputFrameCount);
 
   ma_data_converter_process_pcm_frames(
-      converter_.get(),
-      data,
-      &inputFrameCount,
-      processingBuffer_,
-      &outputFrameCount);
+      converter_.get(), data, &inputFrameCount, processingBuffer_, &outputFrameCount);
 
   return outputFrameCount;
 }
@@ -237,8 +229,7 @@ ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
       converter_.get(), streamMaxBufferSize_, &processingBufferLength_);
 
   processingBuffer_ = ma_malloc(
-      processingBufferLength_ * properties_->channelCount *
-          ma_get_bytes_per_sample(dataFormat),
+      processingBufferLength_ * properties_->channelCount * ma_get_bytes_per_sample(dataFormat),
       NULL);
 
   return MA_SUCCESS;

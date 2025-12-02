@@ -13,12 +13,13 @@ extern "C" {
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <audioapi/utils/AudioFileProperties.h>
 
+#include <algorithm>
+
 constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi::android::ffmpeg {
 
-FFmpegAudioFileWriter::FFmpegAudioFileWriter(
-    std::shared_ptr<AudioFileProperties> properties)
+FFmpegAudioFileWriter::FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties)
     : AndroidFileWriterBackend(properties) {}
 
 FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
@@ -94,8 +95,8 @@ CloseFileStatus FFmpegAudioFileWriter::closeFile() {
     auto finalStatus = finalizeOutput();
 
     return CloseFileStatus::Error(
-        "Failed to flush FIFO to encoder. error code: " +
-        parseErrorCode(result) + ", finalization status: " +
+        "Failed to flush FIFO to encoder. error code: " + parseErrorCode(result) +
+        ", finalization status: " +
         (finalStatus.isSuccess() ? "success" : finalStatus.getMessage()));
   }
 
@@ -138,28 +139,22 @@ bool FFmpegAudioFileWriter::isConverterRequired() {
   return isConverterRequired_.load();
 }
 
-ReturnStatus<void> FFmpegAudioFileWriter::initializeFormatContext(
-    const AVCodec *codec) {
+ReturnStatus<void> FFmpegAudioFileWriter::initializeFormatContext(const AVCodec *codec) {
   AVFormatContext *rawFormatCtx = nullptr;
 
   int result = avformat_alloc_output_context2(
-      &rawFormatCtx,
-      nullptr,
-      getMuxerName(properties_).c_str(),
-      filePath_.c_str());
+      &rawFormatCtx, nullptr, getMuxerName(properties_).c_str(), filePath_.c_str());
 
   if (result < 0 || !rawFormatCtx) {
     return ReturnStatus<void>::Error(
-        "Failed to allocate FFmpeg format context with error: " +
-        parseErrorCode(result));
+        "Failed to allocate FFmpeg format context with error: " + parseErrorCode(result));
   }
 
   formatCtx_ = av_unique_ptr<AVFormatContext>(rawFormatCtx);
   return ReturnStatus<void>::Success();
 }
 
-ReturnStatus<void> FFmpegAudioFileWriter::configureAndOpenCodec(
-    const AVCodec *codec) {
+ReturnStatus<void> FFmpegAudioFileWriter::configureAndOpenCodec(const AVCodec *codec) {
   encoderCtx_ = av_unique_ptr<AVCodecContext>(avcodec_alloc_context3(codec));
 
   if (!encoderCtx_) {
@@ -177,11 +172,7 @@ ReturnStatus<void> FFmpegAudioFileWriter::configureAndOpenCodec(
   AVDictionary *codecOptions = nullptr;
 
   if (properties_->flacCompressionLevel >= 0) {
-    av_dict_set_int(
-        &codecOptions,
-        "compression_level",
-        properties_->flacCompressionLevel,
-        0);
+    av_dict_set_int(&codecOptions, "compression_level", properties_->flacCompressionLevel, 0);
   }
 
   int result = avcodec_open2(encoderCtx_.get(), codec, &codecOptions);
@@ -199,21 +190,17 @@ ReturnStatus<void> FFmpegAudioFileWriter::initializeStream() {
   stream_ = avformat_new_stream(formatCtx_.get(), nullptr);
 
   if (!stream_) {
-    return ReturnStatus<void>::Error(
-        "Failed to create new stream in format context");
+    return ReturnStatus<void>::Error("Failed to create new stream in format context");
   }
 
-  int result =
-      avcodec_parameters_from_context(stream_->codecpar, encoderCtx_.get());
+  int result = avcodec_parameters_from_context(stream_->codecpar, encoderCtx_.get());
 
   if (result < 0) {
     return ReturnStatus<void>::Error(
-        "Failed to copy codec parameters to stream with error: " +
-        parseErrorCode(result));
+        "Failed to copy codec parameters to stream with error: " + parseErrorCode(result));
   }
 
-  stream_->time_base =
-      AVRational{1, static_cast<int>(encoderCtx_->sample_rate)};
+  stream_->time_base = AVRational{1, static_cast<int>(encoderCtx_->sample_rate)};
   return ReturnStatus<void>::Success();
 }
 
@@ -232,8 +219,7 @@ ReturnStatus<void> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   result = avformat_write_header(formatCtx_.get(), nullptr);
 
   if (result < 0) {
-    return ReturnStatus<void>::Error(
-        "Failed to write header to file: " + filePath_);
+    return ReturnStatus<void>::Error("Failed to write header to file: " + filePath_);
   }
 
   return ReturnStatus<void>::Success();
@@ -252,17 +238,13 @@ ReturnStatus<void> FFmpegAudioFileWriter::initializeResampler(
   av_channel_layout_default(&inChannelLayout, inputChannels);
 
   av_opt_set_chlayout(resampleCtx_.get(), "in_chlayout", &inChannelLayout, 0);
-  av_opt_set_chlayout(
-      resampleCtx_.get(), "out_chlayout", &encoderCtx_->ch_layout, 0);
+  av_opt_set_chlayout(resampleCtx_.get(), "out_chlayout", &encoderCtx_->ch_layout, 0);
 
   av_opt_set_int(resampleCtx_.get(), "in_sample_rate", inputRate, 0);
-  av_opt_set_int(
-      resampleCtx_.get(), "out_sample_rate", encoderCtx_->sample_rate, 0);
+  av_opt_set_int(resampleCtx_.get(), "out_sample_rate", encoderCtx_->sample_rate, 0);
 
-  av_opt_set_sample_fmt(
-      resampleCtx_.get(), "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
-  av_opt_set_sample_fmt(
-      resampleCtx_.get(), "out_sample_fmt", encoderCtx_->sample_fmt, 0);
+  av_opt_set_sample_fmt(resampleCtx_.get(), "in_sample_fmt", AV_SAMPLE_FMT_FLT, 0);
+  av_opt_set_sample_fmt(resampleCtx_.get(), "out_sample_fmt", encoderCtx_->sample_fmt, 0);
 
   int result = swr_init(resampleCtx_.get());
 
@@ -282,8 +264,7 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 
   if (encoderCtx_->frame_size > 0) {
     contextFrameRatio = static_cast<int>(std::ceil(
-        static_cast<double>(maxBufferSize) /
-        static_cast<double>(encoderCtx_->frame_size)));
+        static_cast<double>(maxBufferSize) / static_cast<double>(encoderCtx_->frame_size)));
   }
 
   int calculatedSize =
@@ -292,19 +273,14 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
 
   int fifoSize = std::max(calculatedSize, 8192);
 
-  audioFifo_ = av_unique_ptr<AVAudioFifo>(av_audio_fifo_alloc(
-      encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
+  audioFifo_ = av_unique_ptr<AVAudioFifo>(
+      av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
 }
 
-bool FFmpegAudioFileWriter::resampleAndPushToFifo(
-    void *inputData,
-    int inputFrameCount) {
+bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFrameCount) {
   int result = 0;
-  int outputLength = av_rescale_rnd(
-      inputFrameCount,
-      encoderCtx_->sample_rate,
-      streamSampleRate_,
-      AV_ROUND_UP);
+  int outputLength =
+      av_rescale_rnd(inputFrameCount, encoderCtx_->sample_rate, streamSampleRate_, AV_ROUND_UP);
 
   result = prepareFrameForEncoding(outputLength);
 
@@ -314,8 +290,8 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(
 
   const uint8_t *inputs[1] = {reinterpret_cast<const uint8_t *>(inputData)};
 
-  int convertedSamples = swr_convert(
-      resampleCtx_.get(), frame_->data, outputLength, inputs, inputFrameCount);
+  int convertedSamples =
+      swr_convert(resampleCtx_.get(), frame_->data, outputLength, inputs, inputFrameCount);
 
   if (convertedSamples < 0) {
     av_frame_unref(frame_.get());
@@ -323,7 +299,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(
   }
 
   int written = av_audio_fifo_write(
-      audioFifo_.get(), (void **)frame_->data, convertedSamples);
+      audioFifo_.get(), reinterpret_cast<void **>(frame_->data), convertedSamples);
 
   if (written < convertedSamples) {
     return false;
@@ -337,15 +313,14 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
   int frameSize = encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
 
   while (av_audio_fifo_size(audioFifo_.get()) >= (flush ? 1 : frameSize)) {
-    const int chunkSize =
-        std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
+    const int chunkSize = std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
 
     if (prepareFrameForEncoding(chunkSize) < 0) {
       return -1;
     }
 
-    if (av_audio_fifo_read(
-            audioFifo_.get(), (void **)frame_->data, chunkSize) != chunkSize) {
+    if (av_audio_fifo_read(audioFifo_.get(), reinterpret_cast<void **>(frame_->data), chunkSize) !=
+        chunkSize) {
       return -1;
     }
 
@@ -380,16 +355,14 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
       return result;
     }
 
-    av_packet_rescale_ts(
-        packet_.get(), encoderCtx_->time_base, stream_->time_base);
+    av_packet_rescale_ts(packet_.get(), encoderCtx_->time_base, stream_->time_base);
     packet_->stream_index = stream_->index;
 
     result = av_interleaved_write_frame(formatCtx_.get(), packet_.get());
 
     auto now = std::chrono::steady_clock::now();
-    auto elapsedMs = std::chrono::duration_cast<std::chrono::milliseconds>(
-                         now - lastFlushTime_)
-                         .count();
+    auto elapsedMs =
+        std::chrono::duration_cast<std::chrono::milliseconds>(now - lastFlushTime_).count();
 
     if (formatCtx_->pb && elapsedMs >= flushIntervalMs_) {
       avio_flush(formatCtx_->pb);
@@ -414,12 +387,10 @@ int FFmpegAudioFileWriter::prepareFrameForEncoding(int samplesToRead) {
   frame_->format = encoderCtx_->sample_fmt;
   frame_->sample_rate = encoderCtx_->sample_rate;
 
-  if (av_channel_layout_compare(&frame_->ch_layout, &encoderCtx_->ch_layout) !=
-      0) {
+  if (av_channel_layout_compare(&frame_->ch_layout, &encoderCtx_->ch_layout) != 0) {
     av_channel_layout_uninit(&frame_->ch_layout);
 
-    result =
-        av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
+    result = av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
 
     if (result < 0) {
       return result;
@@ -446,8 +417,7 @@ CloseFileStatus FFmpegAudioFileWriter::finalizeOutput() {
   int result = av_write_trailer(formatCtx_.get());
 
   if (result < 0) {
-    return CloseFileStatus::Error(
-        "Failed to write trailer: " + parseErrorCode(result));
+    return CloseFileStatus::Error("Failed to write trailer: " + parseErrorCode(result));
   }
 
   double fileSizeInMB = 0;
