@@ -22,7 +22,7 @@ class RecorderCallback {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
-      size_t channelCount,
+      int channelCount,
       uint64_t callbackId);
   ~RecorderCallback();
 
@@ -43,7 +43,7 @@ class RecorderCallback {
 
   float sampleRate_;
   size_t bufferLength_;
-  size_t channelCount_;
+  int channelCount_;
   uint64_t callbackId_;
   size_t ringBufferSize_;
   size_t converterInputBufferSize_;

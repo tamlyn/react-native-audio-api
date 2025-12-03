@@ -45,13 +45,14 @@ class AudioFileProperties {
       FileDirectory directory,
       const std::string &subDirectory,
       const std::string &fileNamePrefix,
-      size_t channelCount,
+      int channelCount,
       size_t batchDurationSeconds,
       Format format,
       size_t sampleRate,
       size_t bitRate,
       BitDepth bitDepth,
       int flacCompressionLevel,
+      int androidFlushIntervalMs,
       IOSAudioQuality iosAudioQuality);
 
   static std::shared_ptr<AudioFileProperties> CreateFromJSIValue(
@@ -61,13 +62,14 @@ class AudioFileProperties {
   FileDirectory directory;
   std::string subDirectory;
   std::string fileNamePrefix;
-  size_t channelCount;
+  int channelCount;
   size_t batchDurationSeconds;
   Format format;
   size_t sampleRate;
   size_t bitRate;
   BitDepth bitDepth;
   int flacCompressionLevel;
+  int androidFlushIntervalMs;
   IOSAudioQuality iosAudioQuality;
 };
 

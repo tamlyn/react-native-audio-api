@@ -147,7 +147,7 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
 
   auto sampleRate = static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
   auto bufferLength = static_cast<size_t>(options.getProperty(runtime, "bufferLength").getNumber());
-  auto channelCount = static_cast<size_t>(options.getProperty(runtime, "channelCount").getNumber());
+  auto channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
   uint64_t callbackId =
       std::stoull(options.getProperty(runtime, "callbackId").getString(runtime).utf8(runtime));
 
@@ -159,6 +159,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
       runtime,
       "status",
       jsi::String::createFromUtf8(runtime, result.isSuccess() ? "success" : "error"));
+
+  if (!result.isSuccess()) {
+    jsResult.setProperty(
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.getMessage()));
+  }
 
   return jsResult;
 }

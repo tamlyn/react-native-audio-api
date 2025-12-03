@@ -47,7 +47,7 @@ class IOSAudioRecorder : public AudioRecorder {
   ReturnStatus<void> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
-      size_t channelCount,
+      int channelCount,
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 

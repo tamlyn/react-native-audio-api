@@ -40,7 +40,7 @@ class AudioRecorder {
   virtual ReturnStatus<void> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
-      size_t channelCount,
+      int channelCount,
       uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
 
@@ -50,15 +50,15 @@ class AudioRecorder {
   virtual double getCurrentDuration() const = 0;
 
   bool usesCallback() const {
-    return callbackOutputEnabled_.load();
+    return callbackOutputEnabled_.load(std::memory_order_acquire);
   }
 
   bool usesFileOutput() const {
-    return fileOutputEnabled_.load();
+    return fileOutputEnabled_.load(std::memory_order_acquire);
   }
 
   bool isConnected() const {
-    return isConnected_.load();
+    return isConnected_.load(std::memory_order_acquire);
   }
 
   virtual bool isRecording() const = 0;

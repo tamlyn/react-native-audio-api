@@ -21,12 +21,11 @@ namespace audioapi {
 
 AndroidAudioRecorder::AndroidAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(audioEventHandlerRegistry) {
+    : AudioRecorder(audioEventHandlerRegistry),
+      streamSampleRate_(0.0),
+      streamChannelCount_(0),
+      streamMaxBufferSizeInFrames_(0) {
   nativeAudioRecorder_ = jni::make_global(NativeAudioRecorder::create());
-
-  streamSampleRate_ = 0;
-  streamChannelCount_ = 0;
-  streamMaxBufferSizeInFrames_ = 0;
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
@@ -215,7 +214,7 @@ void AndroidAudioRecorder::resume() {
 ReturnStatus<void> AndroidAudioRecorder::setOnAudioReadyCallback(
     float sampleRate,
     size_t bufferLength,
-    size_t channelCount,
+    int channelCount,
     uint64_t callbackId) {
   Locker callbackLock(callbackMutex_);
   callback_ = std::make_shared<AndroidRecorderCallback>(

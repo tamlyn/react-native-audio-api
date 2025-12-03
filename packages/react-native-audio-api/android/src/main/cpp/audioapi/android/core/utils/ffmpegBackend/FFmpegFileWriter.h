@@ -27,7 +27,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   explicit FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
   ~FFmpegAudioFileWriter() override;
 
-  OpenFileStatus openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
+  OpenFileStatus openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   CloseFileStatus closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
@@ -46,7 +46,7 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   unsigned int nextPts_;
 
   std::chrono::steady_clock::time_point lastFlushTime_ = std::chrono::steady_clock::now();
-  uint32_t flushIntervalMs_ = 500;
+  int flushIntervalMs_;
 
   bool isFileOpen();
   bool isConverterRequired();

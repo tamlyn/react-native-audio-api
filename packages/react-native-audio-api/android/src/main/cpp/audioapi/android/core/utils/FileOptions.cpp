@@ -11,38 +11,24 @@
 
 namespace audioapi::android::fileoptions {
 
-bool createDirectoryIfNotExists(const std::string &directoryPath) {
+ReturnStatus<void> createDirectoryIfNotExists(const std::string &directoryPath) {
   std::error_code ec;
 
-  if (!std::filesystem::exists(directoryPath, ec)) {
-    bool created = std::filesystem::create_directories(directoryPath, ec);
+  if (std::filesystem::exists(directoryPath, ec)) {
+    return ReturnStatus<void>::Success();
+  }
 
-    if (ec) {
-      __android_log_print(
-          ANDROID_LOG_ERROR,
-          "FileOptions",
-          "Error creating directory at path: %s, error: %s",
-          directoryPath.c_str(),
-          ec.message().c_str());
+  bool created = std::filesystem::create_directories(directoryPath, ec);
 
-      return false;
-    }
-
-    return created;
+  if (!created) {
+    return ReturnStatus<void>::Error("Failed to create directory: " + directoryPath);
   }
 
   if (ec) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "FileOptions",
-        "Error checking existence of directory at path: %s, error: %s",
-        directoryPath.c_str(),
-        ec.message().c_str());
-
-    return false;
+    return ReturnStatus<void>::Error(ec.message());
   }
 
-  return true;
+  return ReturnStatus<void>::Success();
 }
 
 std::string getTimestampString() {
@@ -76,18 +62,21 @@ std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &propert
   }
 }
 
-std::string getFilePath(const std::shared_ptr<AudioFileProperties> &properties) {
+ReturnStatus<std::string> getFilePath(const std::shared_ptr<AudioFileProperties> &properties) {
   std::string directory = getDirectory(properties);
   std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
   std::string fileTimestamp = getTimestampString();
   std::string extension = getFileExtension(properties);
 
-  if (!createDirectoryIfNotExists(subDirectory)) {
-    return "";
+  auto result = createDirectoryIfNotExists(directory);
+
+  if (!result.isSuccess()) {
+    return ReturnStatus<std::string>::Error(result.getMessage());
   }
 
-  return std::format(
+  auto filePath = std::format(
       "{}/{}_{}.{}", subDirectory, properties->fileNamePrefix, fileTimestamp, extension);
+  return ReturnStatus<std::string>::Success(filePath);
 }
 
 } // namespace audioapi::android::fileoptions

@@ -17,7 +17,7 @@ RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context) noexcept(
   isInitialized_ = false;
 }
 
-void RecorderAdapterNode::init(size_t bufferSize, size_t channelCount) {
+void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
   if (isInitialized_) {
     throw std::runtime_error(
         "RecorderAdapterNode should not be initialized more than once. Just create a new instance.");

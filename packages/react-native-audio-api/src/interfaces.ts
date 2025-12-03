@@ -1,15 +1,12 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
 import type {
+  AudioRecorderCallbackOptions,
+  AudioRecorderFileOptions,
   BiquadFilterType,
-  BitDepth,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
-  FileDirectory,
-  FileFormat,
   FileInfo,
-  FlacCompressionLevel,
-  IOSAudioQuality,
   OscillatorType,
   Result,
   WindowType,
@@ -292,30 +289,8 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
-export interface IFilePreset {
-  bitRate: number;
-  sampleRate: number;
-  bitDepth: BitDepth;
-  iosQuality: IOSAudioQuality;
-  flacCompressionLevel: FlacCompressionLevel;
-}
-
-export interface IAudioRecorderFileOptions {
-  channelCount: number;
-  batchDurationSeconds: number;
-
-  format: FileFormat;
-  preset: IFilePreset;
-
-  directory: FileDirectory;
-  subDirectory: string;
-  fileNamePrefix: string;
-}
-
-export interface IAudioRecorderCallbackOptions {
-  sampleRate: number;
-  bufferLength: number;
-  channelCount: number;
+export interface IAudioRecorderCallbackOptions
+  extends AudioRecorderCallbackOptions {
   callbackId: string;
 }
 
@@ -327,7 +302,7 @@ export interface IAudioRecorder {
   isPaused: () => boolean;
 
   enableFileOutput: (
-    options: IAudioRecorderFileOptions
+    options: AudioRecorderFileOptions
   ) => Result<{ path: string }>;
   disableFileOutput: () => void;
 

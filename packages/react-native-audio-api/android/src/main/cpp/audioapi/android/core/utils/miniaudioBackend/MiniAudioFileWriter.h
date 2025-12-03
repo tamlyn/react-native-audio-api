@@ -14,7 +14,7 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   explicit MiniAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
   ~MiniAudioFileWriter() override;
 
-  OpenFileStatus openFile(int32_t streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
+  OpenFileStatus openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   CloseFileStatus closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;

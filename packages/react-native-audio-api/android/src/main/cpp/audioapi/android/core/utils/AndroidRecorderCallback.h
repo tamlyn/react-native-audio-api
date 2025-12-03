@@ -18,11 +18,11 @@ class AndroidRecorderCallback {
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
-      size_t channelCount,
+      int channelCount,
       uint64_t callbackId);
   ~AndroidRecorderCallback();
 
-  void prepare(int32_t streamSampleRate, int32_t streamChannelCount, size_t maxInputBufferLength);
+  void prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
   void cleanup();
 
   void receiveAudioData(void *data, int numFrames);
@@ -31,13 +31,13 @@ class AndroidRecorderCallback {
   void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
 
  private:
-  int32_t streamSampleRate_;
-  int32_t streamChannelCount_;
+  float streamSampleRate_;
+  int streamChannelCount_;
   size_t maxInputBufferLength_;
 
   float sampleRate_;
+  int channelCount_;
   size_t bufferLength_;
-  size_t channelCount_;
   uint64_t callbackId_;
   size_t ringBufferSize_;
 

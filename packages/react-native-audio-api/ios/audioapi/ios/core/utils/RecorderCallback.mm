@@ -18,7 +18,7 @@ RecorderCallback::RecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
-    size_t channelCount,
+    int channelCount,
     uint64_t callbackId)
     : audioEventHandlerRegistry_(audioEventHandlerRegistry),
       sampleRate_(sampleRate),
@@ -29,7 +29,7 @@ RecorderCallback::RecorderCallback(
   ringBufferSize_ = std::max((int)bufferLength_ * 2, 8192);
   circularBus_.resize(channelCount_);
 
-  for (size_t i = 0; i < channelCount_; ++i) {
+  for (int i = 0; i < channelCount_; ++i) {
     auto busAudioArray = std::make_shared<CircularAudioArray>(ringBufferSize_);
     circularBus_[i] = busAudioArray;
   }
@@ -47,7 +47,7 @@ RecorderCallback::~RecorderCallback()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (size_t i = 0; i < channelCount_; ++i) {
+    for (int i = 0; i < channelCount_; ++i) {
       circularBus_[i].reset();
     }
   }
@@ -106,7 +106,7 @@ void RecorderCallback::cleanup()
     converterInputBuffer_ = nil;
     converterOutputBuffer_ = nil;
 
-    for (size_t i = 0; i < channelCount_; ++i) {
+    for (int i = 0; i < channelCount_; ++i) {
       circularBus_[i]->zero();
     }
   }
@@ -124,7 +124,7 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
     if (bufferFormat_.sampleRate == sampleRate_ && bufferFormat_.channelCount == channelCount_ &&
         !bufferFormat_.isInterleaved) {
       // Directly write to circular buffer
-      for (size_t i = 0; i < channelCount_; ++i) {
+      for (int i = 0; i < channelCount_; ++i) {
         auto *inputChannel = static_cast<float *>(inputBuffer->mBuffers[i].mData);
         circularBus_[i]->push_back(inputChannel, numFrames);
       }
@@ -168,7 +168,7 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
       return;
     }
 
-    for (size_t i = 0; i < channelCount_; ++i) {
+    for (int i = 0; i < channelCount_; ++i) {
       auto *inputChannel =
           static_cast<float *>(converterOutputBuffer_.audioBufferList->mBuffers[i].mData);
       circularBus_[i]->push_back(inputChannel, outputFrameCount);
@@ -183,7 +183,7 @@ void RecorderCallback::emitAudioData()
   while (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
     auto bus = std::make_shared<AudioBus>(bufferLength_, channelCount_, sampleRate_);
 
-    for (size_t i = 0; i < channelCount_; ++i) {
+    for (int i = 0; i < channelCount_; ++i) {
       auto *outputChannel = bus->getChannel(i)->getData();
       circularBus_[i]->pop_front(outputChannel, bufferLength_);
     }
@@ -212,7 +212,7 @@ void RecorderCallback::sendRemainingData()
   auto bus = std::make_shared<AudioBus>(
       circularBus_[0]->getNumberOfAvailableFrames(), channelCount_, sampleRate_);
 
-  for (size_t i = 0; i < channelCount_; ++i) {
+  for (int i = 0; i < channelCount_; ++i) {
     auto *outputChannel = bus->getChannel(i)->getData();
     circularBus_[i]->pop_front(outputChannel, numberOfFrames);
   }

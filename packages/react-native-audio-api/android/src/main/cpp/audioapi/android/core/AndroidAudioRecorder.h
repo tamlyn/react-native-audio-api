@@ -21,8 +21,7 @@ class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
-class AndroidAudioRecorder : public AudioStreamDataCallback,
-                             public AudioStreamErrorCallback, public AudioRecorder {
+class AndroidAudioRecorder : public AudioStreamCallback, public AudioRecorder {
  public:
   explicit AndroidAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
@@ -40,7 +39,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
   bool isPaused() const override;
   bool isIdle() const override;
 
-  ReturnStatus<void> setOnAudioReadyCallback(float sampleRate, size_t bufferLength, size_t channelCount, uint64_t callbackId)
+  ReturnStatus<void> setOnAudioReadyCallback(float sampleRate, size_t bufferLength, int channelCount, uint64_t callbackId)
       override;
   void clearOnAudioReadyCallback() override;
 
@@ -65,7 +64,7 @@ class AndroidAudioRecorder : public AudioStreamDataCallback,
   std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
   std::shared_ptr<AndroidRecorderCallback> callback_;
 
-  int32_t streamSampleRate_;
+  float streamSampleRate_;
   int32_t streamChannelCount_;
   int32_t streamMaxBufferSizeInFrames_;
 

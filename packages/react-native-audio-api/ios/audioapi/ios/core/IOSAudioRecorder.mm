@@ -260,7 +260,7 @@ bool IOSAudioRecorder::isIdle() const
 ReturnStatus<void> IOSAudioRecorder::setOnAudioReadyCallback(
     float sampleRate,
     size_t bufferLength,
-    size_t channelCount,
+    int channelCount,
     uint64_t callbackId)
 {
   Locker lock(callbackMutex_);

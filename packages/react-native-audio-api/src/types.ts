@@ -64,15 +64,15 @@ export enum IOSAudioQuality {
 }
 
 export enum FlacCompressionLevel {
-  L0 = 1,
-  L1 = 2,
-  L2 = 3,
-  L3 = 4,
-  L4 = 5,
-  L5 = 6,
-  L6 = 7,
-  L7 = 8,
-  L8 = 9,
+  L0 = 0,
+  L1 = 1,
+  L2 = 2,
+  L3 = 3,
+  L4 = 4,
+  L5 = 5,
+  L6 = 6,
+  L7 = 7,
+  L8 = 8,
 }
 
 export enum BitDepth {
@@ -99,6 +99,7 @@ export interface AudioRecorderFileOptions {
   directory?: FileDirectory;
   subDirectory?: string;
   fileNamePrefix?: string;
+  androidFlushIntervalMs?: number;
 }
 
 export interface FileInfo {

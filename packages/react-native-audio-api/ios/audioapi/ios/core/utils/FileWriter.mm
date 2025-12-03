@@ -33,7 +33,7 @@ ReturnStatus<std::string> FileWriter::openFile(
       return ReturnStatus<std::string>::Error("file already open");
     }
 
-    framesWritten_.store(0);
+    framesWritten_.store(0, std::memory_order_release);
     bufferFormat_ = bufferFormat;
 
     NSError *error = nil;
@@ -159,7 +159,7 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
         return false;
       }
 
-      framesWritten_.fetch_add(numFrames);
+      framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
       return true;
     }
 
@@ -206,14 +206,15 @@ bool FileWriter::writeAudioData(const AudioBufferList *audioBufferList, int numF
       return false;
     }
 
-    framesWritten_.fetch_add(numFrames);
+    framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
     return true;
   }
 }
 
 double FileWriter::getCurrentDuration() const
 {
-  return static_cast<double>(framesWritten_.load()) / bufferFormat_.sampleRate;
+  return static_cast<double>(framesWritten_.load(std::memory_order_acquire)) /
+      bufferFormat_.sampleRate;
 }
 
 std::string FileWriter::getFilePath() const
@@ -228,7 +229,7 @@ void FileWriter::setOnErrorCallback(uint64_t callbackId)
 
 void FileWriter::clearOnErrorCallback()
 {
-  errorCallbackId_.store(0);
+  errorCallbackId_.store(0, std::memory_order_release);
 }
 
 void FileWriter::invokeOnErrorCallback(const std::string &message)

@@ -3,7 +3,7 @@ import {
   OnAudioReadyEventType,
   OnRecorderErrorEventType,
 } from '../events/types';
-import { IAudioRecorder, IAudioRecorderFileOptions } from '../interfaces';
+import { IAudioRecorder } from '../interfaces';
 import {
   AudioRecorderCallbackOptions,
   AudioRecorderFileOptions,
@@ -16,9 +16,11 @@ import FilePreset from '../utils/filePresets';
 import AudioBuffer from './AudioBuffer';
 import RecorderAdapterNode from './RecorderAdapterNode';
 
+// Enforces default options, making sure that all properties are defined
+// for the contract with native code.
 function withDefaultOptions(
   inOptions: AudioRecorderFileOptions
-): IAudioRecorderFileOptions {
+): Required<AudioRecorderFileOptions> {
   return {
     directory: FileDirectory.Cache,
     subDirectory: 'AudioAPI',
@@ -27,6 +29,7 @@ function withDefaultOptions(
     format: FileFormat.M4A,
     batchDurationSeconds: 0,
     preset: FilePreset.High,
+    androidFlushIntervalMs: 500,
     ...inOptions,
   };
 }

@@ -15,11 +15,19 @@ extern "C" {
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
+#include <string>
+
+constexpr int defaultFrameRatio = 4;
+constexpr int fallbackFIFOSize = 8192;
 
 namespace audioapi::android::ffmpeg {
 
 FFmpegAudioFileWriter::FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties)
-    : AndroidFileWriterBackend(properties) {}
+    : AndroidFileWriterBackend(properties) {
+  // Set flush interval from properties, limit minimum to 100ms
+  // to avoid people hurting themselves too much
+  flushIntervalMs_ = std::min(properties_->androidFlushIntervalMs, 100);
+}
 
 FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
   if (isFileOpen()) {
@@ -35,16 +43,22 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
 /// @param streamMaxBufferSize The estimated maximum buffer size for the incoming audio stream.
 /// @returns Success status with file path or Error status with message.
 OpenFileStatus FFmpegAudioFileWriter::openFile(
-    int32_t streamSampleRate,
+    float streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
-  filePath_ = fileoptions::getFilePath(properties_);
   streamSampleRate_ = streamSampleRate;
   streamChannelCount_ = streamChannelCount;
   streamMaxBufferSize_ = streamMaxBufferSize;
-  framesWritten_.store(0);
+  framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
   ReturnStatus<void> status;
+  ReturnStatus<std::string> filePathResult = fileoptions::getFilePath(properties_);
+
+  if (!filePathResult.isSuccess()) {
+    return OpenFileStatus::Error(filePathResult.getMessage());
+  }
+
+  filePath_ = filePathResult.getValue();
 
   const AVCodec *codec = getCodec(properties_);
 
@@ -84,7 +98,7 @@ OpenFileStatus FFmpegAudioFileWriter::openFile(
 
   initializeBuffers(streamMaxBufferSize);
 
-  isFileOpen_.store(true);
+  isFileOpen_.store(true, std::memory_order_release);
   return OpenFileStatus::Success(filePath_);
 }
 
@@ -136,7 +150,7 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
     return false;
   }
 
-  framesWritten_.fetch_add(numFrames);
+  framesWritten_.fetch_add(numFrames, std::memory_order_acq_rel);
 
   if (processFifo(false) < 0) {
     return false;
@@ -146,11 +160,11 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
 }
 
 bool FFmpegAudioFileWriter::isFileOpen() {
-  return isFileOpen_.load();
+  return isFileOpen_.load(std::memory_order_acquire);
 }
 
 bool FFmpegAudioFileWriter::isConverterRequired() {
-  return isConverterRequired_.load();
+  return isConverterRequired_.load(std::memory_order_acquire);
 }
 
 /// @brief Initializes the FFmpeg format context for the output file.
@@ -291,18 +305,16 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
   frame_ = av_unique_ptr<AVFrame>(av_frame_alloc());
   packet_ = av_unique_ptr<AVPacket>(av_packet_alloc());
 
-  int contextFrameRatio = 4;
-
   if (encoderCtx_->frame_size > 0) {
-    contextFrameRatio = static_cast<int>(std::ceil(
+    defaultFrameRatio = static_cast<int>(std::ceil(
         static_cast<double>(maxBufferSize) / static_cast<double>(encoderCtx_->frame_size)));
   }
 
   int calculatedSize =
-      (encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size * contextFrameRatio
-                                   : maxBufferSize * contextFrameRatio);
+      (encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size * defaultFrameRatio
+                                   : maxBufferSize * defaultFrameRatio);
 
-  int fifoSize = std::max(calculatedSize, 8192);
+  int fifoSize = std::max(calculatedSize, fallbackFIFOSize);
 
   audioFifo_ = av_unique_ptr<AVAudioFifo>(
       av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
@@ -483,7 +495,7 @@ CloseFileStatus FFmpegAudioFileWriter::finalizeOutput() {
   double durationInSeconds = getCurrentDuration();
 
   filePath_ = "";
-  isFileOpen_.store(false);
+  isFileOpen_.store(false, std::memory_order_release);
 
   return CloseFileStatus::Success({fileSizeInMB, durationInSeconds});
 }

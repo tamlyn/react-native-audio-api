@@ -12,13 +12,14 @@ AudioFileProperties::AudioFileProperties(
     FileDirectory directory,
     const std::string &subDirectory,
     const std::string &fileNamePrefix,
-    size_t channelCount,
+    int channelCount,
     size_t batchDurationSeconds,
     Format format,
     size_t sampleRate,
     size_t bitRate,
     BitDepth bitDepth,
     int flacCompressionLevel,
+    int androidFlushIntervalMs,
     IOSAudioQuality iosAudioQuality)
     : directory(directory),
       subDirectory(subDirectory),
@@ -30,6 +31,7 @@ AudioFileProperties::AudioFileProperties(
       bitRate(bitRate),
       bitDepth(bitDepth),
       flacCompressionLevel(flacCompressionLevel),
+      androidFlushIntervalMs(androidFlushIntervalMs),
       iosAudioQuality(iosAudioQuality) {}
 
 std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
@@ -46,8 +48,7 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   std::string fileNamePrefix =
       options.getProperty(runtime, "fileNamePrefix").asString(runtime).utf8(runtime);
 
-  size_t channelCount =
-      static_cast<size_t>(options.getProperty(runtime, "channelCount").getNumber());
+  int channelCount = static_cast<int>(options.getProperty(runtime, "channelCount").getNumber());
 
   size_t batchDurationSeconds =
       static_cast<size_t>(options.getProperty(runtime, "batchDurationSeconds").getNumber());
@@ -67,6 +68,9 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
   int flacCompressionLevel =
       static_cast<int>(presetOptions.getProperty(runtime, "flacCompressionLevel").getNumber());
 
+  int androidFlushIntervalMs =
+      static_cast<int>(presetOptions.getProperty(runtime, "androidFlushIntervalMs").getNumber());
+
   IOSAudioQuality iosAudioQuality =
       static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").getNumber());
 
@@ -80,7 +84,8 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
       sampleRate,
       bitRate,
       bitDepth,
-      std::max(flacCompressionLevel - 1, 0),
+      flacCompressionLevel,
+      androidFlushIntervalMs,
       iosAudioQuality);
 }
 

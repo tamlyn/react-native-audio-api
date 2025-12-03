@@ -25,7 +25,7 @@ AndroidRecorderCallback::AndroidRecorderCallback(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
     float sampleRate,
     size_t bufferLength,
-    size_t channelCount,
+    int channelCount,
     uint64_t callbackId)
     : sampleRate_(sampleRate),
       bufferLength_(bufferLength),
@@ -36,8 +36,7 @@ AndroidRecorderCallback::AndroidRecorderCallback(
   circularBus_.resize(channelCount_);
 
   for (size_t i = 0; i < channelCount_; ++i) {
-    auto busArray = std::make_shared<CircularAudioArray>(ringBufferSize_);
-    circularBus_[i] = busArray;
+    circularBus_[i] = std::make_shared<CircularAudioArray>(ringBufferSize_);
   }
 }
 
@@ -52,7 +51,7 @@ AndroidRecorderCallback::~AndroidRecorderCallback() {
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param maxInputBufferLength The maximum buffer length of the incoming audio stream.
 void AndroidRecorderCallback::prepare(
-    int32_t streamSampleRate,
+    float streamSampleRate,
     int32_t streamChannelCount,
     size_t maxInputBufferLength) {
   ma_result result;
@@ -140,7 +139,7 @@ void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
 void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFrames) {
   auto *inputData = static_cast<float *>(data);
 
-  for (size_t channel = 0; channel < channelCount_; ++channel) {
+  for (int channel = 0; channel < channelCount_; ++channel) {
     float *channelData = deinterleavingArray_->getData();
 
     for (int frame = 0; frame < numFrames; ++frame) {
