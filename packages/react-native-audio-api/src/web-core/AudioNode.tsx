@@ -38,12 +38,16 @@ export default class AudioNode {
     return destination;
   }
 
-  public disconnect(destination?: AudioNode): void {
+  public disconnect(destination?: AudioNode | AudioParam): void {
     if (destination === undefined) {
       this.node.disconnect();
       return;
     }
 
+    if (destination instanceof AudioParam) {
+      this.node.disconnect(destination.param);
+      return;
+    }
     this.node.disconnect(destination.node);
   }
 }

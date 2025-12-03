@@ -1,9 +1,4 @@
-import {
-  ContextState,
-  AudioContextOptions,
-  // @ts-ignore only-for-this-commit
-  AudioBufferBaseSourceNodeOptions,
-} from '../types';
+import { ContextState, AudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
@@ -17,7 +12,6 @@ import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConvolverNode from './ConvolverNode';
 
-import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConstantSourceNode from './ConstantSourceNode';
 
 export default class AudioContext implements BaseAudioContext {
@@ -75,22 +69,8 @@ export default class AudioContext implements BaseAudioContext {
     return new ConvolverNode(this);
   }
 
-  async createBufferSource(
-    options?: AudioBufferBaseSourceNodeOptions
-  ): Promise<AudioBufferSourceNode> {
-    if (!options || !options.pitchCorrection) {
-      return new AudioBufferSourceNode(
-        this,
-        this.context.createBufferSource(),
-        false
-      );
-    }
-
-    await globalWasmPromise;
-
-    const wasmStretch = await window[globalTag](this.context);
-
-    return new AudioBufferSourceNode(this, wasmStretch, true);
+  createBufferSource(): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(this);
   }
 
   createBuffer(
