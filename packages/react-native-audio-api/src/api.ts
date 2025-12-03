@@ -32,3 +32,4 @@ export { default as AudioManager } from './system';
 export * from './errors';
 export * from './system/types';
 export * from './types';
+export { default as FilePreset } from './utils/filePresets';
