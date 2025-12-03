@@ -23,6 +23,7 @@ import WaveShaperNode from './WaveShaperNode';
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
 import ConvolverNode from './ConvolverNode';
 import { ConvolverNodeOptions } from './ConvolverNodeOptions';
+import DelayNode from './DelayNode';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -71,6 +72,10 @@ export default class OfflineAudioContext implements BaseAudioContext {
 
   createGain(): GainNode {
     return new GainNode(this, this.context.createGain());
+  }
+
+  createDelay(maxDelayTime?: number): DelayNode {
+    return new DelayNode(this, this.context.createDelay(maxDelayTime));
   }
 
   createStereoPanner(): StereoPannerNode {

@@ -8,6 +8,7 @@ import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import DelayNode from './DelayNode';
 import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
@@ -28,6 +29,7 @@ export default interface BaseAudioContext {
   createOscillator(): OscillatorNode;
   createConstantSource(): ConstantSourceNode;
   createGain(): GainNode;
+  createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
   createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode;
