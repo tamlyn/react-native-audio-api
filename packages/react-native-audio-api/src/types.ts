@@ -1,3 +1,5 @@
+import AudioBuffer from './core/AudioBuffer';
+
 export type ChannelCountMode = 'max' | 'clamped-max' | 'explicit';
 
 export type ChannelInterpretation = 'speakers' | 'discrete';
@@ -29,7 +31,6 @@ export interface PeriodicWaveConstraints {
 
 export interface AudioContextOptions {
   sampleRate?: number;
-  initSuspended?: boolean;
 }
 
 export interface OfflineAudioContextOptions {
@@ -50,3 +51,13 @@ export interface AudioBufferBaseSourceNodeOptions {
 }
 
 export type ProcessorMode = 'processInPlace' | 'processThrough';
+
+export interface ConvolverNodeOptions {
+  buffer?: AudioBuffer | null;
+  disableNormalization?: boolean;
+}
+
+export interface IIRFilterNodeOptions {
+  feedforward: number[];
+  feedback: number[];
+}

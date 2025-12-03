@@ -4,10 +4,10 @@
 #include <audioapi/jsi/JsiPromise.h>
 
 #include <jsi/jsi.h>
+#include <cstddef>
 #include <memory>
 #include <utility>
 #include <vector>
-#include <cstddef>
 
 namespace audioapi {
 using namespace facebook;
@@ -36,11 +36,14 @@ class BaseAudioContextHostObject : public JsiHostObject {
   JSI_HOST_FUNCTION_DECL(createGain);
   JSI_HOST_FUNCTION_DECL(createStereoPanner);
   JSI_HOST_FUNCTION_DECL(createBiquadFilter);
+  JSI_HOST_FUNCTION_DECL(createIIRFilter);
   JSI_HOST_FUNCTION_DECL(createBufferSource);
   JSI_HOST_FUNCTION_DECL(createBufferQueueSource);
   JSI_HOST_FUNCTION_DECL(createBuffer);
   JSI_HOST_FUNCTION_DECL(createPeriodicWave);
   JSI_HOST_FUNCTION_DECL(createAnalyser);
+  JSI_HOST_FUNCTION_DECL(createConvolver);
+  JSI_HOST_FUNCTION_DECL(createDelay);
 
   std::shared_ptr<BaseAudioContext> context_;
 

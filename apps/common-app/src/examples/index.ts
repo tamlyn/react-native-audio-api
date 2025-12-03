@@ -111,5 +111,5 @@ export const Examples: Example[] = [
     title: 'Streamer',
     subtitle: 'Stream audio from a URL',
     screen: Streaming,
-  }
+  },
 ] as const;

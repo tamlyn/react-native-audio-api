@@ -3,12 +3,13 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
 class OscillatorTest : public ::testing::Test {
  protected:
-  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::unique_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 

@@ -7,6 +7,10 @@ import { Optional, ReadOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
+:::warning
+To access microphone you need to make sure your app has met required conditions to do so. Refer to [permission section](/docs/fundamentals/getting-started#special-permissions) for more info.
+:::
+
 `AudioRecorder` provides a simple way to manage audio recording.
 It connects to the audio graph through a [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) and triggers events when new audio data is ready.
 
@@ -69,7 +73,7 @@ Stops recording.
 Connects recorder to the adapter. If the recorder is already connected, it will switch to the new adapter (it is equivalent to calling disconnect() previously).
 Be careful `RecorderAdapterNode` can be connected only once. You can't connect same adapter twice (even to different recorders).
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `node` | [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) | Adapter that we want to connect to. |
 
@@ -85,7 +89,7 @@ Disconnects recorder from the currently connected adapter. It does not need to b
 
 Sets a callback after every portion of data deliverance.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `callback` | [`(OnAudioReadyEventType => void)`](/docs/inputs/audio-recorder#onaudioreadyeventtype) | The callback function to handle audio data. |
 

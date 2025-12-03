@@ -13,7 +13,6 @@ import { useGainAdsrPlayground } from '@site/src/components/InteractivePlaygroun
 # AudioBufferSourceNode
 
 The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
-The `AudioBufferSourceNode` is an [`AudioBufferBaseSourceNode`](/docs/sources/audio-buffer-base-source-node) which represents audio source with in-memory audio data, stored in
 [`AudioBuffer`](/docs/sources/audio-buffer). You can use it for audio playback, including standard pause and resume functionalities.
 
 An `AudioBufferSourceNode` can be started only once, so if you want to play the same sound again you have to create a new one.
@@ -39,6 +38,14 @@ interface AudioBufferBaseSourceNodeOptions {
   pitchCorrection: boolean // specifies if pitch correction algorithm has to be available
 }
 ```
+
+:::caution
+The pitch correction algorithm introduces processing latency.
+As a result, when scheduling precise playback times, you should start input samples slightly ahead of the intended playback time.
+For more details, see [getLatency()](/docs/sources/audio-buffer-base-source-node#getlatency).
+
+If you plan to play multiple buffers one after another, consider using [AudioBufferQueueSourceNode](/docs/sources/audio-buffer-queue-source-node)
+:::
 
 ## Example
 
@@ -80,13 +87,14 @@ It inherits all methods from [`AudioBufferBaseSourceNode`](/docs/sources/audio-b
 
 ### `start` <Overridden /> {#start}
 
-Schedules `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
+Schedules the `AudioBufferSourceNode` to start playback of audio data contained in the associated [`AudioBuffer`](/docs/sources/audio-buffer), or starts to play immediately.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
-| `when` | `number` | The time, in seconds, at which the node will start to play. |
-| `offset` <Optional /> | `number` | An offset, in seconds, determines the starting point for audio playback. |
-| `duration` <Optional /> | `number` | The duration, in seconds, of audio playback. |
+| `when` <Optional /> | `number` | The time, in seconds, at which playback is scheduled to start. If `when` is less than [`AudioContext.currentTime`](/docs/core/base-audio-context#properties) or set to 0, the node starts playing immediately. <br /> Default: `0`. |
+| `offset` <Optional /> | `number` | The position, in seconds, within the audio buffer where playback begins. <br /> The default value is `0`, which starts playback from the beginning of the buffer. If the offset exceeds the buffer’s [`duration`](/docs/sources/audio-buffer#properties) (or the defined [`loopEnd`](/docs/sources/audio-buffer-source-node#properties) value), it’s automatically clamped to the valid range. <br /> Offsets are calculated using the buffer’s natural sample rate rather than the current playback rate — so even if the sound is played at double speed, halfway through a 10-second buffer is still 5 seconds. |
+| `duration` <Optional /> | `number` | The playback duration, in seconds. If not provided, playback continues until the sound ends naturally or is manually stopped with [`stop() method`](/docs/sources/audio-scheduled-source-node#stop). <br /> Equivalent to calling `start(when, offset)` followed by `stop(when + duration)`. |
+
 
 #### Errors:
 
@@ -98,6 +106,7 @@ Schedules `AudioBufferSourceNode` to start playback of audio data contained in t
 | `InvalidStateError` | If node has already been started once. |
 
 #### Returns `undefined`.
+
 
 ## Events
 

@@ -5,12 +5,13 @@
 #include <audioapi/utils/AudioBus.h>
 #include <gtest/gtest.h>
 #include <test/src/MockAudioEventHandlerRegistry.h>
+#include <memory>
 
 using namespace audioapi;
 
 class GainTest : public ::testing::Test {
  protected:
-  std::shared_ptr<IAudioEventHandlerRegistry> eventRegistry;
+  std::shared_ptr<MockAudioEventHandlerRegistry> eventRegistry;
   std::unique_ptr<OfflineAudioContext> context;
   static constexpr int sampleRate = 44100;
 
@@ -47,8 +48,7 @@ TEST_F(GainTest, GainModulatesVolumeCorrectly) {
   auto gainNode = std::make_shared<TestableGainNode>(context.get());
   gainNode->setGainParam(GAIN_VALUE);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 1, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     bus->getChannel(0)->getData()[i] = i + 1;
   }
@@ -65,8 +65,7 @@ TEST_F(GainTest, GainModulatesVolumeCorrectlyMultiChannel) {
   auto gainNode = std::make_shared<TestableGainNode>(context.get());
   gainNode->setGainParam(GAIN_VALUE);
 
-  auto bus =
-      std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
+  auto bus = std::make_shared<audioapi::AudioBus>(FRAMES_TO_PROCESS, 2, sampleRate);
   for (size_t i = 0; i < bus->getSize(); ++i) {
     bus->getChannel(0)->getData()[i] = i + 1;
     bus->getChannel(1)->getData()[i] = -i - 1;

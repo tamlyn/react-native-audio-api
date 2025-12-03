@@ -3,6 +3,7 @@ import {
   PeriodicWaveConstraints,
   OfflineAudioContextOptions,
   AudioBufferBaseSourceNodeOptions,
+  IIRFilterNodeOptions,
 } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
@@ -11,6 +12,7 @@ import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
@@ -18,6 +20,9 @@ import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 
 import { globalWasmPromise, globalTag } from './custom/LoadCustomWasm';
+import ConvolverNode from './ConvolverNode';
+import { ConvolverNodeOptions } from './ConvolverNodeOptions';
+import DelayNode from './DelayNode';
 
 export default class OfflineAudioContext implements BaseAudioContext {
   readonly context: globalThis.OfflineAudioContext;
@@ -68,12 +73,46 @@ export default class OfflineAudioContext implements BaseAudioContext {
     return new GainNode(this, this.context.createGain());
   }
 
+  createDelay(maxDelayTime?: number): DelayNode {
+    return new DelayNode(this, this.context.createDelay(maxDelayTime));
+  }
+
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this, this.context.createStereoPanner());
   }
 
   createBiquadFilter(): BiquadFilterNode {
     return new BiquadFilterNode(this, this.context.createBiquadFilter());
+  }
+
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(options.feedforward, options.feedback)
+    );
+  }
+
+  createConvolver(options?: ConvolverNodeOptions): ConvolverNode {
+    if (options?.buffer) {
+      const numberOfChannels = options.buffer.numberOfChannels;
+      if (
+        numberOfChannels !== 1 &&
+        numberOfChannels !== 2 &&
+        numberOfChannels !== 4
+      ) {
+        throw new NotSupportedError(
+          `The number of channels provided (${numberOfChannels}) in impulse response for ConvolverNode buffer must be 1 or 2 or 4.`
+        );
+      }
+    }
+    const buffer = options?.buffer ?? null;
+    const disableNormalization = options?.disableNormalization ?? false;
+    return new ConvolverNode(
+      this,
+      this.context.createConvolver(),
+      buffer,
+      disableNormalization
+    );
   }
 
   async createBufferSource(

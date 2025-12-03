@@ -76,7 +76,7 @@ function App() {
 
 ### `setLockScreenInfo`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :-----: |
 | `info` | [`LockScreenInfo`](/docs/system/audio-manager#lockscreeninfo) | Information to be displayed on the lock screen |
 
@@ -90,7 +90,7 @@ Resets all of the lock screen data.
 
 ### `setAudioSessionOptions` <OnlyiOS />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | options | [`SessionOptions`](/docs/system/audio-manager#sessionoptions) | Options to be set for [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Configuring-standard-audio-behaviors) |
 
@@ -98,11 +98,20 @@ Resets all of the lock screen data.
 
 ### `setAudioSessionActivity` <OnlyiOS />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | enabled | `boolean` | It is used to set/unset [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession?language=objc#Activating-the-audio-configuration) activity |
 
-#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.
+#### Returns promise of `boolean` type, which is resolved to `true` if invokation ended with success, `false` otherwise.'
+
+### `disableSessionManagement` <OnlyiOS />
+
+#### Returns `undefined`.
+
+Disables all internal default [AVAudioSession](https://developer.apple.com/documentation/avfaudio/avaudiosession) configurations and management done by the `react-native-audio-api` package. After calling this method, user is responsible for managing audio session entirely on their own.
+Typical use-case for this method is when user wants to fully control audio session outside of `react-native-audio-api` package, 
+commonly when using another audio library along `react-native-audio-api`. The method has to be called before `AudioContext` is created, for example in app initialization code.
+Any later call to `setAudioSessionOptions` or `setAudioSessionActivity` will re-enable internal audio session management.
 
 ### `getDevicePreferredSampleRate`
 
@@ -110,7 +119,7 @@ Resets all of the lock screen data.
 
 ### `observeAudioInterruptions`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing audio interruptions |
 
@@ -118,7 +127,7 @@ Resets all of the lock screen data.
 
 ### `activelyReclaimSession` <OnlyiOS /> <Experimental />
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable session spoofing |
 
@@ -136,7 +145,7 @@ interval polling to check if other audio is playing.
 
 ### `observeVolumeChanges`
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `enabled` | `boolean` | It is used to enable/disable observing volume changes |
 
@@ -146,7 +155,7 @@ interval polling to check if other audio is playing.
 
 Enables emition of some system events.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`RemoteCommandEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event |
 | `enabled` | `boolean` | Indicates the start or the end of event emission |
@@ -165,7 +174,7 @@ with proper parameters.
 
 Adds callback to be invoked upon hearing an event.
 
-| Parameters | Type | Description |
+| Parameter | Type | Description |
 | :---: | :---: | :---- |
 | `name` | [`SystemEventName`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Name of an event listener |
 | `callback` | [`SystemEventCallback`](/docs/system/audio-manager#systemeventname--remotecommandeventname) | Callback that will be invoked upon hearing an event |
@@ -177,11 +186,15 @@ Adds callback to be invoked upon hearing an event.
 Brings up the system microphone permissions pop-up on demand. The pop-up automatically shows if microphone data
 is directly requested, but sometimes it is better to ask beforehand.
 
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
+
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 
 ### `checkRecordingPermissions`
 
 Checks if permissions were previously granted.
+
+#### Throws an `error` if there is no NSMicrophoneUsageDescription entry in `Info.plist`
 
 #### Returns promise of [`PermissionStatus`](/docs/system/audio-manager#permissionstatus) type, which is resolved after receiving answer from the system.
 

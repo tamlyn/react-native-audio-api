@@ -15,8 +15,13 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <chrono>
+#include <cstdio>
+#include <memory>
+#include <string>
+#include <utility>
 
 namespace audioapi {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 StreamerNode::StreamerNode(BaseAudioContext *context)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
@@ -25,20 +30,24 @@ StreamerNode::StreamerNode(BaseAudioContext *context)
       codecpar_(nullptr),
       pkt_(nullptr),
       frame_(nullptr),
-      pendingFrame_(nullptr),
-      bufferedBus_(nullptr),
-      bufferedBusIndex_(0),
-      maxBufferSize_(0),
-      audio_stream_index_(-1),
       swrCtx_(nullptr),
       resampledData_(nullptr),
-      maxResampledSamples_(0) {}
+      bufferedBus_(nullptr),
+      audio_stream_index_(-1),
+      maxResampledSamples_(0),
+      processedSamples_(0) {}
+#else
+StreamerNode::StreamerNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {}
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 StreamerNode::~StreamerNode() {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   cleanup();
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
 bool StreamerNode::initialize(const std::string &input_url) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   if (isInitialized_) {
     cleanup();
   }
@@ -66,26 +75,77 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  maxBufferSize_ = BUFFER_LENGTH_SECONDS * codecCtx_->sample_rate;
-  // If decoding is faster than playing, we buffer few seconds of audio
-  bufferedBus_ = std::make_shared<AudioBus>(
-      maxBufferSize_, codecpar_->ch_layout.nb_channels, codecCtx_->sample_rate);
-
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  audioBus_ = std::make_shared<AudioBus>(
-      RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+
+  auto [sender, receiver] = channels::spsc::channel<
+      StreamingData,
+      channels::spsc::OverflowStrategy::WAIT_ON_FULL,
+      channels::spsc::WaitStrategy::ATOMIC_WAIT>(CHANNEL_CAPACITY);
+  sender_ = std::move(sender);
+  receiver_ = std::move(receiver);
 
   streamingThread_ = std::thread(&StreamerNode::streamAudio, this);
-  streamFlag.store(true);
   isInitialized_ = true;
   return true;
+#else
+  return false;
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-void StreamerNode::stop(double when) {
-  AudioScheduledSourceNode::stop(when);
-  streamFlag.store(false);
+std::shared_ptr<AudioBus> StreamerNode::processNode(
+    const std::shared_ptr<AudioBus> &processingBus,
+    int framesToProcess) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+  size_t startOffset = 0;
+  size_t offsetLength = 0;
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  isNodeFinished_.store(isFinished(), std::memory_order_release);
+
+  if (!isPlaying() && !isStopScheduled()) {
+    processingBus->zero();
+    return processingBus;
+  }
+
+  int bufferRemaining = bufferedBusSize_ - processedSamples_;
+  int alreadyProcessed = 0;
+  if (bufferRemaining < framesToProcess) {
+    if (bufferedBus_ != nullptr) {
+      for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
+        memcpy(
+            processingBus->getChannel(ch)->getData(),
+            bufferedBus_->getChannel(ch)->getData() + processedSamples_,
+            bufferRemaining * sizeof(float));
+      }
+      framesToProcess -= bufferRemaining;
+      alreadyProcessed += bufferRemaining;
+    }
+    StreamingData data;
+    auto res = receiver_.try_receive(data);
+    if (res == channels::spsc::ResponseStatus::SUCCESS) {
+      bufferedBus_ = std::make_shared<AudioBus>(std::move(data.bus));
+      bufferedBusSize_ = data.size;
+      processedSamples_ = 0;
+    } else {
+      bufferedBus_ = nullptr;
+    }
+  }
+  if (bufferedBus_ != nullptr) {
+    for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
+      memcpy(
+          processingBus->getChannel(ch)->getData() + alreadyProcessed,
+          bufferedBus_->getChannel(ch)->getData() + processedSamples_,
+          framesToProcess * sizeof(float));
+    }
+    processedSamples_ += framesToProcess;
+  }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+
+  return processingBus;
 }
 
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 bool StreamerNode::setupResampler() {
   // Allocate resampler context
   swrCtx_ = swr_alloc();
@@ -122,69 +182,23 @@ bool StreamerNode::setupResampler() {
 }
 
 void StreamerNode::streamAudio() {
-  while (streamFlag.load()) {
-    if (pendingFrame_ != nullptr) {
-      if (!processFrameWithResampler(pendingFrame_)) {
+  while (!isNodeFinished_.load(std::memory_order_acquire)) {
+    if (av_read_frame(fmtCtx_, pkt_) < 0) {
+      return;
+    }
+    if (pkt_->stream_index == audio_stream_index_) {
+      if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
         return;
       }
-    } else {
-      if (av_read_frame(fmtCtx_, pkt_) < 0) {
+      if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
         return;
       }
-      if (pkt_->stream_index == audio_stream_index_) {
-        if (avcodec_send_packet(codecCtx_, pkt_) != 0) {
-          return;
-        }
-        if (avcodec_receive_frame(codecCtx_, frame_) != 0) {
-          return;
-        }
-        if (!processFrameWithResampler(frame_)) {
-          return;
-        }
+      if (!processFrameWithResampler(frame_)) {
+        return;
       }
-      av_packet_unref(pkt_);
     }
-    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+    av_packet_unref(pkt_);
   }
-}
-
-std::shared_ptr<AudioBus> StreamerNode::processNode(
-    const std::shared_ptr<AudioBus> &processingBus,
-    int framesToProcess) {
-  size_t startOffset = 0;
-  size_t offsetLength = 0;
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
-
-  if (!isPlaying() && !isStopScheduled()) {
-    processingBus->zero();
-    return processingBus;
-  }
-
-  // If we have enough buffered data, copy to output bus
-  if (bufferedBusIndex_ >= framesToProcess) {
-    Locker locker(mutex_);
-    for (int ch = 0; ch < processingBus->getNumberOfChannels(); ch++) {
-      memcpy(
-          processingBus->getChannel(ch)->getData(),
-          bufferedBus_->getChannel(ch)->getData(),
-          offsetLength * sizeof(float));
-
-      memmove(
-          bufferedBus_->getChannel(ch)->getData(),
-          bufferedBus_->getChannel(ch)->getData() + offsetLength,
-          (maxBufferSize_ - offsetLength) * sizeof(float));
-    }
-    bufferedBusIndex_ -= offsetLength;
-  } else {
-    if (VERBOSE)
-      printf(
-          "Buffer underrun: have %zu, need %zu\n",
-          bufferedBusIndex_,
-          (size_t)framesToProcess);
-    processingBus->zero();
-  }
-
-  return processingBus;
 }
 
 bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
@@ -220,22 +234,21 @@ bool StreamerNode::processFrameWithResampler(AVFrame *frame) {
     return false;
   }
 
-  // Check if converted data fits in buffer
-  if (bufferedBusIndex_ + converted_samples > maxBufferSize_) {
-    pendingFrame_ = frame;
+  // if we would like to finish dont copy anything
+  if (this->isFinished()) {
     return true;
-  } else {
-    pendingFrame_ = nullptr;
   }
-
-  // Copy converted data to our buffer
-  Locker locker(mutex_);
+  auto bus = AudioBus(
+      static_cast<size_t>(converted_samples),
+      codecCtx_->ch_layout.nb_channels,
+      context_->getSampleRate());
   for (int ch = 0; ch < codecCtx_->ch_layout.nb_channels; ch++) {
     auto *src = reinterpret_cast<float *>(resampledData_[ch]);
-    float *dst = bufferedBus_->getChannel(ch)->getData() + bufferedBusIndex_;
+    float *dst = bus.getChannel(ch)->getData();
     memcpy(dst, src, converted_samples * sizeof(float));
   }
-  bufferedBusIndex_ += converted_samples;
+  StreamingData data{std::move(bus), static_cast<size_t>(converted_samples)};
+  sender_.send(std::move(data));
   return true;
 }
 
@@ -280,10 +293,13 @@ bool StreamerNode::setupDecoder() {
 }
 
 void StreamerNode::cleanup() {
-  streamFlag.store(false);
-  // cleanup cannot be called from the streaming thread so there is no need to
-  // check if we are in the same thread
-  streamingThread_.join();
+  this->playbackState_ = PlaybackState::FINISHED;
+  if (streamingThread_.joinable()) {
+    StreamingData dummy;
+    while (receiver_.try_receive(dummy) == channels::spsc::ResponseStatus::SUCCESS)
+      ; // clear the receiver
+    streamingThread_.join();
+  }
   if (swrCtx_ != nullptr) {
     swr_free(&swrCtx_);
   }
@@ -315,4 +331,5 @@ void StreamerNode::cleanup() {
   codecpar_ = nullptr;
   maxResampledSamples_ = 0;
 }
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
 } // namespace audioapi

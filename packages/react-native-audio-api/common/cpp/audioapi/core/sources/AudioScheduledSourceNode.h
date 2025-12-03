@@ -4,19 +4,19 @@
 
 #include <algorithm>
 #include <atomic>
+#include <cassert>
 #include <chrono>
+#include <cstddef>
 #include <functional>
 #include <iostream>
 #include <limits>
 #include <memory>
 #include <thread>
-#include <cstddef>
-#include <cassert>
 #include <utility>
 
 namespace audioapi {
 
-class AudioEventHandlerRegistry;
+class IAudioEventHandlerRegistry;
 
 class AudioScheduledSourceNode : public AudioNode {
  public:
@@ -28,7 +28,7 @@ class AudioScheduledSourceNode : public AudioNode {
   enum class PlaybackState { UNSCHEDULED, SCHEDULED, PLAYING, STOP_SCHEDULED, FINISHED };
   explicit AudioScheduledSourceNode(BaseAudioContext *context);
 
-  void start(double when);
+  virtual void start(double when);
   virtual void stop(double when);
 
   bool isUnscheduled();
@@ -37,7 +37,6 @@ class AudioScheduledSourceNode : public AudioNode {
   bool isFinished();
   bool isStopScheduled();
 
-  void clearOnEndedCallback();
   void setOnEndedCallbackId(uint64_t callbackId);
 
   void disable() override;
@@ -49,9 +48,10 @@ class AudioScheduledSourceNode : public AudioNode {
   PlaybackState playbackState_;
 
   std::atomic<uint64_t> onEndedCallbackId_ = 0;
+  std::shared_ptr<IAudioEventHandlerRegistry> audioEventHandlerRegistry_;
 
   void updatePlaybackInfo(
-      const std::shared_ptr<AudioBus>& processingBus,
+      const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess,
       size_t &startOffset,
       size_t &nonSilentFramesToProcess);

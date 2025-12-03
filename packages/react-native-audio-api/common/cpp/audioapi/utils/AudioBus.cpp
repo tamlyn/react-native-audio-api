@@ -2,6 +2,10 @@
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <algorithm>
+#include <memory>
+#include <utility>
+#include <vector>
 
 // Implementation of channel summing/mixing is based on the WebKit approach,
 // source:
@@ -16,9 +20,7 @@ namespace audioapi {
  */
 
 AudioBus::AudioBus(size_t size, int numberOfChannels, float sampleRate)
-    : numberOfChannels_(numberOfChannels),
-      sampleRate_(sampleRate),
-      size_(size) {
+    : numberOfChannels_(numberOfChannels), sampleRate_(sampleRate), size_(size) {
   createChannels();
 }
 
@@ -32,6 +34,34 @@ AudioBus::AudioBus(const AudioBus &other) {
   for (int i = 0; i < numberOfChannels_; i += 1) {
     channels_[i] = std::make_shared<AudioArray>(*other.channels_[i]);
   }
+}
+
+AudioBus::AudioBus(AudioBus &&other) noexcept
+    : channels_(std::move(other.channels_)),
+      numberOfChannels_(other.numberOfChannels_),
+      sampleRate_(other.sampleRate_),
+      size_(other.size_) {
+  other.numberOfChannels_ = 0;
+  other.sampleRate_ = 0.0f;
+  other.size_ = 0;
+}
+
+AudioBus &AudioBus::operator=(const AudioBus &other) {
+  if (this == &other) {
+    return *this;
+  }
+
+  numberOfChannels_ = other.numberOfChannels_;
+  sampleRate_ = other.sampleRate_;
+  size_ = other.size_;
+
+  createChannels();
+
+  for (int i = 0; i < numberOfChannels_; i += 1) {
+    channels_[i] = std::make_shared<AudioArray>(*other.channels_[i]);
+  }
+
+  return *this;
 }
 
 AudioBus::~AudioBus() {
@@ -128,6 +158,10 @@ AudioArray *AudioBus::getChannelByType(int channelType) const {
   }
 }
 
+std::shared_ptr<AudioArray> AudioBus::getSharedChannel(int index) const {
+  return channels_[index];
+}
+
 AudioArray &AudioBus::operator[](size_t index) {
   return *channels_[index];
 }
@@ -178,9 +212,7 @@ float AudioBus::maxAbsValue() const {
   return maxAbsValue;
 }
 
-void AudioBus::sum(
-    const AudioBus *source,
-    ChannelInterpretation interpretation) {
+void AudioBus::sum(const AudioBus *source, ChannelInterpretation interpretation) {
   sum(source, 0, 0, getSize(), interpretation);
 }
 
@@ -224,8 +256,7 @@ void AudioBus::sum(
 
   // Source and destination channel counts are the same. Just sum the channels.
   for (int i = 0; i < numberOfChannels_; i += 1) {
-    getChannel(i)->sum(
-        source->getChannel(i), sourceStart, destinationStart, length);
+    getChannel(i)->sum(source->getChannel(i), sourceStart, destinationStart, length);
   }
 }
 
@@ -248,8 +279,7 @@ void AudioBus::copy(
 
   if (source->getNumberOfChannels() == getNumberOfChannels()) {
     for (int i = 0; i < getNumberOfChannels(); i += 1) {
-      getChannel(i)->copy(
-          source->getChannel(i), sourceStart, destinationStart, length);
+      getChannel(i)->copy(source->getChannel(i), sourceStart, destinationStart, length);
     }
 
     return;
@@ -281,15 +311,13 @@ void AudioBus::discreteSum(
     size_t sourceStart,
     size_t destinationStart,
     size_t length) const {
-  int numberOfChannels =
-      std::min(getNumberOfChannels(), source->getNumberOfChannels());
+  int numberOfChannels = std::min(getNumberOfChannels(), source->getNumberOfChannels());
 
   // In case of source > destination, we "down-mix" and drop the extra channels.
   // In case of source < destination, we "up-mix" as many channels as we have,
   // leaving the remaining channels untouched.
   for (int i = 0; i < numberOfChannels; i++) {
-    getChannel(i)->sum(
-        source->getChannel(i), sourceStart, destinationStart, length);
+    getChannel(i)->sum(source->getChannel(i), sourceStart, destinationStart, length);
   }
 }
 
@@ -302,14 +330,11 @@ void AudioBus::sumByUpMixing(
   int numberOfChannels = getNumberOfChannels();
 
   // Mono to stereo (1 -> 2, 4)
-  if (numberOfSourceChannels == 1 &&
-      (numberOfChannels == 2 || numberOfChannels == 4)) {
+  if (numberOfSourceChannels == 1 && (numberOfChannels == 2 || numberOfChannels == 4)) {
     AudioArray *sourceChannel = source->getChannelByType(ChannelMono);
 
-    getChannelByType(ChannelLeft)
-        ->sum(sourceChannel, sourceStart, destinationStart, length);
-    getChannelByType(ChannelRight)
-        ->sum(sourceChannel, sourceStart, destinationStart, length);
+    getChannelByType(ChannelLeft)->sum(sourceChannel, sourceStart, destinationStart, length);
+    getChannelByType(ChannelRight)->sum(sourceChannel, sourceStart, destinationStart, length);
     return;
   }
 
@@ -317,55 +342,30 @@ void AudioBus::sumByUpMixing(
   if (numberOfSourceChannels == 1 && numberOfChannels == 6) {
     AudioArray *sourceChannel = source->getChannel(0);
 
-    getChannelByType(ChannelCenter)
-        ->sum(sourceChannel, sourceStart, destinationStart, length);
+    getChannelByType(ChannelCenter)->sum(sourceChannel, sourceStart, destinationStart, length);
     return;
   }
 
   // Stereo 2 to stereo 4 or 5.1 (2 -> 4, 6)
-  if (numberOfSourceChannels == 2 &&
-      (numberOfChannels == 4 || numberOfChannels == 6)) {
+  if (numberOfSourceChannels == 2 && (numberOfChannels == 4 || numberOfChannels == 6)) {
     getChannelByType(ChannelLeft)
-        ->sum(
-            source->getChannelByType(ChannelLeft),
-            sourceStart,
-            destinationStart,
-            length);
+        ->sum(source->getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
     getChannelByType(ChannelRight)
-        ->sum(
-            source->getChannelByType(ChannelRight),
-            sourceStart,
-            destinationStart,
-            length);
+        ->sum(source->getChannelByType(ChannelRight), sourceStart, destinationStart, length);
     return;
   }
 
   // Stereo 4 to 5.1 (4 -> 6)
   if (numberOfSourceChannels == 4 && numberOfChannels == 6) {
     getChannelByType(ChannelLeft)
-        ->sum(
-            source->getChannelByType(ChannelLeft),
-            sourceStart,
-            destinationStart,
-            length);
+        ->sum(source->getChannelByType(ChannelLeft), sourceStart, destinationStart, length);
     getChannelByType(ChannelRight)
-        ->sum(
-            source->getChannelByType(ChannelRight),
-            sourceStart,
-            destinationStart,
-            length);
+        ->sum(source->getChannelByType(ChannelRight), sourceStart, destinationStart, length);
     getChannelByType(ChannelSurroundLeft)
-        ->sum(
-            source->getChannelByType(ChannelSurroundLeft),
-            sourceStart,
-            destinationStart,
-            length);
+        ->sum(source->getChannelByType(ChannelSurroundLeft), sourceStart, destinationStart, length);
     getChannelByType(ChannelSurroundRight)
         ->sum(
-            source->getChannelByType(ChannelSurroundRight),
-            sourceStart,
-            destinationStart,
-            length);
+            source->getChannelByType(ChannelSurroundRight), sourceStart, destinationStart, length);
     return;
   }
 
@@ -388,15 +388,9 @@ void AudioBus::sumByDownMixing(
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
     dsp::multiplyByScalarThenAddToOutput(
-        sourceLeft + sourceStart,
-        0.5f,
-        destinationData + destinationStart,
-        length);
+        sourceLeft + sourceStart, 0.5f, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceRight + sourceStart,
-        0.5f,
-        destinationData + destinationStart,
-        length);
+        sourceRight + sourceStart, 0.5f, destinationData + destinationStart, length);
     return;
   }
 
@@ -406,33 +400,19 @@ void AudioBus::sumByDownMixing(
   if (numberOfSourceChannels == 4 && numberOfChannels == 1) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
-    float *sourceSurroundLeft =
-        source->getChannelByType(ChannelSurroundLeft)->getData();
-    float *sourceSurroundRight =
-        source->getChannelByType(ChannelSurroundRight)->getData();
+    float *sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
     dsp::multiplyByScalarThenAddToOutput(
-        sourceLeft + sourceStart,
-        0.25f,
-        destinationData + destinationStart,
-        length);
+        sourceLeft + sourceStart, 0.25f, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceRight + sourceStart,
-        0.25f,
-        destinationData + destinationStart,
-        length);
+        sourceRight + sourceStart, 0.25f, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundLeft + sourceStart,
-        0.25f,
-        destinationData + destinationStart,
-        length);
+        sourceSurroundLeft + sourceStart, 0.25f, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundRight + sourceStart,
-        0.25f,
-        destinationData + destinationStart,
-        length);
+        sourceSurroundRight + sourceStart, 0.25f, destinationData + destinationStart, length);
     return;
   }
 
@@ -443,38 +423,24 @@ void AudioBus::sumByDownMixing(
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
     float *sourceCenter = source->getChannelByType(ChannelCenter)->getData();
-    float *sourceSurroundLeft =
-        source->getChannelByType(ChannelSurroundLeft)->getData();
-    float *sourceSurroundRight =
-        source->getChannelByType(ChannelSurroundRight)->getData();
+    float *sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationData = getChannelByType(ChannelMono)->getData();
 
     dsp::multiplyByScalarThenAddToOutput(
-        sourceLeft + sourceStart,
-        SQRT_HALF,
-        destinationData + destinationStart,
-        length);
+        sourceLeft + sourceStart, SQRT_HALF, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceRight + sourceStart,
-        SQRT_HALF,
-        destinationData + destinationStart,
-        length);
+        sourceRight + sourceStart, SQRT_HALF, destinationData + destinationStart, length);
     dsp::add(
         sourceCenter + sourceStart,
         destinationData + destinationStart,
         destinationData + destinationStart,
         length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundLeft + sourceStart,
-        0.5f,
-        destinationData + destinationStart,
-        length);
+        sourceSurroundLeft + sourceStart, 0.5f, destinationData + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundRight + sourceStart,
-        0.5f,
-        destinationData + destinationStart,
-        length);
+        sourceSurroundRight + sourceStart, 0.5f, destinationData + destinationStart, length);
 
     return;
   }
@@ -485,35 +451,21 @@ void AudioBus::sumByDownMixing(
   if (numberOfSourceChannels == 4 && numberOfChannels == 2) {
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
-    float *sourceSurroundLeft =
-        source->getChannelByType(ChannelSurroundLeft)->getData();
-    float *sourceSurroundRight =
-        source->getChannelByType(ChannelSurroundRight)->getData();
+    float *sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
 
     dsp::multiplyByScalarThenAddToOutput(
-        sourceLeft + sourceStart,
-        0.5f,
-        destinationLeft + destinationStart,
-        length);
+        sourceLeft + sourceStart, 0.5f, destinationLeft + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundLeft + sourceStart,
-        0.5f,
-        destinationLeft + destinationStart,
-        length);
+        sourceSurroundLeft + sourceStart, 0.5f, destinationLeft + destinationStart, length);
 
     dsp::multiplyByScalarThenAddToOutput(
-        sourceRight + sourceStart,
-        0.5f,
-        destinationRight + destinationStart,
-        length);
+        sourceRight + sourceStart, 0.5f, destinationRight + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundRight + sourceStart,
-        0.5f,
-        destinationRight + destinationStart,
-        length);
+        sourceSurroundRight + sourceStart, 0.5f, destinationRight + destinationStart, length);
     return;
   }
 
@@ -525,10 +477,8 @@ void AudioBus::sumByDownMixing(
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
     float *sourceCenter = source->getChannelByType(ChannelCenter)->getData();
-    float *sourceSurroundLeft =
-        source->getChannelByType(ChannelSurroundLeft)->getData();
-    float *sourceSurroundRight =
-        source->getChannelByType(ChannelSurroundRight)->getData();
+    float *sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
@@ -539,15 +489,9 @@ void AudioBus::sumByDownMixing(
         destinationLeft + destinationStart,
         length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceCenter + sourceStart,
-        SQRT_HALF,
-        destinationLeft + destinationStart,
-        length);
+        sourceCenter + sourceStart, SQRT_HALF, destinationLeft + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundLeft + sourceStart,
-        SQRT_HALF,
-        destinationLeft + destinationStart,
-        length);
+        sourceSurroundLeft + sourceStart, SQRT_HALF, destinationLeft + destinationStart, length);
 
     dsp::add(
         sourceRight + sourceStart,
@@ -555,15 +499,9 @@ void AudioBus::sumByDownMixing(
         destinationRight + destinationStart,
         length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceCenter + sourceStart,
-        SQRT_HALF,
-        destinationRight + destinationStart,
-        length);
+        sourceCenter + sourceStart, SQRT_HALF, destinationRight + destinationStart, length);
     dsp::multiplyByScalarThenAddToOutput(
-        sourceSurroundRight + sourceStart,
-        SQRT_HALF,
-        destinationRight + destinationStart,
-        length);
+        sourceSurroundRight + sourceStart, SQRT_HALF, destinationRight + destinationStart, length);
     return;
   }
 
@@ -576,17 +514,13 @@ void AudioBus::sumByDownMixing(
     float *sourceLeft = source->getChannelByType(ChannelLeft)->getData();
     float *sourceRight = source->getChannelByType(ChannelRight)->getData();
     float *sourceCenter = source->getChannelByType(ChannelCenter)->getData();
-    float *sourceSurroundLeft =
-        source->getChannelByType(ChannelSurroundLeft)->getData();
-    float *sourceSurroundRight =
-        source->getChannelByType(ChannelSurroundRight)->getData();
+    float *sourceSurroundLeft = source->getChannelByType(ChannelSurroundLeft)->getData();
+    float *sourceSurroundRight = source->getChannelByType(ChannelSurroundRight)->getData();
 
     float *destinationLeft = getChannelByType(ChannelLeft)->getData();
     float *destinationRight = getChannelByType(ChannelRight)->getData();
-    float *destinationSurroundLeft =
-        getChannelByType(ChannelSurroundLeft)->getData();
-    float *destinationSurroundRight =
-        getChannelByType(ChannelSurroundRight)->getData();
+    float *destinationSurroundLeft = getChannelByType(ChannelSurroundLeft)->getData();
+    float *destinationSurroundRight = getChannelByType(ChannelSurroundRight)->getData();
 
     dsp::add(
         sourceLeft + sourceStart,

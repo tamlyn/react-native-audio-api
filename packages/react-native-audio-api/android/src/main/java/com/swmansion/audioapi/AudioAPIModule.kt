@@ -1,6 +1,7 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.bridge.ReadableArray
@@ -16,7 +17,8 @@ import java.lang.ref.WeakReference
 @ReactModule(name = AudioAPIModule.NAME)
 class AudioAPIModule(
   reactContext: ReactApplicationContext,
-) : NativeAudioAPIModuleSpec(reactContext) {
+) : NativeAudioAPIModuleSpec(reactContext),
+  LifecycleEventListener {
   companion object {
     const val NAME = NativeAudioAPIModuleSpec.NAME
   }
@@ -64,6 +66,27 @@ class AudioAPIModule(
     return true
   }
 
+  override fun onHostResume() {
+    // do nothing
+  }
+
+  override fun onHostPause() {
+    // do nothing
+  }
+
+  override fun onHostDestroy() {
+    // do nothing
+  }
+
+  override fun initialize() {
+    reactContext.get()?.addLifecycleEventListener(this)
+  }
+
+  override fun invalidate() {
+    reactContext.get()?.removeLifecycleEventListener(this)
+    // think about cleaning up resources, singletons etc.
+  }
+
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
 
   override fun setAudioSessionActivity(
@@ -80,6 +103,10 @@ class AudioAPIModule(
     allowHaptics: Boolean,
   ) {
     // noting to do here
+  }
+
+  override fun disableSessionManagement() {
+    // nothing to do here
   }
 
   override fun setLockScreenInfo(info: ReadableMap?) {

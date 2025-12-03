@@ -1,24 +1,20 @@
-import type { ShareableWorkletCallback } from '../interfaces';
+import AudioAPIModule from '../AudioAPIModule';
 
-interface SimplifiedWorkletModule {
-  makeShareableCloneRecursive: (
-    workletCallback: ShareableWorkletCallback
-  ) => ShareableWorkletCallback;
+export function assertWorkletsEnabled() {
+  if (!AudioAPIModule.areWorkletsAvailable) {
+    throw new Error(
+      '[react-native-audio-api]: Worklets are not available. Please install react-native-worklets to use this feature.'
+    );
+  }
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  createWorkletRuntime: (options?: any) => any;
+  if (!AudioAPIModule.isWorkletsVersionSupported) {
+    throw new Error(
+      `[react-native-audio-api]: Worklets version ${AudioAPIModule.workletsVersion} is not supported.
+      Please install react-native-worklets of one of the following versions: [${AudioAPIModule.supportedWorkletsVersion.join(', ')}] to use this feature.`
+    );
+  }
 }
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max);
-}
-
-export let isWorkletsAvailable = false;
-export let workletsModule: SimplifiedWorkletModule;
-
-try {
-  workletsModule = require('react-native-worklets');
-  isWorkletsAvailable = true;
-} catch (error) {
-  isWorkletsAvailable = false;
 }
