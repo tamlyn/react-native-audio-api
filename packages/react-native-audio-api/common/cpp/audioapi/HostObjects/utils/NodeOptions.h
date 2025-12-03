@@ -92,6 +92,8 @@ struct IIRFilterOptions : AudioNodeOptions {
 
   IIRFilterOptions() = default;
 
+  explicit IIRFilterOptions(const AudioNodeOptions options) : AudioNodeOptions(options) {}
+
   IIRFilterOptions(const std::vector<float> &ff, const std::vector<float> &fb)
       : feedforward(ff), feedback(fb) {}
 

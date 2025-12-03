@@ -3,7 +3,7 @@ import { InvalidStateError, RangeError } from '../errors';
 import AudioParam from './AudioParam';
 import AudioBuffer from './AudioBuffer';
 import BaseAudioContext from './BaseAudioContext';
-import AudioScheduledSourceNode from './AudioScheduledSourceNode';
+import AudioNode from './AudioNode';
 
 import { clamp } from '../utils';
 import { TAudioBufferSourceOptions } from '../types';
@@ -200,13 +200,11 @@ interface IAudioAPIBufferSourceNodeWeb {
   set loopEnd(value: number);
 }
 
-class AudioBufferSourceNodeStretcher
-  extends globalThis.AudioNode
-  implements IAudioAPIBufferSourceNodeWeb
-{
+class AudioBufferSourceNodeStretcher implements IAudioAPIBufferSourceNodeWeb {
   private stretcherPromise: Promise<IStretcherNode> | null = null;
   private node: IStretcherNode | null = null;
   private hasBeenStarted: boolean = false;
+  private context: BaseAudioContext;
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
@@ -217,11 +215,11 @@ class AudioBufferSourceNodeStretcher
   private _buffer: AudioBuffer | null = null;
 
   constructor(context: BaseAudioContext) {
-    super();
     const promise = async () => {
       await globalWasmPromise;
       return window[globalTag](new window.AudioContext());
     };
+    this.context = context;
     this.stretcherPromise = promise();
     this.stretcherPromise.then((node) => {
       this.node = node;
@@ -250,6 +248,49 @@ class AudioBufferSourceNodeStretcher
       ),
       context
     );
+  }
+
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    const action = (node: IStretcherNode) => {
+      if (destination instanceof AudioParam) {
+        node.connect(destination.param);
+        return;
+      }
+      node.connect(destination.node);
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+    } else {
+      action(this.node);
+    }
+
+    return destination;
+  }
+
+  disconnect(destination?: AudioNode | AudioParam): void {
+    const action = (node: IStretcherNode) => {
+      if (destination === undefined) {
+        node.disconnect();
+        return;
+      }
+
+      if (destination instanceof AudioParam) {
+        node.disconnect(destination.param);
+        return;
+      }
+      node.disconnect(destination.node);
+    };
+
+    if (!this.node) {
+      this.stretcherPromise!.then((node) => {
+        action(node);
+      });
+    } else {
+      action(this.node);
+    }
   }
 
   start(when?: number, offset?: number, duration?: number): void {
@@ -433,17 +474,13 @@ class AudioBufferSourceNodeStretcher
   }
 }
 
-class AudioBufferSourceNodeWeb
-  extends globalThis.AudioNode
-  implements IAudioAPIBufferSourceNodeWeb
-{
+class AudioBufferSourceNodeWeb implements IAudioAPIBufferSourceNodeWeb {
   private node: DefaultSource;
   private hasBeenStarted: boolean = false;
   readonly playbackRate: AudioParam;
   readonly detune: AudioParam;
 
   constructor(context: BaseAudioContext, options?: TAudioBufferSourceOptions) {
-    super();
     this.node = new globalThis.AudioBufferSourceNode(context.context, options);
     this.detune = new AudioParam(this.node.detune, context);
     this.playbackRate = new AudioParam(this.node.playbackRate, context);
@@ -544,10 +581,31 @@ class AudioBufferSourceNodeWeb
   set loopEnd(value: number) {
     this.node.loopEnd = value;
   }
+
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    if (destination instanceof AudioParam) {
+      this.node.connect(destination.param);
+    } else {
+      this.node.connect(destination.node);
+    }
+    return destination;
+  }
+
+  disconnect(destination?: AudioNode | AudioParam): void {
+    if (destination === undefined) {
+      this.node.disconnect();
+      return;
+    }
+
+    if (destination instanceof AudioParam) {
+      this.node.disconnect(destination.param);
+      return;
+    }
+    this.node.disconnect(destination.node);
+  }
 }
 
 export default class AudioBufferSourceNode
-  extends globalThis.AudioNode
   implements IAudioAPIBufferSourceNodeWeb
 {
   private node: AudioBufferSourceNodeStretcher | AudioBufferSourceNodeWeb;
@@ -556,14 +614,21 @@ export default class AudioBufferSourceNode
       ...AudioBufferSourceOptions,
       ...options,
     };
-    super();
     this.node = finalOptions.pitchCorrection
       ? new AudioBufferSourceNodeStretcher(context)
       : new AudioBufferSourceNodeWeb(context, options);
   }
 
+  connect(destination: AudioNode | AudioParam): AudioNode | AudioParam {
+    return this.asAudioBufferSourceNodeWeb().connect(destination);
+  }
+
+  disconnect(destination?: AudioNode | AudioParam): void {
+    this.asAudioBufferSourceNodeWeb().disconnect(destination);
+  }
+
   asAudioBufferSourceNodeWeb(): IAudioAPIBufferSourceNodeWeb {
-    return this as unknown as IAudioAPIBufferSourceNodeWeb;
+    return this.node as unknown as IAudioAPIBufferSourceNodeWeb;
   }
 
   start(when: number = 0, offset?: number, duration?: number): void {

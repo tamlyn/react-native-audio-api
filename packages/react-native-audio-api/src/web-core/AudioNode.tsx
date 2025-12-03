@@ -10,7 +10,7 @@ export default class AudioNode {
   readonly channelCountMode: ChannelCountMode;
   readonly channelInterpretation: ChannelInterpretation;
 
-  protected readonly node: globalThis.AudioNode;
+  readonly node: globalThis.AudioNode;
 
   constructor(context: BaseAudioContext, node: globalThis.AudioNode) {
     this.context = context;

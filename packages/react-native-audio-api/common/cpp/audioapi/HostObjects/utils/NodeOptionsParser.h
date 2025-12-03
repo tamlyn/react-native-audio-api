@@ -177,7 +177,7 @@ std::shared_ptr<BaseAudioBufferSourceOptions> parseBaseAudioBufferSourceOptions(
   options.playbackRate =
       static_cast<float>(optionsObject.getProperty(runtime, "playbackRate").getNumber());
   options.pitchCorrection =
-      static_cast<bool>(optionsObject.getProperty(runtime, "pitchCorrection").getNumber());
+      static_cast<bool>(optionsObject.getProperty(runtime, "pitchCorrection").getBool());
   return std::make_shared<BaseAudioBufferSourceOptions>(options);
 }
 
@@ -193,7 +193,7 @@ std::shared_ptr<AudioBufferSourceOptions> parseAudioBufferSourceOptions(
                                 .asHostObject<AudioBufferHostObject>(runtime);
     options.buffer = bufferHostObject->audioBuffer_;
   }
-  options.loop = static_cast<bool>(optionsObject.getProperty(runtime, "loop").getNumber());
+  options.loop = static_cast<bool>(optionsObject.getProperty(runtime, "loop").getBool());
   options.loopStart =
       static_cast<float>(optionsObject.getProperty(runtime, "loopStart").getNumber());
   options.loopEnd = static_cast<float>(optionsObject.getProperty(runtime, "loopEnd").getNumber());

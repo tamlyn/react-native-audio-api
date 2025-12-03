@@ -167,9 +167,6 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto options = args[0].asObject(runtime);
-  auto streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
-  auto streamer = context_->createStreamer(streamerOptions);
   auto streamerOptions = std::make_shared<StreamerOptions>();
   if (!args[0].isUndefined()) {
     auto options = args[0].asObject(runtime);
