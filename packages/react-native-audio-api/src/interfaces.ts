@@ -81,6 +81,11 @@ export interface IBaseAudioContext {
   createBufferSource: (
     audioBufferSourceOptions: TAudioBufferSourceOptions
   ) => IAudioBufferSourceNode;
+  createDelay(maxDelayTime: number): IDelayNode;
+  createIIRFilter: (
+    feedforward: number[],
+    feedback: number[]
+  ) => IIIRFilterNode;
   createBufferQueueSource: (
     audioBufferQueueSourceOptions: TBaseAudioBufferSourceOptions
   ) => IAudioBufferQueueSourceNode;
@@ -92,7 +97,7 @@ export interface IBaseAudioContext {
   ) => IPeriodicWave;
   createAnalyser: (analyserOptions: TAnalyserOptions) => IAnalyserNode;
   createConvolver: (convolverOptions: TConvolverOptions) => IConvolverNode;
-  createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode;
+  createStreamer: (streamerOptions?: TStreamerOptions) => IStreamerNode | null;
 }
 
 export interface IAudioContext extends IBaseAudioContext {
@@ -119,6 +124,11 @@ export interface IAudioNode {
   disconnect: (destination?: IAudioNode | IAudioParam) => void;
 }
 
+export interface IDelayNode extends IAudioNode {
+  readonly delayTime: IAudioParam;
+  maxDelayTime: number;
+}
+
 export interface IGainNode extends IAudioNode {
   readonly gain: IAudioParam;
 }
@@ -134,6 +144,14 @@ export interface IBiquadFilterNode extends IAudioNode {
   readonly gain: AudioParam;
   type: BiquadFilterType;
 
+  getFrequencyResponse(
+    frequencyArray: Float32Array,
+    magResponseOutput: Float32Array,
+    phaseResponseOutput: Float32Array
+  ): void;
+}
+
+export interface IIIRFilterNode extends IAudioNode {
   getFrequencyResponse(
     frequencyArray: Float32Array,
     magResponseOutput: Float32Array,

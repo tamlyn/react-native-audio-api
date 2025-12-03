@@ -28,6 +28,7 @@ ConvolverNode::ConvolverNode(
   setBuffer(options->bus);
   audioBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  requiresTailProcessing_ = true;
   isInitialized_ = true;
 }
 

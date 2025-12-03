@@ -77,6 +77,10 @@ bool AudioNode::isEnabled() const {
   return isEnabled_;
 }
 
+bool AudioNode::requiresTailProcessing() const {
+  return requiresTailProcessing_;
+}
+
 void AudioNode::enable() {
   if (isEnabled()) {
     return;

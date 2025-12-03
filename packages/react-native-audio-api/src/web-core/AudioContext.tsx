@@ -1,4 +1,8 @@
-import { ContextState, AudioContextOptions } from '../types';
+import {
+  ContextState,
+  AudioContextOptions,
+  IIRFilterNodeOptions,
+} from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
@@ -6,12 +10,13 @@ import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConvolverNode from './ConvolverNode';
-
+import DelayNode from './DelayNode';
 import ConstantSourceNode from './ConstantSourceNode';
 
 export default class AudioContext implements BaseAudioContext {
@@ -57,6 +62,10 @@ export default class AudioContext implements BaseAudioContext {
     return new GainNode(this);
   }
 
+  createDelay(maxDelayTime?: number): DelayNode {
+    return new DelayNode(this, this.context.createDelay(maxDelayTime));
+  }
+
   createStereoPanner(): StereoPannerNode {
     return new StereoPannerNode(this);
   }
@@ -67,6 +76,13 @@ export default class AudioContext implements BaseAudioContext {
 
   createConvolver(): ConvolverNode {
     return new ConvolverNode(this);
+  }
+
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
+    return new IIRFilterNode(
+      this,
+      this.context.createIIRFilter(options.feedforward, options.feedback)
+    );
   }
 
   createBufferSource(): AudioBufferSourceNode {

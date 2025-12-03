@@ -41,6 +41,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
       bool checkIsAlreadyProcessed);
 
   bool isEnabled() const;
+  bool requiresTailProcessing() const;
   void enable();
   virtual void disable();
 
@@ -48,6 +49,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioNodeManager;
   friend class AudioDestinationNode;
   friend class ConvolverNode;
+  friend class DelayNodeHostObject;
 
   BaseAudioContext *context_;
   std::shared_ptr<AudioBus> audioBus_;
@@ -67,6 +69,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   int numberOfEnabledInputNodes_ = 0;
   bool isInitialized_ = false;
   bool isEnabled_ = true;
+  bool requiresTailProcessing_ = false;
 
   std::size_t lastRenderedFrame_{SIZE_MAX};
 

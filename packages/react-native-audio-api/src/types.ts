@@ -127,3 +127,8 @@ export interface TAudioBufferOptions {
   length: number;
   sampleRate: number;
 }
+
+export interface IIRFilterNodeOptions {
+  feedforward: number[];
+  feedback: number[];
+}

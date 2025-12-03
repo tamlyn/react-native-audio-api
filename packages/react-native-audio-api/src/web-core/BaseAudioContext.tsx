@@ -1,15 +1,17 @@
-import { ContextState } from '../types';
+import { ContextState, IIRFilterNodeOptions } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
 import AudioBufferSourceNode from './AudioBufferSourceNode';
 import BiquadFilterNode from './BiquadFilterNode';
+import IIRFilterNode from './IIRFilterNode';
 import GainNode from './GainNode';
 import OscillatorNode from './OscillatorNode';
 import PeriodicWave from './PeriodicWave';
 import StereoPannerNode from './StereoPannerNode';
 import ConstantSourceNode from './ConstantSourceNode';
 import ConvolverNode from './ConvolverNode';
+import DelayNode from './DelayNode';
 
 export default interface BaseAudioContext {
   readonly context: globalThis.BaseAudioContext;
@@ -22,8 +24,10 @@ export default interface BaseAudioContext {
   createOscillator(): OscillatorNode;
   createConstantSource(): ConstantSourceNode;
   createGain(): GainNode;
+  createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
+  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode;
   createConvolver(): ConvolverNode;
   createBufferSource(): AudioBufferSourceNode;
   createBuffer(

@@ -16,6 +16,7 @@ namespace audioapi {
 
 class AudioBus;
 class GainNode;
+class DelayNode;
 class AudioBuffer;
 class PeriodicWave;
 class OscillatorNode;
@@ -23,6 +24,7 @@ class ConstantSourceNode;
 class StereoPannerNode;
 class AudioNodeManager;
 class BiquadFilterNode;
+class IIRFilterNode;
 class AudioDestinationNode;
 class AudioBufferSourceNode;
 class AudioBufferQueueSourceNode;
@@ -75,6 +77,10 @@ class BaseAudioContext {
       std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
+  std::shared_ptr<DelayNode> createDelay(float maxDelayTime);
+  std::shared_ptr<IIRFilterNode> createIIRFilter(
+      const std::vector<float> &feedforward,
+      const std::vector<float> &feedback);
   std::shared_ptr<OscillatorNode> createOscillator(std::shared_ptr<OscillatorOptions> options);
   std::shared_ptr<ConstantSourceNode> createConstantSource(
       std::shared_ptr<ConstantSourceOptions> options);

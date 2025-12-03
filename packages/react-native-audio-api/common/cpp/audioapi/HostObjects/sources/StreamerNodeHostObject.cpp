@@ -19,10 +19,14 @@ JSI_PROPERTY_GETTER_IMPL(StreamerNodeHostObject, streamPath) {
 }
 
 JSI_HOST_FUNCTION_IMPL(StreamerNodeHostObject, initialize) {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
   auto streamerNode = std::static_pointer_cast<StreamerNode>(node_);
   auto path = args[0].getString(runtime).utf8(runtime);
   auto result = streamerNode->initialize(path);
   return {result};
+#else
+  return false;
+#endif
 }
 
 } // namespace audioapi
