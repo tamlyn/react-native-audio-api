@@ -126,9 +126,9 @@
   "codegenConfig": {
     "name": "MediSpec",
     "type": "modules",
-    "jsSrcsDir": "src",
+    "jsSrcsDir": "src/specs",
     "android": {
-      "javaPackageName": "com.medi"
+      "javaPackageName": "com.swmansion.midi"
     }
   },
   "create-react-native-library": {

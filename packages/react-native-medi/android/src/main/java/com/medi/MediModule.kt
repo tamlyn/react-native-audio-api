@@ -17,10 +17,16 @@ import com.facebook.react.bridge.WritableArray
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.bridge.WritableNativeArray
 import com.facebook.react.module.annotations.ReactModule
+import com.swmansion.midi.NativeMediSpec
 
 @ReactModule(name = MediModule.NAME)
-class MediModule(reactContext: ReactApplicationContext) :
+class MediModule(private val reactContext: ReactApplicationContext) :
   NativeMediSpec(reactContext) {
+
+  companion object {
+    const val NAME = "Medi"
+    private const val TAG = "MediModule"
+  }
 
   private var midiManager: MidiManager? = null
   private val openDevices = mutableMapOf<String, MidiDevice>()
@@ -39,7 +45,7 @@ class MediModule(reactContext: ReactApplicationContext) :
       return
     }
 
-    midiManager = reactApplicationContext.getSystemService(Context.MIDI_SERVICE) as? MidiManager
+    midiManager = reactContext.getSystemService(Context.MIDI_SERVICE) as? MidiManager
     sysexEnabled = sysex
 
     if (midiManager == null) {
@@ -51,7 +57,7 @@ class MediModule(reactContext: ReactApplicationContext) :
     // Register device callback for state changes (for now just logging)
     midiManager?.registerDeviceCallback(
       MidiManager.TRANSPORT_MIDI_BYTE_STREAM,
-      reactApplicationContext.mainExecutor,
+      reactContext.mainExecutor,
       object : MidiManager.DeviceCallback() {
         override fun onDeviceAdded(device: MidiDeviceInfo) {
           Log.d(TAG, "[MIDI State] Device added: ${device.properties.getString(MidiDeviceInfo.PROPERTY_NAME)}")
@@ -274,8 +280,7 @@ class MediModule(reactContext: ReactApplicationContext) :
     return info
   }
 
-  override fun invalidate() {
-    super.invalidate()
+  fun cleanup() {
     // Clean up all open ports and devices
     openPorts.values.forEach { port ->
       try {
@@ -296,10 +301,5 @@ class MediModule(reactContext: ReactApplicationContext) :
     }
     openPorts.clear()
     openDevices.clear()
-  }
-
-  companion object {
-    const val NAME = "Medi"
-    private const val TAG = "MediModule"
   }
 }

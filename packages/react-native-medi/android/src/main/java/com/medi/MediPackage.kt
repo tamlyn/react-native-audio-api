@@ -5,10 +5,11 @@ import com.facebook.react.bridge.NativeModule
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.module.model.ReactModuleInfo
 import com.facebook.react.module.model.ReactModuleInfoProvider
+import com.swmansion.midi.NativeMediSpec
 import java.util.HashMap
 
 class MediPackage : BaseReactPackage() {
-  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeModule? {
+  override fun getModule(name: String, reactContext: ReactApplicationContext): NativeMediSpec? {
     return if (name == MediModule.NAME) {
       MediModule(reactContext)
     } else {
