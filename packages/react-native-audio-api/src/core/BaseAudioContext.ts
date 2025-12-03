@@ -156,8 +156,8 @@ export default class BaseAudioContext {
     return new BiquadFilterNode(this);
   }
 
-  createBufferSource(): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this);
+  createBufferSource(pitchCorrection?: boolean): AudioBufferSourceNode {
+    return new AudioBufferSourceNode(this, { pitchCorrection });
   }
 
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
@@ -187,8 +187,10 @@ export default class BaseAudioContext {
     return new IIRFilterNode(this, { feedforward, feedback });
   }
 
-  createBufferQueueSource(): AudioBufferQueueSourceNode {
-    return new AudioBufferQueueSourceNode(this);
+  createBufferQueueSource(
+    pitchCorrection?: boolean
+  ): AudioBufferQueueSourceNode {
+    return new AudioBufferQueueSourceNode(this, { pitchCorrection });
   }
 
   createBuffer(
