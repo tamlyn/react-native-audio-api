@@ -114,7 +114,7 @@ ReturnStatus<std::string> AndroidAudioRecorder::start() {
 
   jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->start(); });
 
-  state_.store(RecorderState::Recording);
+  state_.store(RecorderState::Recording, std::memory_order_release);
   return ReturnStatus<std::string>::Success(std::format("file://{}", filePath_));
 }
 
@@ -136,7 +136,7 @@ ReturnStatus<std::tuple<std::string, double, double>> AndroidAudioRecorder::stop
         "Audio stream is not initialized.");
   }
 
-  state_.store(RecorderState::Idle);
+  state_.store(RecorderState::Idle, std::memory_order_release);
   jni::ThreadScope::WithClassLoader([this]() { nativeAudioRecorder_->stop(); });
   mStream_->requestStop();
 
@@ -183,13 +183,13 @@ ReturnStatus<std::string> AndroidAudioRecorder::enableFileOutput(
     filePath_ = fileResult.getValue();
   }
 
-  fileOutputEnabled_.store(true);
+  fileOutputEnabled_.store(true, std::memory_order_release);
   return ReturnStatus<std::string>::Success(filePath_);
 }
 
 void AndroidAudioRecorder::disableFileOutput() {
   Locker fileWriterLock(fileWriterMutex_);
-  fileOutputEnabled_.store(false);
+  fileOutputEnabled_.store(false, std::memory_order_release);
   fileWriter_ = nullptr;
 }
 
@@ -199,7 +199,7 @@ void AndroidAudioRecorder::pause() {
   }
 
   mStream_->pause(0);
-  state_.store(RecorderState::Paused);
+  state_.store(RecorderState::Paused, std::memory_order_release);
 }
 
 void AndroidAudioRecorder::resume() {
@@ -208,7 +208,7 @@ void AndroidAudioRecorder::resume() {
   }
 
   mStream_->start(0);
-  state_.store(RecorderState::Recording);
+  state_.store(RecorderState::Recording, std::memory_order_release);
 }
 
 ReturnStatus<void> AndroidAudioRecorder::setOnAudioReadyCallback(
@@ -224,14 +224,14 @@ ReturnStatus<void> AndroidAudioRecorder::setOnAudioReadyCallback(
     callback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
-  callbackOutputEnabled_.store(true);
+  callbackOutputEnabled_.store(true, std::memory_order_release);
 
   return ReturnStatus<void>::Success();
 }
 
 void AndroidAudioRecorder::clearOnAudioReadyCallback() {
   Locker callbackLock(callbackMutex_);
-  callbackOutputEnabled_.store(false);
+  callbackOutputEnabled_.store(false, std::memory_order_release);
   callback_ = nullptr;
 }
 
@@ -275,20 +275,20 @@ double AndroidAudioRecorder::getCurrentDuration() const {
 }
 
 bool AndroidAudioRecorder::isRecording() const {
-  return state_.load() == RecorderState::Recording &&
+  return state_.load(std::memory_order_acquire) == RecorderState::Recording &&
       mStream_->getState() == oboe::StreamState::Started;
 }
 
 bool AndroidAudioRecorder::isPaused() const {
-  return state_.load() == RecorderState::Paused;
+  return state_.load(std::memory_order_acquire) == RecorderState::Paused;
 }
 
 bool AndroidAudioRecorder::isIdle() const {
-  return state_.load() == RecorderState::Idle;
+  return state_.load(std::memory_order_acquire) == RecorderState::Idle;
 }
 
 void AndroidAudioRecorder::cleanup() {
-  state_.store(RecorderState::Idle);
+  state_.store(RecorderState::Idle, std::memory_order_release);
 
   if (mStream_) {
     mStream_->close();
@@ -308,7 +308,7 @@ void AndroidAudioRecorder::onErrorAfterClose(oboe::AudioStream *stream, oboe::Re
     }
 
     mStream_->requestStart();
-    state_.store(RecorderState::Recording);
+    state_.store(RecorderState::Recording, std::memory_order_release);
   }
 }
 

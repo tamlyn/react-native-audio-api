@@ -117,7 +117,7 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
   }
 
   [nativeRecorder_ start];
-  state_.store(RecorderState::Recording);
+  state_.store(RecorderState::Recording, std::memory_order_release);
   return ReturnStatus<std::string>::Success(filePath_);
 }
 
@@ -134,7 +134,7 @@ ReturnStatus<std::tuple<std::string, double, double>> IOSAudioRecorder::stop()
     return ReturnStatus<std::tuple<std::string, double, double>>::Error("Not recording");
   }
 
-  state_.store(RecorderState::Idle);
+  state_.store(RecorderState::Idle, std::memory_order_release);
   [nativeRecorder_ stop];
 
   if (usesFileOutput()) {
@@ -177,18 +177,18 @@ ReturnStatus<std::string> IOSAudioRecorder::enableFileOutput(
   }
 
   // TODO: atomic szpont?
-  if (errorCallbackId_.load() != 0) {
-    fileWriter_->setOnErrorCallback(errorCallbackId_.load());
+  if (errorCallbackId_.load(std::memory_order_acquire) != 0) {
+    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   }
 
-  fileOutputEnabled_.store(true);
+  fileOutputEnabled_.store(true, std::memory_order_release);
   return ReturnStatus<std::string>::Success(filePath_);
 }
 
 void IOSAudioRecorder::disableFileOutput()
 {
   Locker lock(fileWriterMutex_);
-  fileOutputEnabled_.store(false);
+  fileOutputEnabled_.store(false, std::memory_order_release);
   fileWriter_ = nullptr;
 }
 
@@ -202,14 +202,14 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
         [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
   }
 
-  isConnected_.store(true);
+  isConnected_.store(true, std::memory_order_release);
 }
 
 void IOSAudioRecorder::disconnect()
 {
   Locker lock(adapterNodeMutex_);
   adapterNode_ = nullptr;
-  isConnected_.store(false);
+  isConnected_.store(false, std::memory_order_release);
 }
 
 void IOSAudioRecorder::pause()
@@ -219,7 +219,7 @@ void IOSAudioRecorder::pause()
   }
 
   [nativeRecorder_ pause];
-  state_.store(RecorderState::Paused);
+  state_.store(RecorderState::Paused, std::memory_order_release);
 }
 
 void IOSAudioRecorder::resume()
@@ -229,20 +229,20 @@ void IOSAudioRecorder::resume()
   }
 
   [nativeRecorder_ resume];
-  state_.store(RecorderState::Recording);
+  state_.store(RecorderState::Recording, std::memory_order_release);
 }
 
 bool IOSAudioRecorder::isRecording() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  return state_.load() == RecorderState::Recording &&
+  return state_.load(std::memory_order_acquire) == RecorderState::Recording &&
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
 bool IOSAudioRecorder::isPaused() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
-  auto currentState = state_.load();
+  auto currentState = state_.load(std::memory_order_acquire);
 
   if (currentState == RecorderState::Idle) {
     return false;
@@ -254,7 +254,7 @@ bool IOSAudioRecorder::isPaused() const
 
 bool IOSAudioRecorder::isIdle() const
 {
-  return state_.load() == RecorderState::Idle;
+  return state_.load(std::memory_order_acquire) == RecorderState::Idle;
 }
 
 ReturnStatus<void> IOSAudioRecorder::setOnAudioReadyCallback(
@@ -277,18 +277,19 @@ ReturnStatus<void> IOSAudioRecorder::setOnAudioReadyCallback(
     }
   }
 
-  if (errorCallbackId_.load() != 0) {
-    callback_->setOnErrorCallback(errorCallbackId_.load());
+  // TODO: atomic szpont?
+  if (errorCallbackId_.load(std::memory_order_acquire) != 0) {
+    callback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
   }
 
-  callbackOutputEnabled_.store(true);
+  callbackOutputEnabled_.store(true, std::memory_order_release);
   return ReturnStatus<void>::Success();
 }
 
 void IOSAudioRecorder::clearOnAudioReadyCallback()
 {
   Locker lock(callbackMutex_);
-  callbackOutputEnabled_.store(false);
+  callbackOutputEnabled_.store(false, std::memory_order_release);
   callback_ = nullptr;
 }
 
@@ -301,12 +302,12 @@ void IOSAudioRecorder::setOnErrorCallback(uint64_t callbackId)
   if (usesCallback()) {
     callback_->setOnErrorCallback(callbackId);
   }
-  errorCallbackId_.store(callbackId);
+  errorCallbackId_.store(callbackId, std::memory_order_release);
 }
 
 void IOSAudioRecorder::clearOnErrorCallback()
 {
-  errorCallbackId_.store(0);
+  errorCallbackId_.store(0, std::memory_order_release);
 
   if (usesFileOutput()) {
     fileWriter_->clearOnErrorCallback();

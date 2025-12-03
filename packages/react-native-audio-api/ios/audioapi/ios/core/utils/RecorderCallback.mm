@@ -34,12 +34,12 @@ RecorderCallback::RecorderCallback(
     circularBus_[i] = busAudioArray;
   }
 
-  isInitialized_.store(true);
+  isInitialized_.store(true, std::memory_order_release);
 }
 
 RecorderCallback::~RecorderCallback()
 {
-  isInitialized_.store(false);
+  isInitialized_.store(false, std::memory_order_release);
   @autoreleasepool {
     converter_ = nil;
     bufferFormat_ = nil;
@@ -114,7 +114,7 @@ void RecorderCallback::cleanup()
 
 void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int numFrames)
 {
-  if (!isInitialized_.load()) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
     return;
   }
 
@@ -222,17 +222,17 @@ void RecorderCallback::sendRemainingData()
 
 void RecorderCallback::setOnErrorCallback(uint64_t callbackId)
 {
-  errorCallbackId_.store(callbackId);
+  errorCallbackId_.store(callbackId, std::memory_order_release);
 }
 
 void RecorderCallback::clearOnErrorCallback()
 {
-  errorCallbackId_.store(0);
+  errorCallbackId_.store(0, std::memory_order_release);
 }
 
 void RecorderCallback::invokeOnErrorCallback(const std::string &message)
 {
-  uint64_t callbackId = errorCallbackId_.load();
+  uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
 
   // TODO: only the line above is atomic, which means that between reading the callbackId and invoking the callback,
   // the callback could be cleared. We need to ensure that the callback is still valid when invoking it.

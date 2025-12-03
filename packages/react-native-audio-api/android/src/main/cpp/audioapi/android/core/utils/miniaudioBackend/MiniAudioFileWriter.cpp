@@ -81,8 +81,9 @@ OpenFileStatus MiniAudioFileWriter::openFile(
 
   isConverterRequired_.store(
       (streamSampleRate_ != properties_->sampleRate) ||
-      (streamChannelCount_ != properties_->channelCount) ||
-      (getDataFormat(properties_) != ma_format_f32));
+          (streamChannelCount_ != properties_->channelCount) ||
+          (getDataFormat(properties_) != ma_format_f32),
+      std::memory_order_release);
 
   result = initializeConverterIfNeeded();
 

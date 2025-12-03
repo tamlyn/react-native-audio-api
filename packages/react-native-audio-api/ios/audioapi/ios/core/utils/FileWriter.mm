@@ -120,7 +120,7 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
     }
 
     fileURL_ = nil;
-    framesWritten_.store(0);
+    framesWritten_.store(0, std::memory_order_release);
 
     return ReturnStatus<std::tuple<double, double>>::Success(
         std::make_tuple(fileDuration, fileSizeBytesMb));
@@ -224,7 +224,7 @@ std::string FileWriter::getFilePath() const
 
 void FileWriter::setOnErrorCallback(uint64_t callbackId)
 {
-  errorCallbackId_.store(callbackId);
+  errorCallbackId_.store(callbackId, std::memory_order_release);
 }
 
 void FileWriter::clearOnErrorCallback()
@@ -234,7 +234,7 @@ void FileWriter::clearOnErrorCallback()
 
 void FileWriter::invokeOnErrorCallback(const std::string &message)
 {
-  uint64_t callbackId = errorCallbackId_.load();
+  uint64_t callbackId = errorCallbackId_.load(std::memory_order_acquire);
 
   // TODO: only the line above is atomic, which means that between reading the callbackId and invoking the callback,
   // the callback could be cleared. We need to ensure that the callback is still valid when invoking it.
