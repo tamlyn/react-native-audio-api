@@ -72,7 +72,7 @@ void WaveShaper::processNone(const std::shared_ptr<AudioArray> &channelData) {
 
   auto data = channelData->getData();
 
-  for (int i = 0; i < channelData->getSize(); i += 1) {
+  for (int i = 0; i < channelData->getSize(); i++) {
     float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
 
     if (v <= 0) {

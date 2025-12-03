@@ -15,7 +15,7 @@ WaveShaperNode::WaveShaperNode(BaseAudioContext *context)
 
   waveShapers_.reserve(6);
   for (int i = 0; i < channelCount_; i++) {
-    waveShapers_.push_back(std::make_unique<WaveShaper>(nullptr));
+    waveShapers_.emplace_back(std::make_unique<WaveShaper>(nullptr));
   }
 
   // to change after graph processing improvement - should be max
@@ -28,7 +28,7 @@ std::string WaveShaperNode::getOversample() const {
 }
 
 void WaveShaperNode::setOversample(const std::string &type) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::scoped_lock<std::mutex> lock(mutex_);
   oversample_.store(fromString(type), std::memory_order_release);
 
   for (int i = 0; i < waveShapers_.size(); i++) {
@@ -37,12 +37,12 @@ void WaveShaperNode::setOversample(const std::string &type) {
 }
 
 std::shared_ptr<AudioArray> WaveShaperNode::getCurve() const {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::scoped_lock<std::mutex> lock(mutex_);
   return curve_;
 }
 
 void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
-  std::lock_guard<std::mutex> lock(mutex_);
+  std::scoped_lock<std::mutex> lock(mutex_);
   curve_ = curve;
 
   for (int i = 0; i < waveShapers_.size(); i++) {
@@ -69,7 +69,7 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
     return processingBus;
   }
 
-  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel += 1) {
+  for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
     auto channelData = processingBus->getSharedChannel(channel);
 
     waveShapers_[channel]->process(channelData);
