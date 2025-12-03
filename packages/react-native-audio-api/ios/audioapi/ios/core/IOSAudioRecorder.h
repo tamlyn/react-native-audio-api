@@ -18,6 +18,7 @@ namespace audioapi {
 
 class FileWriter;
 class RecorderCallback;
+class RecorderAdapterNode;
 class AudioFileProperties;
 class AudioEventHandlerRegistry;
 
@@ -32,6 +33,9 @@ class IOSAudioRecorder : public AudioRecorder {
   ReturnStatus<std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
+
+  void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
+  void disconnect() override;
 
   void pause() override;
   void resume() override;

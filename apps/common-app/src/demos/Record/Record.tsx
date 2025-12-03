@@ -1,5 +1,5 @@
 import React, { FC, useCallback, useEffect, useState } from 'react';
-import { AudioContext, AudioManager } from 'react-native-audio-api';
+import { AudioManager } from 'react-native-audio-api';
 
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
@@ -16,8 +16,6 @@ AudioManager.setAudioSessionOptions({
   iosMode: 'default',
   iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
 });
-
-const audioContext = new AudioContext({ initSuspended: true });
 
 Recorder.enableFileOutput({});
 
@@ -160,42 +158,3 @@ const styles = StyleSheet.create({
   spacerM: { height: 24 },
   spacerS: { height: 12 },
 });
-
-// const [lastOutput, setLastOutput] = useState<string | null>(null);
-
-// useEffect(() => {
-//   recorder.onError((error) => {
-//     console.error('Recorder error:', error);
-//     Alert.alert('Recorder Error', error.message);
-//   });
-
-//   return () => {
-//     recorder.clearOnError();
-//   };
-// }, []);
-
-// const onPlayOutput = useCallback(async () => {
-//   if (!lastOutput || state !== ExampleState.Idle) {
-//     return;
-//   }
-
-//   setState(ExampleState.Playing);
-
-//   await AudioManager.setAudioSessionActivity(true);
-
-//   const buffer = await audioContext.decodeAudioData(lastOutput);
-//   const source = audioContext.createBufferSource();
-//   source.buffer = buffer;
-//   source.connect(audioContext.destination);
-//   source.start();
-
-//   source.onEnded = async () => {
-//     await audioContext.suspend();
-//     await AudioManager.setAudioSessionActivity(false);
-//     setState(ExampleState.Idle);
-//   };
-
-//   if (audioContext.state === 'suspended') {
-//     await audioContext.resume();
-//   }
-// }, [lastOutput, state]);

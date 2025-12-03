@@ -23,19 +23,23 @@ type NavigationParamList = {
   PlaybackSpeed: undefined;
   AudioVisualizer: undefined;
   OfflineRendering: undefined;
-  // Record: undefined;
+  Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
 
+interface SimplifiedIconProps {
+  color?: string;
+  size?: number;
+}
+
 export type MainStackProps = StackNavigationProp<NavigationParamList>;
 export interface Example {
   key: ExampleKey;
   title: string;
-  Icon: React.FC;
-  subtitle: string;
+  Icon: React.FC<SimplifiedIconProps>;
   screen: React.FC;
 }
 
@@ -44,75 +48,65 @@ export const Examples: Example[] = [
     key: 'DrumMachine',
     title: 'Drum Machine',
     Icon: icons.Drum,
-    subtitle: 'Create drum patterns',
     screen: DrumMachine,
   },
   {
     key: 'Piano',
     Icon: icons.Piano,
     title: 'Simple Piano',
-    subtitle: 'Play some notes',
     screen: Piano,
   },
   {
     key: 'AudioFile',
     title: 'Audio File',
     Icon: icons.Music,
-    subtitle: 'Play an audio file',
     screen: AudioFile,
   },
   {
     key: 'PlaybackSpeed',
     Icon: icons.VenetianMask,
     title: 'Playback Speed',
-    subtitle: 'Control playback speed of audio',
     screen: PlaybackSpeed,
   },
   {
     key: 'Metronome',
     title: 'Metronome',
     Icon: icons.Thermometer,
-    subtitle: 'Keep time with the beat',
     screen: Metronome,
   },
   {
     key: 'Oscillator',
     title: 'Oscillator',
     Icon: icons.Waves,
-    subtitle: 'Generate sound waves',
     screen: Oscillator,
   },
   {
     key: 'AudioVisualizer',
     title: 'Audio Visualizer',
-    subtitle: 'Visualize audio data',
     Icon: icons.Activity,
     screen: AudioVisualizer,
   },
   {
     key: 'OfflineRendering',
     title: 'Offline Rendering',
-    subtitle: 'Rendering audio in offline',
     Icon: icons.HardDrive,
     screen: OfflineRendering,
   },
-  // {
-  //   key: 'Record',
-  //   title: 'Record',
-  //   subtitle: 'Record audio',
-  //   screen: Record,
-  // },
+  {
+    key: 'Record',
+    title: 'Record',
+    Icon: icons.Mic,
+    screen: Record,
+  },
   {
     key: 'Worklets',
     title: 'Worklets',
-    subtitle: 'Process audio on ui thread with worklet support',
     Icon: icons.Code,
     screen: Worklets,
   },
   {
     key: 'Streamer',
     title: 'Streamer',
-    subtitle: 'Stream audio from a URL',
     Icon: icons.Radio,
     screen: Streaming,
   },

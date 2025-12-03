@@ -5,6 +5,7 @@
 
 #include <unordered_map>
 
+#include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
@@ -37,6 +38,16 @@ IOSAudioRecorder::IOSAudioRecorder(
         callback_->receiveAudioData(inputBuffer, numFrames);
       }
     }
+
+    if (isConnected()) {
+      if (auto lock = Locker::tryLock(adapterNodeMutex_)) {
+        for (size_t channel = 0; channel < adapterNode_->channelCount_; ++channel) {
+          float *channelData = (float *)inputBuffer->mBuffers[channel].mData;
+
+          adapterNode_->buff_[channel]->write(channelData, numFrames);
+        }
+      }
+    }
   };
 
   nativeRecorder_ = [[NativeAudioRecorder alloc] initWithReceiverBlock:receiverBlock];
@@ -52,6 +63,7 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
 {
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
+  Locker adapterLock(adapterNodeMutex_);
   AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
 
   if ([[audioSessionManager checkRecordingPermissions] isEqual:@"Denied"]) {
@@ -65,13 +77,16 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
   }
 
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
+  auto inputFormat = [nativeRecorder_ getInputFormat];
+
+  NSLog(@"Starting IOSAudioRecorder with input format: %@", inputFormat);
 
   if (isRecording()) {
     return ReturnStatus<std::string>::Error("Already recording");
   }
 
   if (usesFileOutput()) {
-    auto fileResult = fileWriter_->openFile([nativeRecorder_ getInputFormat], maxInputBufferLength);
+    auto fileResult = fileWriter_->openFile(inputFormat, maxInputBufferLength);
 
     if (!fileResult.isSuccess()) {
       return ReturnStatus<std::string>::Error(
@@ -82,8 +97,7 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
   }
 
   if (usesCallback()) {
-    auto callbackResult =
-        callback_->prepare([nativeRecorder_ getInputFormat], maxInputBufferLength);
+    auto callbackResult = callback_->prepare(inputFormat, maxInputBufferLength);
 
     if (!callbackResult.isSuccess()) {
       return ReturnStatus<std::string>::Error(
@@ -92,7 +106,7 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
   }
 
   if (isConnected()) {
-    // TODO: set adapter node properties?
+    adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
   }
 
   [nativeRecorder_ start];
@@ -170,6 +184,26 @@ void IOSAudioRecorder::disableFileOutput()
   Locker lock(fileWriterMutex_);
   fileOutputEnabled_.store(false);
   fileWriter_ = nullptr;
+}
+
+void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
+{
+  Locker lock(adapterNodeMutex_);
+  adapterNode_ = node;
+
+  if (!isIdle()) {
+    adapterNode_->init(
+        [nativeRecorder_ getBufferSize], [nativeRecorder_ getInputFormat].channelCount);
+  }
+
+  isConnected_.store(true);
+}
+
+void IOSAudioRecorder::disconnect()
+{
+  Locker lock(adapterNodeMutex_);
+  adapterNode_ = nullptr;
+  isConnected_.store(false);
 }
 
 void IOSAudioRecorder::pause()

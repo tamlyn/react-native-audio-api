@@ -1,5 +1,6 @@
 #pragma once
 
+#include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/ReturnStatus.hpp>
 #include <atomic>
 #include <memory>
@@ -33,8 +34,8 @@ class AudioRecorder {
   virtual void pause() = 0;
   virtual void resume() = 0;
 
-  void connect(const std::shared_ptr<RecorderAdapterNode> &node) {}
-  void disconnect() {}
+  virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
+  virtual void disconnect() = 0;
 
   virtual ReturnStatus<void> setOnAudioReadyCallback(
       float sampleRate,
@@ -70,7 +71,7 @@ class AudioRecorder {
   std::atomic<bool> callbackOutputEnabled_{false};
   std::atomic<bool> isConnected_{false};
 
-  mutable std::mutex adapterNodeLock_;
+  mutable std::mutex adapterNodeMutex_;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;

@@ -58,6 +58,12 @@ static AudioSessionManager *_sharedInstance = nil;
   if (error != nil) {
     NSLog(@"Error while configuring audio session: %@", [error debugDescription]);
     return false;
+  } else {
+    NSLog(
+        @"[AudioSessionManager] Configured audio session: category=%@, mode=%@, options=%lu",
+        self.audioSession.category,
+        self.audioSession.mode,
+        (unsigned long)self.audioSession.categoryOptions);
   }
 
   if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording != self.allowHapticsAndSounds) {

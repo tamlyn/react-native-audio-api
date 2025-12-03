@@ -21,41 +21,31 @@ import { colors, layout } from './styles';
 
 const Stack = createStackNavigator();
 
-const ItemSeparatorComponent = () => <Spacer.Vertical size={16} />;
-
-const ItemSeparatorComponent2 = () => (
-  <View>
-    <Spacer.Vertical size={12} />
-    <View style={styles.hr} />
-    <Spacer.Vertical size={12} />
-  </View>
-);
-
-const ExamplesScreen: FC = () => {
+const TestsScreen: FC = () => {
   const navigation = useNavigation<MainStackProps>();
 
   const renderItem: ListRenderItem<Example> = ({
-    item: { Icon, key, subtitle, title },
+    item: { Icon, key, title },
   }) => (
     <Pressable
       key={key}
       style={styles.buttonSmall}
       onPress={() => navigation.navigate(key)}
     >
-      {/* <Icon /> */}
-      <Text style={styles.subtitleSmall}>{subtitle}</Text>
+      <Icon color={colors.white} size={18} />
       <Text style={styles.titleSmall}>{title}</Text>
     </Pressable>
   );
 
   return (
-    <Container>
+    <Container headless>
       <FlatList
         data={Examples}
         renderItem={renderItem}
         keyExtractor={(item) => item.key}
         contentContainerStyle={styles.scrollView}
-        ItemSeparatorComponent={ItemSeparatorComponent2}
+        ItemSeparatorComponent={ItemSeparatorComponentSmall}
+        numColumns={2}
       />
     </Container>
   );
@@ -73,13 +63,16 @@ const DemoAppsScreen: FC = () => {
         { borderStyle: pressed ? 'solid' : 'dashed' },
       ]}
     >
-      <Text style={styles.title}>{item.title}</Text>
-      <Text style={styles.subtitle}>{item.subtitle}</Text>
+      <item.icon color={colors.white} size={24} />
+      <View style={styles.buttonInner}>
+        <Text style={styles.title}>{item.title}</Text>
+        <Text style={styles.subtitle}>{item.subtitle}</Text>
+      </View>
     </Pressable>
   );
 
   return (
-    <Container>
+    <Container headless>
       <FlatList
         data={demos}
         renderItem={renderItem}
@@ -91,15 +84,15 @@ const DemoAppsScreen: FC = () => {
   );
 };
 
-const BenchmarksScreen: FC = () => {
-  return <Container />;
+const OtherScreen: FC = () => {
+  return <Container headless />;
 };
 
 const MainTabs = createNativeBottomTabNavigator<MainStackProps>({
   screens: {
-    Examples: ExamplesScreen,
+    Tests: TestsScreen,
     DemoApps: DemoAppsScreen,
-    Benchmarks: BenchmarksScreen,
+    Other: OtherScreen,
   },
 });
 
@@ -107,10 +100,10 @@ const MainTabsScreen: FC = () => {
   return (
     <MainTabs.Navigator>
       <MainTabs.Screen
-        name="Examples"
-        component={ExamplesScreen}
+        name="Tests"
+        component={TestsScreen}
         options={{
-          title: 'Examples',
+          title: 'Tests',
           tabBarIcon: {
             type: 'sfSymbol',
             name: 'list.number',
@@ -129,10 +122,10 @@ const MainTabsScreen: FC = () => {
         }}
       />
       <MainTabs.Screen
-        name="Benchmarks"
-        component={BenchmarksScreen}
+        name="Other"
+        component={OtherScreen}
         options={{
-          title: 'Benchmarks',
+          title: 'Other',
 
           tabBarIcon: {
             type: 'sfSymbol',
@@ -189,6 +182,16 @@ const App: FC = () => {
 
 export default App;
 
+const ItemSeparatorComponent = () => <Spacer.Vertical size={16} />;
+
+const ItemSeparatorComponentSmall = () => (
+  <View>
+    <Spacer.Vertical size={6} />
+    <View style={styles.hr} />
+    <Spacer.Vertical size={6} />
+  </View>
+);
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -197,6 +200,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: colors.white,
+    lineHeight: 24,
   },
   subtitle: {
     opacity: 0.6,
@@ -208,15 +212,30 @@ const styles = StyleSheet.create({
     borderRadius: layout.radius,
     paddingVertical: layout.spacing * 2,
     paddingHorizontal: layout.spacing * 2,
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: layout.spacing,
+  },
+  buttonInner: {
+    flexShrink: 1,
   },
   buttonSmall: {
-    paddingVertical: layout.spacing,
-    paddingHorizontal: layout.spacing * 2,
+    padding: layout.spacing,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: layout.spacing,
+    width: '48%',
+    margin: '1%',
+    height: 40,
+    borderWidth: StyleSheet.hairlineWidth,
+    borderColor: colors.white,
   },
   titleSmall: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '600',
     color: colors.white,
+    marginLeft: 4,
+    flexShrink: 1,
   },
   subtitleSmall: {
     opacity: 0.6,
@@ -224,8 +243,14 @@ const styles = StyleSheet.create({
   },
   scrollView: {},
   hr: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border,
-    marginHorizontal: 64,
+    // height: StyleSheet.hairlineWidth,
+    // // backgroundColor: colors.border,
+    // marginLeft: 60,
+    // marginRight: '35%',
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: layout.spacing,
   },
 });

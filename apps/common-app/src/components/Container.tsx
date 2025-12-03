@@ -8,18 +8,23 @@ type ContainerProps = PropsWithChildren<{
   style?: StyleProp<ViewStyle>;
   centered?: boolean;
   disablePadding?: boolean;
+  headless?: boolean;
 }>;
 
 const headerPadding = 120; // eyeballed
 
 const Container: React.FC<ContainerProps> = (props) => {
-  const { children, style, centered, disablePadding } = props;
+  const { children, style, centered, disablePadding, headless } = props;
 
   return (
     <SafeAreaView
-      edges={['bottom', 'left', 'right']}
+      edges={
+        headless
+          ? ['bottom', 'left', 'right', 'top']
+          : ['bottom', 'left', 'right']
+      }
       style={[
-        styles.basic,
+        headless ? styles.basicHeadless : styles.basic,
         centered && styles.centered,
         !disablePadding && styles.padding,
         style,
@@ -38,8 +43,13 @@ const styles = StyleSheet.create({
     paddingTop: headerPadding,
     backgroundColor: colors.background,
   },
+  basicHeadless: {
+    flex: 1,
+    backgroundColor: colors.background,
+    paddingTop: 20,
+  },
   padding: {
-    padding: 24,
+    paddingHorizontal: 18,
   },
   centered: {
     alignItems: 'center',

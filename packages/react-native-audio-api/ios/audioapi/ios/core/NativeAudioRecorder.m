@@ -44,7 +44,18 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 
 - (AVAudioFormat *)getInputFormat
 {
-  return [AudioEngine.sharedInstance.audioEngine.inputNode inputFormatForBus:0];
+  AVAudioFormat *format = [AudioEngine.sharedInstance.audioEngine.inputNode inputFormatForBus:0];
+
+  if (format.sampleRate == 0 || format.channelCount == 0) {
+    AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
+    NSLog(
+        @"[NativeAudioRecorder] Warning: Input format has zero sample rate or channel count, forcing default values");
+    format = [[AVAudioFormat alloc]
+        initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
+                                channels:2];
+  }
+
+  return format;
 }
 
 - (int)getBufferSize

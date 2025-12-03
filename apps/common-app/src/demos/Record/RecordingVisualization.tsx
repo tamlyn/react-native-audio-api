@@ -18,8 +18,8 @@ interface RecordingVisualizationProps {
 
 const constants = {
   sampleRate: 3125,
-  updateIntervalMS: 32,
-  barWidth: 3,
+  updateIntervalMS: 42,
+  barWidth: 2,
   barGap: 2,
   minDb: -40,
   maxDb: 0,

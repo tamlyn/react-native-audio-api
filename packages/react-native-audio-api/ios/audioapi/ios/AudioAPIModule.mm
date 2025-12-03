@@ -246,9 +246,4 @@ RCT_EXPORT_METHOD(disableSessionManagement)
   }
 }
 
-- (dispatch_queue_t)methodQueue
-{
-  return dispatch_queue_create("swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
-}
-
 @end
