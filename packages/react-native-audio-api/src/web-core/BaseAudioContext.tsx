@@ -1,4 +1,4 @@
-import { ContextState, IIRFilterNodeOptions } from '../types';
+import { ContextState } from '../types';
 import AnalyserNode from './AnalyserNode';
 import AudioDestinationNode from './AudioDestinationNode';
 import AudioBuffer from './AudioBuffer';
@@ -27,7 +27,7 @@ export default interface BaseAudioContext {
   createDelay(maxDelayTime?: number): DelayNode;
   createStereoPanner(): StereoPannerNode;
   createBiquadFilter(): BiquadFilterNode;
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode;
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode;
   createConvolver(): ConvolverNode;
   createBufferSource(): AudioBufferSourceNode;
   createBuffer(

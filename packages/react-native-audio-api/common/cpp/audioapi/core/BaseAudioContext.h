@@ -49,6 +49,7 @@ class AudioBufferSourceOptions;
 class StreamerOptions;
 class AudioBufferOptions;
 class DelayOptions;
+class IIRFilterOptions;
 
 class BaseAudioContext {
  public:
@@ -79,9 +80,7 @@ class BaseAudioContext {
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
   std::shared_ptr<DelayNode> createDelay(std::shared_ptr<DelayOptions> options);
-  std::shared_ptr<IIRFilterNode> createIIRFilter(
-      const std::vector<float> &feedforward,
-      const std::vector<float> &feedback);
+  std::shared_ptr<IIRFilterNode> createIIRFilter(std::shared_ptr<IIRFilterOptions> options);
   std::shared_ptr<OscillatorNode> createOscillator(std::shared_ptr<OscillatorOptions> options);
   std::shared_ptr<ConstantSourceNode> createConstantSource(
       std::shared_ptr<ConstantSourceOptions> options);

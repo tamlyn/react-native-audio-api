@@ -1,8 +1,4 @@
-import {
-  ContextState,
-  AudioContextOptions,
-  IIRFilterNodeOptions,
-} from '../types';
+import { ContextState, AudioContextOptions } from '../types';
 import { InvalidAccessError, NotSupportedError } from '../errors';
 import BaseAudioContext from './BaseAudioContext';
 import AnalyserNode from './AnalyserNode';
@@ -78,11 +74,8 @@ export default class AudioContext implements BaseAudioContext {
     return new ConvolverNode(this);
   }
 
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
-    return new IIRFilterNode(
-      this,
-      this.context.createIIRFilter(options.feedforward, options.feedback)
-    );
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
+    return new IIRFilterNode(this, { feedforward, feedback });
   }
 
   createBufferSource(): AudioBufferSourceNode {

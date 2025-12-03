@@ -23,6 +23,7 @@
  * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  */
 
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/BaseAudioContext.h>
 #include <audioapi/core/effects/IIRFilterNode.h>
 #include <audioapi/core/utils/Constants.h>
@@ -34,13 +35,11 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(
-    BaseAudioContext *context,
-    const std::vector<float> &feedforward,
-    const std::vector<float> &feedback)
-    : AudioNode(context), feedforward_(feedforward), feedback_(feedback) {
+IIRFilterNode::IIRFilterNode(BaseAudioContext *context, std::shared_ptr<IIRFilterOptions> options)
+    : AudioNode(context, options),
+      feedforward_(options->feedforward),
+      feedback_(options->feedback) {
   isInitialized_ = true;
-  channelCountMode_ = ChannelCountMode::MAX;
 
   int maxChannels = MAX_CHANNEL_COUNT;
   xBuffers_.resize(maxChannels);

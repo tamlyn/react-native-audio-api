@@ -128,7 +128,7 @@ export interface TAudioBufferOptions {
   sampleRate: number;
 }
 
-export interface IIRFilterNodeOptions {
+export interface TIIRFilterOptions extends TAudioNodeOptions {
   feedforward: number[];
   feedback: number[];
 }

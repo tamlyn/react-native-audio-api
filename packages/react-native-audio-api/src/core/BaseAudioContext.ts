@@ -4,11 +4,7 @@ import {
   NotSupportedError,
 } from '../errors';
 import { IBaseAudioContext } from '../interfaces';
-import {
-  AudioWorkletRuntime,
-  ContextState,
-  IIRFilterNodeOptions,
-} from '../types';
+import { AudioWorkletRuntime, ContextState } from '../types';
 import { assertWorkletsEnabled } from '../utils';
 import AnalyserNode from './AnalyserNode';
 import AudioBuffer from './AudioBuffer';
@@ -164,9 +160,7 @@ export default class BaseAudioContext {
     return new AudioBufferSourceNode(this);
   }
 
-  createIIRFilter(options: IIRFilterNodeOptions): IIRFilterNode {
-    const feedforward = options.feedforward;
-    const feedback = options.feedback;
+  createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
     if (feedforward.length < 1 || feedforward.length > 20) {
       throw new NotSupportedError(
         `The provided feedforward array has length (${feedforward.length}) outside the range [1, 20]`
@@ -190,10 +184,7 @@ export default class BaseAudioContext {
       );
     }
 
-    return new IIRFilterNode(
-      this,
-      this.context.createIIRFilter(feedforward, feedback)
-    );
+    return new IIRFilterNode(this, { feedforward, feedback });
   }
 
   createBufferQueueSource(): AudioBufferQueueSourceNode {

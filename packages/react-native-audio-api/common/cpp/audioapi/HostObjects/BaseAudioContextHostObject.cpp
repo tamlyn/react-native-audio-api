@@ -167,7 +167,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createOscillator) {
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createStreamer) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamer = context_->createStreamer();
+  auto options = args[0].asObject(runtime);
+  auto streamerOptions = audioapi::option_parser::parseStreamerOptions(runtime, options);
+  auto streamer = context_->createStreamer(streamerOptions);
   auto streamerOptions = std::make_shared<StreamerOptions>();
   if (!args[0].isUndefined()) {
     auto options = args[0].asObject(runtime);
@@ -201,8 +203,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createDelay) {
-  auto maxDelayTime = static_cast<float>(args[0].getNumber());
-  auto delayNode = context_->createDelay(maxDelayTime);
+  auto options = args[0].asObject(runtime);
+  auto delayOptions = audioapi::option_parser::parseDelayOptions(runtime, options);
+  auto delayNode = context_->createDelay(delayOptions);
   auto delayNodeHostObject = std::make_shared<DelayNodeHostObject>(delayNode);
   auto jsiObject = jsi::Object::createFromHostObject(runtime, delayNodeHostObject);
   jsiObject.setExternalMemoryPressure(runtime, delayNodeHostObject->getSizeInBytes());
@@ -226,27 +229,9 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createBiquadFilter) {
 }
 
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createIIRFilter) {
-  auto feedforwardArray = args[0].asObject(runtime).asArray(runtime);
-  auto feedbackArray = args[1].asObject(runtime).asArray(runtime);
-
-  size_t feedforwardLength = feedforwardArray.length(runtime);
-  size_t feedbackLength = feedbackArray.length(runtime);
-
-  std::vector<float> feedforward;
-  std::vector<float> feedback;
-
-  feedforward.reserve(feedforwardLength);
-  feedback.reserve(feedbackLength);
-
-  for (size_t i = 0; i < feedforwardLength; ++i) {
-    feedforward.push_back(feedforwardArray.getValueAtIndex(runtime, i).asNumber());
-  }
-
-  for (size_t i = 0; i < feedbackLength; ++i) {
-    feedback.push_back(feedbackArray.getValueAtIndex(runtime, i).asNumber());
-  }
-
-  auto iirFilter = context_->createIIRFilter(feedforward, feedback);
+  auto options = args[0].asObject(runtime);
+  auto iirFilterOptions = audioapi::option_parser::parseIIRFilterOptions(runtime, options);
+  auto iirFilter = context_->createIIRFilter(iirFilterOptions);
   auto iirFilterHostObject = std::make_shared<IIRFilterNodeHostObject>(iirFilter);
   return jsi::Object::createFromHostObject(runtime, iirFilterHostObject);
 }

@@ -234,4 +234,31 @@ std::shared_ptr<DelayOptions> parseDelayOptions(
       static_cast<float>(optionsObject.getProperty(runtime, "delayTime").getNumber());
   return std::make_shared<DelayOptions>(options);
 }
+
+std::shared_ptr<IIRFilterOptions> parseIIRFilterOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+  IIRFilterOptions options(*nodeOptions.get());
+
+  auto feedforwardArray =
+      optionsObject.getProperty(runtime, "feedforward").asObject(runtime).asArray(runtime);
+  size_t feedforwardLength = feedforwardArray.size(runtime);
+  options.feedforward.reserve(feedforwardLength);
+  for (size_t i = 0; i < feedforwardLength; ++i) {
+    options.feedforward.push_back(
+        static_cast<float>(feedforwardArray.getValueAtIndex(runtime, i).getNumber()));
+  }
+
+  auto feedbackArray =
+      optionsObject.getProperty(runtime, "feedback").asObject(runtime).asArray(runtime);
+  size_t feedbackLength = feedbackArray.size(runtime);
+  options.feedback.reserve(feedbackLength);
+  for (size_t i = 0; i < feedbackLength; ++i) {
+    options.feedback.push_back(
+        static_cast<float>(feedbackArray.getValueAtIndex(runtime, i).getNumber()));
+  }
+
+  return std::make_shared<IIRFilterOptions>(options);
+}
 } // namespace audioapi::option_parser

@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <vector>
 
 #include <audioapi/core/effects/PeriodicWave.h>
 #include <audioapi/core/sources/AudioBuffer.h>
@@ -82,6 +83,11 @@ struct AudioBufferOptions {
 struct DelayOptions : AudioNodeOptions {
   float maxDelayTime = 1.0f;
   float delayTime = 0.0f;
+};
+
+struct IIRFilterOptions : AudioNodeOptions {
+  std::vector<float> feedforward;
+  std::vector<float> feedback;
 };
 
 } // namespace audioapi

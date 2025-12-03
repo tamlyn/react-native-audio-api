@@ -174,9 +174,8 @@ std::shared_ptr<AudioBufferSourceNode> BaseAudioContext::createBufferSource(
 }
 
 std::shared_ptr<IIRFilterNode> BaseAudioContext::createIIRFilter(
-    const std::vector<float> &feedforward,
-    const std::vector<float> &feedback) {
-  auto iirFilter = std::make_shared<IIRFilterNode>(this, feedforward, feedback);
+    std::shared_ptr<IIRFilterOptions> options) {
+  auto iirFilter = std::make_shared<IIRFilterNode>(this, options);
   nodeManager_->addProcessingNode(iirFilter);
   return iirFilter;
 }
