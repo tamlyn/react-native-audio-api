@@ -2,6 +2,7 @@
 
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <audioapi/core/effects/PeriodicWave.h>
@@ -88,6 +89,14 @@ struct DelayOptions : AudioNodeOptions {
 struct IIRFilterOptions : AudioNodeOptions {
   std::vector<float> feedforward;
   std::vector<float> feedback;
+
+  IIRFilterOptions() = default;
+
+  IIRFilterOptions(const std::vector<float> &ff, const std::vector<float> &fb)
+      : feedforward(ff), feedback(fb) {}
+
+  IIRFilterOptions(std::vector<float> &&ff, std::vector<float> &&fb)
+      : feedforward(std::move(ff)), feedback(std::move(fb)) {}
 };
 
 } // namespace audioapi

@@ -130,9 +130,8 @@ std::shared_ptr<ConstantSourceNode> BaseAudioContext::createConstantSource(
 
 std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(
     std::shared_ptr<StreamerOptions> options) {
-  auto streamer = std::make_shared<StreamerNode>(this, options);
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-  auto streamer = std::make_shared<StreamerNode>(this);
+  auto streamer = std::make_shared<StreamerNode>(this, options);
   nodeManager_->addSourceNode(streamer);
   return streamer;
 #else

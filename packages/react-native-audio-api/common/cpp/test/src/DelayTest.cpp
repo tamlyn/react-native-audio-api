@@ -1,3 +1,4 @@
+#include <audioapi/HostObjects/utils/NodeOptions.h>
 #include <audioapi/core/OfflineAudioContext.h>
 #include <audioapi/core/effects/DelayNode.h>
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
@@ -24,7 +25,8 @@ class DelayTest : public ::testing::Test {
 
 class TestableDelayNode : public DelayNode {
  public:
-  explicit TestableDelayNode(BaseAudioContext *context) : DelayNode(context, 1) {}
+  explicit TestableDelayNode(BaseAudioContext *context)
+      : DelayNode(context, std::make_shared<DelayOptions>()) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
@@ -38,7 +40,7 @@ class TestableDelayNode : public DelayNode {
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
-  auto delay = context->createDelay(1.0f);
+  auto delay = context->createDelay(std::make_shared<DelayOptions>());
   ASSERT_NE(delay, nullptr);
 }
 
