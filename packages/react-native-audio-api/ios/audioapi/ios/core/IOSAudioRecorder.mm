@@ -61,6 +61,10 @@ IOSAudioRecorder::~IOSAudioRecorder()
 
 ReturnStatus<std::string> IOSAudioRecorder::start()
 {
+  if (isRecording()) {
+    return ReturnStatus<std::string>::Error("Already recording");
+  }
+
   Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
   Locker adapterLock(adapterNodeMutex_);
@@ -76,14 +80,16 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
     return ReturnStatus<std::string>::Error("Audio session is not active");
   }
 
+  // TODO: this is a bit ugly, and could be written slightly better
+  // we need to stop the audio engine if it's running, to be able to get
+  // proper input format values, otherwise the system my zero out the sample rate or channel count
+  // if input wasn't used yet
+  // (especially on simulators)
+  // Engine will be started again once the native recorder starts
+  [AudioEngine.sharedInstance stopIfNecessary];
+
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
   auto inputFormat = [nativeRecorder_ getInputFormat];
-
-  NSLog(@"Starting IOSAudioRecorder with input format: %@", inputFormat);
-
-  if (isRecording()) {
-    return ReturnStatus<std::string>::Error("Already recording");
-  }
 
   if (usesFileOutput()) {
     auto fileResult = fileWriter_->openFile(inputFormat, maxInputBufferLength);
@@ -106,12 +112,12 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
   }
 
   if (isConnected()) {
+    // TODO: pass sample rate, in case conversion is necessary
     adapterNode_->init(maxInputBufferLength, inputFormat.channelCount);
   }
 
   [nativeRecorder_ start];
   state_.store(RecorderState::Recording);
-
   return ReturnStatus<std::string>::Success(filePath_);
 }
 

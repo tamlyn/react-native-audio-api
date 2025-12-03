@@ -160,6 +160,11 @@ static AudioSessionManager *_sharedInstance = nil;
   return [NSNumber numberWithFloat:[self.audioSession sampleRate]];
 }
 
+- (NSNumber *)getDevicePreferredInputChannelCount
+{
+  return [NSNumber numberWithInteger:[self.audioSession inputNumberOfChannels]];
+}
+
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject
 {

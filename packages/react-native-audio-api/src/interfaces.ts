@@ -293,8 +293,8 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 export interface IWorkletProcessingNode extends IAudioNode {}
 
 export interface IFilePreset {
-  sampleRate: number;
   bitRate: number;
+  sampleRate: number;
   bitDepth: BitDepth;
   iosQuality: IOSAudioQuality;
   flacCompressionLevel: FlacCompressionLevel;

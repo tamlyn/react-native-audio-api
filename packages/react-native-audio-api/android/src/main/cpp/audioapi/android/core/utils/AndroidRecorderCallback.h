@@ -48,6 +48,7 @@ class AndroidRecorderCallback {
   std::unique_ptr<ma_data_converter> converter_{nullptr};
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  // TODO: CircularAudioBus
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
   std::shared_ptr<AudioArray> deinterleavingArray_;
 

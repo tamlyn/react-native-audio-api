@@ -33,6 +33,7 @@
 - (void)disableSessionManagement;
 
 - (NSNumber *)getDevicePreferredSampleRate;
+- (NSNumber *)getDevicePreferredInputChannelCount;
 
 - (void)requestRecordingPermissions:(RCTPromiseResolveBlock)resolve
                              reject:(RCTPromiseRejectBlock)reject;

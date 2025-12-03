@@ -77,15 +77,6 @@ static AudioEngine *_sharedInstance = nil;
   self.inputNode = inputNode;
 
   AVAudioFormat *format = [self.audioEngine.inputNode inputFormatForBus:0];
-  AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
-
-  if (format.sampleRate == 0 || format.channelCount == 0) {
-    NSLog(
-        @"[AudioEngine] Warning: Input node format has zero sample rate or channel count, forcing default values");
-    format = [[AVAudioFormat alloc]
-        initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
-                                channels:2];
-  }
 
   [self.audioEngine attachNode:inputNode];
   [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:format];

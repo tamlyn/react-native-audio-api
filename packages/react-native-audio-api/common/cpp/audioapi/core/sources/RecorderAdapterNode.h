@@ -29,6 +29,7 @@ class RecorderAdapterNode : public AudioNode {
   void init(size_t bufferSize, size_t channelCount);
 
   size_t channelCount_;
+  // TODO: CircularOverflowableAudioBus
   std::vector<std::shared_ptr<CircularOverflowableAudioArray>> buff_;
 
  protected:

@@ -53,6 +53,7 @@ class RecorderCallback {
   std::atomic<uint64_t> errorCallbackId_{0};
 
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
+  // TODO: CircularAudioBus
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
 
   AVAudioFormat *bufferFormat_;

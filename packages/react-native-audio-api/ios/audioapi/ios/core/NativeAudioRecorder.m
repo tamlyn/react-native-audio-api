@@ -52,7 +52,8 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
         @"[NativeAudioRecorder] Warning: Input format has zero sample rate or channel count, forcing default values");
     format = [[AVAudioFormat alloc]
         initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
-                                channels:2];
+                                channels:[[sessionManager getDevicePreferredInputChannelCount]
+                                             intValue]];
   }
 
   return format;
