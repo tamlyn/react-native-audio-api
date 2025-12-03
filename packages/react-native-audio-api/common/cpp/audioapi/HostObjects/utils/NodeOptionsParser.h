@@ -223,4 +223,15 @@ std::shared_ptr<AudioBufferOptions> parseAudioBufferOptions(
   return std::make_shared<AudioBufferOptions>(options);
 }
 
+std::shared_ptr<DelayOptions> parseDelayOptions(
+    jsi::Runtime &runtime,
+    const jsi::Object &optionsObject) {
+  std::shared_ptr<AudioNodeOptions> nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+  DelayOptions options(*nodeOptions.get());
+  options.maxDelayTime =
+      static_cast<float>(optionsObject.getProperty(runtime, "maxDelayTime").getNumber());
+  options.delayTime =
+      static_cast<float>(optionsObject.getProperty(runtime, "delayTime").getNumber());
+  return std::make_shared<DelayOptions>(options);
+}
 } // namespace audioapi::option_parser

@@ -48,6 +48,7 @@ class BaseAudioBufferSourceOptions;
 class AudioBufferSourceOptions;
 class StreamerOptions;
 class AudioBufferOptions;
+class DelayOptions;
 
 class BaseAudioContext {
  public:
@@ -77,7 +78,7 @@ class BaseAudioContext {
       std::shared_ptr<worklets::SerializableWorklet> &shareableWorklet,
       std::weak_ptr<worklets::WorkletRuntime> runtime,
       bool shouldLockRuntime = true);
-  std::shared_ptr<DelayNode> createDelay(float maxDelayTime);
+  std::shared_ptr<DelayNode> createDelay(std::shared_ptr<DelayOptions> options);
   std::shared_ptr<IIRFilterNode> createIIRFilter(
       const std::vector<float> &feedforward,
       const std::vector<float> &feedback);

@@ -70,7 +70,7 @@ export default class OfflineAudioContext implements BaseAudioContext {
   }
 
   createDelay(maxDelayTime?: number): DelayNode {
-    return new DelayNode(this, this.context.createDelay(maxDelayTime));
+    return new DelayNode(this, { maxDelayTime });
   }
 
   createStereoPanner(): StereoPannerNode {

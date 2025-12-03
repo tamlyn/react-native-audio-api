@@ -149,8 +149,7 @@ export default class BaseAudioContext {
   }
 
   createDelay(maxDelayTime?: number): DelayNode {
-    const maxTime = maxDelayTime ?? 1.0;
-    return new DelayNode(this, this.context.createDelay(maxTime));
+    return new DelayNode(this, { maxDelayTime });
   }
 
   createStereoPanner(): StereoPannerNode {

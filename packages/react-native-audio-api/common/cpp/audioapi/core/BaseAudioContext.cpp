@@ -153,8 +153,8 @@ std::shared_ptr<StereoPannerNode> BaseAudioContext::createStereoPanner(
   return stereoPanner;
 }
 
-std::shared_ptr<DelayNode> BaseAudioContext::createDelay(float maxDelayTime) {
-  auto delay = std::make_shared<DelayNode>(this, maxDelayTime);
+std::shared_ptr<DelayNode> BaseAudioContext::createDelay(std::shared_ptr<DelayOptions> options) {
+  auto delay = std::make_shared<DelayNode>(this, options);
   nodeManager_->addProcessingNode(delay);
   return delay;
 }

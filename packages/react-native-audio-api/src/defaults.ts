@@ -11,6 +11,7 @@ import {
   TBaseAudioBufferSourceOptions,
   TAudioBufferSourceOptions,
   TAudioBufferOptions,
+  TDelayOptions,
 } from './types';
 
 export const AudioNodeOptions: TAudioNodeOptions = {
@@ -84,4 +85,10 @@ export const AudioBufferOptions: TAudioBufferOptions = {
   numberOfChannels: 1,
   length: 0, // always overwritten by provided value, only placeholder
   sampleRate: 44100, // always overwritten by provided value, only placeholder
+};
+
+export const DelayOptions: TDelayOptions = {
+  ...AudioNodeOptions,
+  maxDelayTime: 1.0,
+  delayTime: 0.0,
 };

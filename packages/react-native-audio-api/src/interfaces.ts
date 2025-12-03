@@ -16,6 +16,7 @@ import {
   TAudioBufferSourceOptions,
   TStreamerOptions,
   TAudioBufferOptions,
+  TDelayOptions,
 } from './types';
 
 // IMPORTANT: use only IClass, because it is a part of contract between cpp host object and js layer
@@ -81,7 +82,7 @@ export interface IBaseAudioContext {
   createBufferSource: (
     audioBufferSourceOptions: TAudioBufferSourceOptions
   ) => IAudioBufferSourceNode;
-  createDelay(maxDelayTime: number): IDelayNode;
+  createDelay(delayOptions: TDelayOptions): IDelayNode;
   createIIRFilter: (
     feedforward: number[],
     feedback: number[]

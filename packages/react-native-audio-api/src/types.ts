@@ -132,3 +132,8 @@ export interface IIRFilterNodeOptions {
   feedforward: number[];
   feedback: number[];
 }
+
+export interface TDelayOptions extends TAudioNodeOptions {
+  maxDelayTime?: number;
+  delayTime?: number;
+}
