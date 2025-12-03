@@ -6,8 +6,7 @@
 #include <audioapi/ios/core/utils/FileWriter.h>
 #include <audioapi/utils/AudioFileProperties.h>
 #include <audioapi/utils/ReturnStatus.hpp>
-
-constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
+#include <audioapi/utils/UnitConversion.h>
 
 namespace audioapi {
 FileWriter::FileWriter(
@@ -113,7 +112,7 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
     double fileSizeBytesMb = static_cast<double>([[[NSFileManager defaultManager]
                                  attributesOfItemAtPath:fileURL_.path
                                                   error:&error] fileSize]) /
-        BYTES_TO_MB;
+        MB_IN_BYTES;
 
     if (error != nil) {
       NSLog(@"⚠️ closeFile: error while retrieving file size");

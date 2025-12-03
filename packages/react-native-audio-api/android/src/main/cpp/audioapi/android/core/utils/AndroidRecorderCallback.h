@@ -26,10 +26,9 @@ class AndroidRecorderCallback {
   void cleanup();
 
   void receiveAudioData(void *data, int numFrames);
-  void emitAudioData();
+  void emitAudioData(bool flush = false);
 
   void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
-  void sendRemainingData();
 
  private:
   int32_t streamSampleRate_;
@@ -52,7 +51,7 @@ class AndroidRecorderCallback {
   std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
   std::shared_ptr<AudioArray> deinterleavingArray_;
 
-  void deinterleaveAndWriteAudioData(void *data, int numFrames);
+  void deinterleaveAndPushAudioData(void *data, int numFrames);
 };
 
 } // namespace audioapi

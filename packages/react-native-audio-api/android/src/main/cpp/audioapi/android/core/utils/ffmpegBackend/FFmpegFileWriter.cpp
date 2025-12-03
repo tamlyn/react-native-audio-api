@@ -12,10 +12,9 @@ extern "C" {
 #include <audioapi/android/core/utils/ffmpegBackend/ptrs.hpp>
 #include <audioapi/android/core/utils/ffmpegBackend/utils.h>
 #include <audioapi/utils/AudioFileProperties.h>
+#include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
-
-constexpr double BYTES_TO_MB = 1024.0 * 1024.0;
 
 namespace audioapi::android::ffmpeg {
 
@@ -28,6 +27,13 @@ FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
   }
 }
 
+/// @brief Opens a specified audio file for writing and prepares any necessary resources.
+/// such as codecs, conversion buffers or circular AVIO FIFO.
+/// This method should be called from the JS thread only.
+/// @param streamSampleRate The sample rate of the incoming audio stream (aka microphone).
+/// @param streamChannelCount The number of channels in the incoming audio stream.
+/// @param streamMaxBufferSize The estimated maximum buffer size for the incoming audio stream.
+/// @returns Success status with file path or Error status with message.
 OpenFileStatus FFmpegAudioFileWriter::openFile(
     int32_t streamSampleRate,
     int32_t streamChannelCount,
@@ -82,6 +88,9 @@ OpenFileStatus FFmpegAudioFileWriter::openFile(
   return OpenFileStatus::Success(filePath_);
 }
 
+/// @brief Closes the currently opened audio file, flushing any remaining data and finalizing the file.
+/// This method should called from the JS thread only.
+/// @returns CloseFileStatus indicating success with file path, size and duration, or error with message.
 CloseFileStatus FFmpegAudioFileWriter::closeFile() {
   int result = 0;
 
@@ -113,6 +122,11 @@ CloseFileStatus FFmpegAudioFileWriter::closeFile() {
   return finalizeOutput();
 }
 
+/// @brief Writes audio data to the currently opened file.
+/// This method should be called only from the audio thread (or audio side-effect thread in the future).
+/// @param data Pointer to the audio data buffer (interleaved float samples) as returned by Oboe stream.
+/// @param numFrames Number of audio frames in the data buffer.
+/// @returns True if the data was written successfully, false otherwise.
 bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
   if (!isFileOpen()) {
     return false;
@@ -139,6 +153,9 @@ bool FFmpegAudioFileWriter::isConverterRequired() {
   return isConverterRequired_.load();
 }
 
+/// @brief Initializes the FFmpeg format context for the output file.
+/// @param codec The codec to be used for encoding.
+/// @returns Success status or Error status with message.
 ReturnStatus<void> FFmpegAudioFileWriter::initializeFormatContext(const AVCodec *codec) {
   AVFormatContext *rawFormatCtx = nullptr;
 
@@ -154,6 +171,9 @@ ReturnStatus<void> FFmpegAudioFileWriter::initializeFormatContext(const AVCodec 
   return ReturnStatus<void>::Success();
 }
 
+/// @brief Configures and opens the codec context for encoding.
+/// @param codec The codec to be used for encoding.
+/// @returns Success status or Error status with message.
 ReturnStatus<void> FFmpegAudioFileWriter::configureAndOpenCodec(const AVCodec *codec) {
   encoderCtx_ = av_unique_ptr<AVCodecContext>(avcodec_alloc_context3(codec));
 
@@ -186,6 +206,8 @@ ReturnStatus<void> FFmpegAudioFileWriter::configureAndOpenCodec(const AVCodec *c
   return ReturnStatus<void>::Success();
 }
 
+/// @brief Initializes a new stream in the format context.
+/// @returns Success status or Error status with message.
 ReturnStatus<void> FFmpegAudioFileWriter::initializeStream() {
   stream_ = avformat_new_stream(formatCtx_.get(), nullptr);
 
@@ -204,6 +226,8 @@ ReturnStatus<void> FFmpegAudioFileWriter::initializeStream() {
   return ReturnStatus<void>::Success();
 }
 
+/// @brief Opens the file and writes the basic header (depends on the codec/format used).
+/// @returns Success status or Error status with message.
 ReturnStatus<void> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   int result = 0;
 
@@ -225,6 +249,10 @@ ReturnStatus<void> FFmpegAudioFileWriter::openIOAndWriteHeader() {
   return ReturnStatus<void>::Success();
 }
 
+/// @brief Initializes the resampler context for audio conversion.
+/// @param inputRate The sample rate of the input audio.
+/// @param inputChannels The number of channels in the input audio.
+/// @returns Success status or Error status with message.
 ReturnStatus<void> FFmpegAudioFileWriter::initializeResampler(
     int32_t inputRate,
     int32_t inputChannels) {
@@ -256,6 +284,9 @@ ReturnStatus<void> FFmpegAudioFileWriter::initializeResampler(
   return ReturnStatus<void>::Success();
 }
 
+/// @brief Initializes frame and packet buffers as well as the audio FIFO,
+/// that might be needed for storing intermediate audio data or buffering before encoding.
+/// @param maxBufferSize The maximum buffer size to allocate.
 void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
   frame_ = av_unique_ptr<AVFrame>(av_frame_alloc());
   packet_ = av_unique_ptr<AVPacket>(av_packet_alloc());
@@ -277,6 +308,10 @@ void FFmpegAudioFileWriter::initializeBuffers(int32_t maxBufferSize) {
       av_audio_fifo_alloc(encoderCtx_->sample_fmt, encoderCtx_->ch_layout.nb_channels, fifoSize));
 }
 
+/// @brief Resamples input audio data and pushes it to the audio FIFO.
+/// @param inputData Pointer to the input audio data.
+/// @param inputFrameCount Number of input frames.
+/// @returns True if successful, false otherwise.
 bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFrameCount) {
   int result = 0;
   int outputLength =
@@ -308,6 +343,12 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
   return true;
 }
 
+/// @brief pushes the audio data from FIFO to the encoder in chunks,
+// defined by the encoder (512 samples by default) or flushes the FIFO if requested.
+/// Note: flush might be called only when writing the final data batch, otherwise
+// the codec will crash (especially in case of defined size frames like AAC).
+/// @param flush Indicates whether to flush the FIFO.
+/// @returns 0 on success, -1 or AV_ERROR code on failure
 int FFmpegAudioFileWriter::processFifo(bool flush) {
   int result = 0;
   int frameSize = encoderCtx_->frame_size > 0 ? encoderCtx_->frame_size : 512;
@@ -343,6 +384,10 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
   return 0;
 }
 
+/// @brief Takes ready encoded packets from the encoder and writes them to the output file.
+/// Also in order to optimize file writing vs file resilience from crashes, it periodically
+/// forces the AVIO buffer to flush data to disk, by default every 0,5 second.
+/// @returns 0 on success, AV_ERROR code on failure
 int FFmpegAudioFileWriter::writeEncodedPackets() {
   int result = 0;
 
@@ -375,6 +420,11 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
   }
 }
 
+/// @brief Prepares the frame for next encoding phase,
+/// if frame is same size as previously used one (99.9% cases) try to reuse it.
+/// Otherwise resize the frame and in the worst case allocate new frame to use.
+/// @param samplesToRead Number of samples to prepare the frame for.
+/// @returns 0 on success, AV_ERROR code on failure
 int FFmpegAudioFileWriter::prepareFrameForEncoding(int samplesToRead) {
   int result = 0;
 
@@ -413,6 +463,9 @@ int FFmpegAudioFileWriter::prepareFrameForEncoding(int samplesToRead) {
   return result;
 }
 
+/// @brief Closes the currently opened audio file, flushing any remaining data and finalizing the file.
+/// Method checks the file size and duration for convenience.
+/// @returns CloseFileStatus indicating success or error details
 CloseFileStatus FFmpegAudioFileWriter::finalizeOutput() {
   int result = av_write_trailer(formatCtx_.get());
 
@@ -423,7 +476,7 @@ CloseFileStatus FFmpegAudioFileWriter::finalizeOutput() {
   double fileSizeInMB = 0;
 
   if (formatCtx_->pb) {
-    fileSizeInMB = avio_size(formatCtx_->pb) / BYTES_TO_MB;
+    fileSizeInMB = avio_size(formatCtx_->pb) / MB_IN_BYTES;
     avio_closep(&formatCtx_->pb);
   }
 

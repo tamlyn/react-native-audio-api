@@ -12,6 +12,10 @@ extern "C" {
 
 namespace audioapi::android::ffmpeg {
 
+/// @brief Get the PCM codec ID based on the bit depth.
+/// Note: This function returns only PCM codec IDs and its different from getSampleFormat. :)
+/// @param properties The audio file properties.
+/// @return The corresponding PCM AVCodecID.
 AVCodecID getPCMCodecID(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->bitDepth) {
     case AudioFileProperties::BitDepth::Bit16:
@@ -25,6 +29,10 @@ AVCodecID getPCMCodecID(const std::shared_ptr<AudioFileProperties> &properties) 
   }
 }
 
+/// @brief Get the codec ID based on the audio file properties.
+/// Note: PCM codec is used with wav and caf formats as both are uncompressed formats.
+/// @param properties The audio file properties.
+/// @return The corresponding AVCodecID.
 AVCodecID getCodecID(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->format) {
     case AudioFileProperties::Format::WAV:
@@ -39,6 +47,9 @@ AVCodecID getCodecID(const std::shared_ptr<AudioFileProperties> &properties) {
   }
 }
 
+/// @brief Returns the appropriate AVSampleFormat for codecs that require it. (non-PCM codecs)
+/// @param properties The audio file properties.
+/// @return The corresponding AVSampleFormat.
 AVSampleFormat getSampleFormat(const std::shared_ptr<AudioFileProperties> &properties) {
   if (properties->format == AudioFileProperties::Format::M4A) {
     return AV_SAMPLE_FMT_FLTP;
@@ -56,10 +67,18 @@ AVSampleFormat getSampleFormat(const std::shared_ptr<AudioFileProperties> &prope
   }
 }
 
+/// @brief Finds the appropriate codec based on the audio file properties.
+/// @param properties The audio file properties.
+/// @return A pointer to the AVCodec.
 const AVCodec *getCodec(const std::shared_ptr<AudioFileProperties> &properties) {
   return avcodec_find_encoder(getCodecID(properties));
 }
 
+/// @brief Returns the appropriate muxer name based on the audio file properties.
+/// Note: most of the time, the muxer name is same as the file extension, (M4A uses MP4 muxer :))
+/// thus this is kept separate from format -> extension mapping.
+/// @param properties The audio file properties.
+/// @return The corresponding muxer name.
 std::string getMuxerName(const std::shared_ptr<AudioFileProperties> &properties) {
   switch (properties->format) {
     case AudioFileProperties::Format::WAV:
@@ -75,6 +94,9 @@ std::string getMuxerName(const std::shared_ptr<AudioFileProperties> &properties)
   }
 }
 
+/// @brief Parses the FFmpeg error int code into a human-readable string.
+/// @param errorCode The FFmpeg error code.
+/// @return A human-readable string describing the error.
 std::string parseErrorCode(int errorCode) {
   char errorBuffer[AV_ERROR_MAX_STRING_SIZE];
 

@@ -30,10 +30,9 @@ class RecorderCallback {
   void cleanup();
 
   void receiveAudioData(const AudioBufferList *audioBufferList, int numFrames);
-  void emitAudioData();
+  void emitAudioData(bool flush = false);
 
   void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
-  void sendRemainingData();
 
   void setOnErrorCallback(uint64_t callbackId);
   void clearOnErrorCallback();
