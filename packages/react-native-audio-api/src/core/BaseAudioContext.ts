@@ -145,7 +145,11 @@ export default class BaseAudioContext {
   }
 
   createDelay(maxDelayTime?: number): DelayNode {
-    return new DelayNode(this, { maxDelayTime });
+    if (maxDelayTime !== undefined) {
+      return new DelayNode(this, { maxDelayTime });
+    } else {
+      return new DelayNode(this);
+    }
   }
 
   createStereoPanner(): StereoPannerNode {
@@ -157,7 +161,11 @@ export default class BaseAudioContext {
   }
 
   createBufferSource(pitchCorrection?: boolean): AudioBufferSourceNode {
-    return new AudioBufferSourceNode(this, { pitchCorrection });
+    if (pitchCorrection !== undefined) {
+      return new AudioBufferSourceNode(this, { pitchCorrection });
+    } else {
+      return new AudioBufferSourceNode(this);
+    }
   }
 
   createIIRFilter(feedforward: number[], feedback: number[]): IIRFilterNode {
@@ -190,7 +198,11 @@ export default class BaseAudioContext {
   createBufferQueueSource(
     pitchCorrection?: boolean
   ): AudioBufferQueueSourceNode {
-    return new AudioBufferQueueSourceNode(this, { pitchCorrection });
+    if (pitchCorrection !== undefined) {
+      return new AudioBufferQueueSourceNode(this, { pitchCorrection });
+    } else {
+      return new AudioBufferQueueSourceNode(this);
+    }
   }
 
   createBuffer(

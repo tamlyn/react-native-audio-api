@@ -25,8 +25,7 @@ class GainTest : public ::testing::Test {
 
 class TestableGainNode : public GainNode {
  public:
-  explicit TestableGainNode(BaseAudioContext *context)
-      : GainNode(context, std::make_shared<GainOptions>()) {}
+  explicit TestableGainNode(BaseAudioContext *context) : GainNode(context, GainOptions()) {}
 
   void setGainParam(float value) {
     getGainParam()->setValue(value);
@@ -40,7 +39,7 @@ class TestableGainNode : public GainNode {
 };
 
 TEST_F(GainTest, GainCanBeCreated) {
-  auto gain = context->createGain(std::make_shared<GainOptions>());
+  auto gain = context->createGain(GainOptions());
   ASSERT_NE(gain, nullptr);
 }
 

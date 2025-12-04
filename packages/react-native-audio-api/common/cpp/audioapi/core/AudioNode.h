@@ -20,9 +20,8 @@ class AudioNodeOptions;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(
-      BaseAudioContext *context,
-      std::shared_ptr<AudioNodeOptions> options = nullptr);
+  explicit AudioNode(BaseAudioContext *context);
+  explicit AudioNode(BaseAudioContext *context, const AudioNodeOptions &options);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;

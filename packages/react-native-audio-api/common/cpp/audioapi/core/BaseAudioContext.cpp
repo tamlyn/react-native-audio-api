@@ -139,8 +139,8 @@ std::shared_ptr<StreamerNode> BaseAudioContext::createStreamer(
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 }
 
-std::shared_ptr<GainNode> BaseAudioContext::createGain(std::shared_ptr<GainOptions> options) {
-  auto gain = std::make_shared<GainNode>(this, options);
+std::shared_ptr<GainNode> BaseAudioContext::createGain(GainOptions &&options) {
+  auto gain = std::make_shared<GainNode>(this, std::move(options));
   nodeManager_->addProcessingNode(gain);
   return gain;
 }

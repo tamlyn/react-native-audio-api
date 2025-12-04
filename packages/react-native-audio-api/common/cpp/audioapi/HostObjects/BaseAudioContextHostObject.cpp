@@ -23,6 +23,7 @@
 
 #include <audioapi/HostObjects/utils/NodeOptionsParser.h>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
@@ -194,7 +195,7 @@ JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createConstantSource) {
 JSI_HOST_FUNCTION_IMPL(BaseAudioContextHostObject, createGain) {
   auto options = args[0].asObject(runtime);
   auto gainOptions = audioapi::option_parser::parseGainOptions(runtime, options);
-  auto gain = context_->createGain(gainOptions);
+  auto gain = context_->createGain(std::move(gainOptions));
   auto gainHostObject = std::make_shared<GainNodeHostObject>(gain);
   return jsi::Object::createFromHostObject(runtime, gainHostObject);
 }

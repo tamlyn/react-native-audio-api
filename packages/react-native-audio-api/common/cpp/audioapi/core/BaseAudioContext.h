@@ -85,7 +85,7 @@ class BaseAudioContext {
   std::shared_ptr<ConstantSourceNode> createConstantSource(
       std::shared_ptr<ConstantSourceOptions> options);
   std::shared_ptr<StreamerNode> createStreamer(std::shared_ptr<StreamerOptions> options);
-  std::shared_ptr<GainNode> createGain(std::shared_ptr<GainOptions> options);
+  std::shared_ptr<GainNode> createGain(GainOptions &&options);
   std::shared_ptr<StereoPannerNode> createStereoPanner(
       std::shared_ptr<StereoPannerOptions> options);
   std::shared_ptr<BiquadFilterNode> createBiquadFilter(

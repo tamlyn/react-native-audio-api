@@ -9,7 +9,12 @@
 namespace audioapi {
 
 DelayNode::DelayNode(BaseAudioContext *context, std::shared_ptr<DelayOptions> options)
-    : AudioNode(context, options) {
+    : AudioNode(
+          context,
+          AudioNodeOptions(
+              options->channelCount,
+              options->channelCountMode,
+              options->channelInterpretation)) {
   delayTimeParam_ =
       std::make_shared<AudioParam>(options->delayTime, 0, options->maxDelayTime, context);
   delayBuffer_ = std::make_shared<AudioBus>(

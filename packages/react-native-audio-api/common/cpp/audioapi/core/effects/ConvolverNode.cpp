@@ -15,7 +15,12 @@ namespace audioapi {
 ConvolverNode::ConvolverNode(
     BaseAudioContext *context,
     const std::shared_ptr<ConvolverOptions> options)
-    : AudioNode(context, options),
+    : AudioNode(
+          context,
+          AudioNodeOptions(
+              options->channelCount,
+              options->channelCountMode,
+              options->channelInterpretation)),
       remainingSegments_(0),
       internalBufferIndex_(0),
       signalledToStop_(false),
