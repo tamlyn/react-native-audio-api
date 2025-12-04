@@ -2,17 +2,341 @@
 sidebar_position: 4
 ---
 
+import Tabs from '@theme/Tabs';
+import TabItem from '@theme/TabItem';
 import AudioNodePropsTable from "@site/src/components/AudioNodePropsTable"
-import { Optional, ReadOnly } from '@site/src/components/Badges';
+import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
-:::warning
-To access microphone you need to make sure your app has met required conditions to do so. Refer to [permission section](/docs/fundamentals/getting-started#special-permissions) for more info.
-:::
+AudioRecorder is the primary interface for capturing audio. It supports three main modes of operations.
 
-`AudioRecorder` provides a simple way to manage audio recording.
-It connects to the audio graph through a [`RecorderAdapterNode`](/docs/sources/recorder-adapter-node) and triggers events when new audio data is ready.
+- **File recording:** Writing audio data directly to the filesystem.
+- **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
+- **Graph processing:** connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+
+## Configuration
+
+To access microphone you need to make sure your app has required permission configuration, check [permission section](/docs/fundamentals/getting-started#special-permissions) of getting started for more information.
+
+Additionally to be able to record audio while application is in background, you need to enable background mode on iOS and configure foreground service on android.
+
+<Tabs groupId="platforms">
+  <TabItem value="expo" label="Expo" default>
+    In expo application you can do so through `react-native-audio-api` expo plugin, eg.
+
+    ```json
+    {
+      "plugins": [
+        [
+          "react-native-audio-api",
+          {
+            "iosBackgroundMode": true,
+            "iosMicrophonePermission": "[YOUR_APP_NAME] requires access to the microphone to record audio.",
+            "androidPermissions" : [
+              "android.permission.RECORD_AUDIO",
+              "android.permission.FOREGROUND_SERVICE",
+              "android.permission.FOREGROUND_SERVICE_MICROPHONE",
+            ],
+            "androidForegroundService": true,
+            "androidFSTypes": ["microphone"]
+          }
+        ]
+      ]
+    }
+    ```
+
+    for more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+  </TabItem>
+  <TabItem value="iOS" label="iOS (bare react-native)" default>
+    For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
+
+    ![background mode configuration example](/docs/recorder/signing-and-capabilities.png)
+
+    Microphone permission can be created or modified through the `Info.plist` file
+
+    ![Info plist example](/docs/recorder/info-plist.png)
+
+    Alternatively you can modify the `Info.plist` file directly in your editor of choice by adding those lines:
+
+    ```xml
+    <key>NSMicrophoneUsageDescription</key>
+    <string>$(PRODUCT_NAME) wants to access your microphone in order to use voice memo recording</string>
+    <key>UIBackgroundModes</key>
+    <array>
+      <string>audio</string>
+    </array>
+    ```
+  </TabItem>
+  <TabItem value="android" label="Android (bare react-native)">
+    To enable required permissions or foreground service you have to manually edit the `AndroidManifest.xml` file
+
+    ```xml
+    <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+      <!-- Foreground service and microphone permissions for background usage -->
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+      <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MICROPHONE"/>
+
+      <!-- General permission for microphone access -->
+      <uses-permission android:name="android.permission.RECORD_AUDIO"/>
+
+      <!-- Paste this inside <application> tag -->
+        <service android:stopWithTask="true" android:name="com.swmansion.audioapi.system.MediaNotificationManager$AudioForegroundService" android:foregroundServiceType="microphone" />
+    </manifest>
+
+    ```
+  </TabItem>
+</Tabs>
+
+## Usage
+
+<Tabs group="usage">
+  <TabItem value="record-to-file" label="Record to File">
+
+```tsx
+import React from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioManger } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'record',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const recorder = new AudioRecorder();
+
+// Enables recording to file with default configuration
+recorder.enableFileOutput();
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== "Granted") {
+      console.warn("Permissions are not granted");
+      return;
+    }
+
+    // Activate audio session
+    const success = await AudioManager.setAudioSessionActivity(true);
+
+    if (!success) {
+      console.warn("Could not activate the audio session");
+      return;
+    }
+
+    const result = audioRecorder.start();
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    console.log("Recording started to file:", result.path);
+    setIsRecording(true);
+  }
+
+  const onStop = () => {
+    if (!isRecording) {
+      return;
+    }
+
+    const result = recorder.stop();
+    console.log(result);
+    setIsRecording(false);
+  }
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? "Record" : "Stop"}</Text>
+      </Pressable>
+    </View>
+  )
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+  <TabItem value="data-callback" label="Data callback">
+
+```tsx
+import React from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioManger } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'record',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const recorder = new AudioRecorder();
+const sampleRate = 16000;
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  useEffect(() => {
+    recorder.onAudioReady({
+      sampleRate,
+      bufferLength: sampleRate * 0.1, // 0.1s of audio each batch
+      channelCount: 1,
+    }, ({ buffer, numFrames, when }) => {
+      // do something with the data, i.e. stream it
+    });
+
+    return () => {
+      recorder.clearOnAudioReady();
+    }
+  }, []);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== "Granted") {
+      console.warn("Permissions are not granted");
+      return;
+    }
+
+    // Activate audio session
+    const success = await AudioManager.setAudioSessionActivity(true);
+
+    if (!success) {
+      console.warn("Could not activate the audio session");
+      return;
+    }
+
+    audioRecorder.start();
+
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    setIsRecording(true);
+  }
+
+  const onStop = () => {
+    if (!isRecording) {
+      return;
+    }
+
+    recorder.stop();
+    setIsRecording(false);
+  }
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? "Record" : "Stop"}</Text>
+      </Pressable>
+    </View>
+  )
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+  <TabItem value="graph-processing" label="Graph processing">
+
+```tsx
+import React from 'react';
+import { View, Pressable, Text } from 'react-native';
+import { AudioRecorder, AudioContext, AudioManger } from 'react-native-audio-api';
+
+AudioManager.setAudioSessionOptions({
+  iosCategory: 'playAndRecord',
+  iosMode: 'default',
+  iosOptions: [],
+});
+
+const recorder = new AudioRecorder();
+const audioContext = new AudioContext();
+
+const MyRecorder: React.FC = () => {
+  const [isRecording, setIsRecording] = useState(false);
+
+  const onStart = async () => {
+    if (isRecording) {
+      return;
+    }
+
+    // Make sure the permissions are granted
+    const permissions = await AudioManager.requestRecordingPermissions();
+
+    if (permissions !== "Granted") {
+      console.warn("Permissions are not granted");
+      return;
+    }
+
+    // Activate audio session
+    const success = await AudioManager.setAudioSessionActivity(true);
+
+    if (!success) {
+      console.warn("Could not activate the audio session");
+      return;
+    }
+
+    const adapter = audioContext.createRecorderAdapter();
+    adapter.connect(audioContext.destination);
+    audioRecorder.connect(adapter);
+
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
+    }
+
+    const result = audioRecorder.start();
+
+    if (result.status === 'error') {
+      console.warn(result.message);
+      return;
+    }
+
+    setIsRecording(true);
+  }
+
+  const onStop = () => {
+    if (!isRecording) {
+      return;
+    }
+
+    recorder.stop();
+    audioContext.suspend();
+    setIsRecording(false);
+  }
+
+  return (
+    <View>
+      <Pressable onPress={isRecording ? onStop : onStart}>
+        <Text>{isRecording ? "Record" : "Stop"}</Text>
+      </Pressable>
+    </View>
+  )
+};
+
+export default MyRecorder;
+```
+
+  </TabItem>
+</Tabs>
+
+<!--
 
 ## Constructor
 
@@ -108,4 +432,4 @@ interface OnAudioReadyEventType {
   numFrames: number; //number of frames in a buffer
 }
 ```
-</details>
+</details> -->

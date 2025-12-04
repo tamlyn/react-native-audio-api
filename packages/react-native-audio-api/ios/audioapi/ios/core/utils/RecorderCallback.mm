@@ -9,7 +9,7 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 #include <audioapi/utils/CircularAudioArray.h>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 #include <algorithm>
 
 namespace audioapi {
@@ -53,7 +53,7 @@ RecorderCallback::~RecorderCallback()
   }
 }
 
-ReturnStatus<void> RecorderCallback::prepare(
+Result<NoneType, std::string> RecorderCallback::prepare(
     AVAudioFormat *bufferFormat,
     size_t maxInputBufferLength)
 {
@@ -62,12 +62,12 @@ ReturnStatus<void> RecorderCallback::prepare(
     converterInputBufferSize_ = maxInputBufferLength;
 
     if (bufferFormat.sampleRate <= 0 || bufferFormat.channelCount == 0) {
-      return ReturnStatus<void>::Error(
+      return Result<NoneType, std::string>::Err(
           "Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
     if (sampleRate_ <= 0 || channelCount_ == 0) {
-      return ReturnStatus<void>::Error(
+      return Result<NoneType, std::string>::Err(
           "Invalid callback format: sampleRate and channelCount must be greater than 0");
     }
 
@@ -92,7 +92,7 @@ ReturnStatus<void> RecorderCallback::prepare(
                                       frameCapacity:(AVAudioFrameCount)converterOutputBufferSize_];
   }
 
-  return ReturnStatus<void>::Success();
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 void RecorderCallback::cleanup()

@@ -17,12 +17,6 @@ enum Status {
   Playback = 'Playback',
 }
 
-AudioManager.setAudioSessionOptions({
-  iosCategory: 'playAndRecord',
-  iosMode: 'default',
-  iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
-});
-
 const audioContext = new AudioContext();
 const audioRecorder = new AudioRecorder();
 
@@ -45,6 +39,12 @@ const Record: FC = () => {
       );
       return;
     }
+
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playAndRecord',
+      iosMode: 'default',
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    });
 
     const success = await AudioManager.setAudioSessionActivity(true);
 
@@ -89,6 +89,7 @@ const Record: FC = () => {
   const stopEcho = () => {
     audioRecorder.stop();
     setStatus(Status.Idle);
+    AudioManager.setAudioSessionActivity(false);
   };
 
   const startRecordForReplay = async () => {
@@ -101,6 +102,12 @@ const Record: FC = () => {
       );
       return;
     }
+
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playAndRecord',
+      iosMode: 'default',
+      iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
+    });
 
     const success = await AudioManager.setAudioSessionActivity(true);
 
@@ -154,7 +161,23 @@ const Record: FC = () => {
     }, 5000);
   };
 
-  const onStartReplay = () => {
+  const onStartReplay = async () => {
+    AudioManager.setAudioSessionOptions({
+      iosCategory: 'playback',
+      iosMode: 'default',
+      iosOptions: [],
+    });
+
+    const success = await AudioManager.setAudioSessionActivity(true);
+
+    if (!success) {
+      Alert.alert(
+        'Audio Session Error',
+        'Failed to activate audio session for playback.'
+      );
+      return;
+    }
+
     if (audioContext.state === 'suspended') {
       audioContext.resume();
     }

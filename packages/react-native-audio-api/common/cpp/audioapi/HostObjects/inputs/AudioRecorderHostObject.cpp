@@ -12,6 +12,7 @@
 #include <audioapi/ios/core/IOSAudioRecorder.h>
 #endif
 #include <memory>
+#include
 
 namespace audioapi {
 
@@ -47,13 +48,13 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, start) {
   jsResult.setProperty(
       runtime,
       "status",
-      jsi::String::createFromUtf8(runtime, result.isSuccess() ? "success" : "error"));
+      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.isSuccess()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.getValue()));
+  if (result.is_ok()) {
+    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
   } else {
     jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.getMessage()));
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
 
   return jsResult;
@@ -66,17 +67,17 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, stop) {
   jsResult.setProperty(
       runtime,
       "status",
-      jsi::String::createFromUtf8(runtime, result.isSuccess() ? "success" : "error"));
+      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.isSuccess()) {
-    auto info = result.getValue();
+  if (result.is_ok()) {
+    auto info = result.unwrap();
 
     jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, std::get<0>(info)));
     jsResult.setProperty(runtime, "size", std::get<1>(info));
     jsResult.setProperty(runtime, "duration", std::get<2>(info));
   } else {
     jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.getMessage()));
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
 
   return jsResult;
@@ -99,13 +100,13 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, enableFileOutput) {
   jsResult.setProperty(
       runtime,
       "status",
-      jsi::String::createFromUtf8(runtime, result.isSuccess() ? "success" : "error"));
+      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (result.isSuccess()) {
-    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.getValue()));
+  if (result.is_ok()) {
+    jsResult.setProperty(runtime, "path", jsi::String::createFromUtf8(runtime, result.unwrap()));
   } else {
     jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.getMessage()));
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
 
   return jsResult;
@@ -158,11 +159,11 @@ JSI_HOST_FUNCTION_IMPL(AudioRecorderHostObject, setOnAudioReady) {
   jsResult.setProperty(
       runtime,
       "status",
-      jsi::String::createFromUtf8(runtime, result.isSuccess() ? "success" : "error"));
+      jsi::String::createFromUtf8(runtime, result.is_ok() ? "success" : "error"));
 
-  if (!result.isSuccess()) {
+  if (result.is_err()) {
     jsResult.setProperty(
-        runtime, "message", jsi::String::createFromUtf8(runtime, result.getMessage()));
+        runtime, "message", jsi::String::createFromUtf8(runtime, result.unwrap_err()));
   }
 
   return jsResult;

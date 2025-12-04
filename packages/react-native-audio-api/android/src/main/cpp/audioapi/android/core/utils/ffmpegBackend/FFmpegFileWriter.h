@@ -6,7 +6,7 @@
 #include <memory>
 #include <tuple>
 #include <chrono>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 
 struct AVCodecContext;
 struct AVFormatContext;
@@ -27,8 +27,8 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   explicit FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
   ~FFmpegAudioFileWriter() override;
 
-  OpenFileStatus openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
-  CloseFileStatus closeFile() override;
+  OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
+  CloseFileResult closeFile() override;
 
   bool writeAudioData(void *data, int numFrames) override;
 
@@ -52,21 +52,21 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   bool isConverterRequired();
 
   // Initialization helper methods
-  ReturnStatus<void> initializeFormatContext(const AVCodec* codec);
-  ReturnStatus<void> configureAndOpenCodec(const AVCodec* codec);
-  ReturnStatus<void> initializeStream();
-  ReturnStatus<void> openIOAndWriteHeader();
-  ReturnStatus<void> initializeResampler(int32_t inputRate, int32_t inputChannels);
+  Result<NoneType, std::string> initializeFormatContext(const AVCodec* codec);
+  Result<NoneType, std::string> configureAndOpenCodec(const AVCodec* codec);
+  Result<NoneType, std::string> initializeStream();
+  Result<NoneType, std::string> openIOAndWriteHeader();
+  Result<NoneType, std::string> initializeResampler(float inputRate, int inputChannels);
   void initializeBuffers(int32_t maxBufferSize);
 
   // Processing helper methods
   bool resampleAndPushToFifo(void *data, int numFrames);
   int processFifo(bool flush);
   int writeEncodedPackets();
-  int prepareFrameForEncoding(int samplesToRead);
+  int prepareFrameForEncoding(int64_t samplesToRead);
 
   // Finalization helper methods
-  CloseFileStatus finalizeOutput();
+  CloseFileResult finalizeOutput();
 };
 
 } // namespace android::ffmpeg

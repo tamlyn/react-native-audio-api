@@ -7,12 +7,10 @@
 #include <string>
 #include <tuple>
 #include <mutex>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 #include <audioapi/android/core/NativeAudioRecorder.hpp>
 
 namespace audioapi {
-
-using namespace oboe;
 
 class AudioBus;
 class CircularAudioArray;
@@ -21,16 +19,16 @@ class AndroidRecorderCallback;
 class AndroidFileWriterBackend;
 class AudioEventHandlerRegistry;
 
-class AndroidAudioRecorder : public AudioStreamCallback, public AudioRecorder {
+class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecorder {
  public:
   explicit AndroidAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~AndroidAudioRecorder() override;
   void cleanup();
 
-  ReturnStatus<std::string> start() override;
-  ReturnStatus<std::tuple<std::string, double, double>> stop() override;
+  Result<std::string, std::string> start() override;
+  Result<std::tuple<std::string, double, double>, std::string> stop() override;
 
-  ReturnStatus<std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) override;
+  Result<std::string, std::string> enableFileOutput(std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
   void pause() override;
@@ -39,24 +37,27 @@ class AndroidAudioRecorder : public AudioStreamCallback, public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  ReturnStatus<void> setOnAudioReadyCallback(float sampleRate, size_t bufferLength, int channelCount, uint64_t callbackId)
+  Result<NoneType, std::string> setOnAudioReadyCallback(float sampleRate, size_t bufferLength, int channelCount, uint64_t callbackId)
       override;
   void clearOnAudioReadyCallback() override;
 
   void setOnErrorCallback(uint64_t callbackId) override;
   void clearOnErrorCallback() override;
 
+  void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
+  void disconnect() override;
+
   double getCurrentDuration() const override;
 
-  DataCallbackResult onAudioReady(
-          AudioStream *oboeStream,
+  oboe::DataCallbackResult onAudioReady(
+          oboe::AudioStream *oboeStream,
           void *audioData,
           int32_t numFrames) override;
-  void onErrorAfterClose(AudioStream *oboeStream, Result error) override;
+  void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:
   std::string filePath_;
-  std::shared_ptr<AudioStream> mStream_;
+  std::shared_ptr<oboe::AudioStream> mStream_;
 
   std::mutex callbackMutex_;
   std::mutex fileWriterMutex_;
@@ -70,7 +71,7 @@ class AndroidAudioRecorder : public AudioStreamCallback, public AudioRecorder {
 
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
-  ReturnStatus<void> openAudioStream();
+  Result<NoneType, std::string> openAudioStream();
 };
 
 } // namespace audioapi

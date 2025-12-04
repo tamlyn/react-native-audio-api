@@ -10,7 +10,7 @@ typedef struct objc_object NativeAudioRecorder;
 #endif // __OBJC__
 
 #include <audioapi/core/inputs/AudioRecorder.h>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 
 #include <mutex>
 
@@ -27,10 +27,10 @@ class IOSAudioRecorder : public AudioRecorder {
   IOSAudioRecorder(const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
   ~IOSAudioRecorder() override;
 
-  ReturnStatus<std::string> start() override;
-  ReturnStatus<std::tuple<std::string, double, double>> stop() override;
+  Result<std::string, std::string> start() override;
+  Result<std::tuple<std::string, double, double>, std::string> stop() override;
 
-  ReturnStatus<std::string> enableFileOutput(
+  Result<std::string, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) override;
   void disableFileOutput() override;
 
@@ -44,7 +44,7 @@ class IOSAudioRecorder : public AudioRecorder {
   bool isPaused() const override;
   bool isIdle() const override;
 
-  ReturnStatus<void> setOnAudioReadyCallback(
+  Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,

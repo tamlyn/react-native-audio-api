@@ -6,7 +6,7 @@ typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
 #endif
 
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 #include <memory>
 #include <vector>
 
@@ -26,7 +26,7 @@ class RecorderCallback {
       uint64_t callbackId);
   ~RecorderCallback();
 
-  ReturnStatus<void> prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
+  Result<NoneType, std::string> prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
   void cleanup();
 
   void receiveAudioData(const AudioBufferList *audioBufferList, int numFrames);

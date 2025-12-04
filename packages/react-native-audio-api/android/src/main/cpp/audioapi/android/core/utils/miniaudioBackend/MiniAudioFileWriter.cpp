@@ -70,7 +70,7 @@ MiniAudioFileWriter::~MiniAudioFileWriter() {
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param streamMaxBufferSize The maximum buffer size of the incoming audio stream.
 /// @return The status of the file opening operation.
-OpenFileStatus MiniAudioFileWriter::openFile(
+OpenFileResult MiniAudioFileWriter::openFile(
     float streamSampleRate,
     int32_t streamChannelCount,
     int32_t streamMaxBufferSize) {
@@ -88,19 +88,19 @@ OpenFileStatus MiniAudioFileWriter::openFile(
   result = initializeConverterIfNeeded();
 
   if (result != MA_SUCCESS) {
-    return OpenFileStatus::Error(
+    return OpenFileResult ::Err(
         "Failed to initialize converter" + std::string(ma_result_description(result)));
   }
 
   result = initializeEncoder();
 
   if (result != MA_SUCCESS) {
-    return OpenFileStatus::Error(
+    return OpenFileResult ::Err(
         "Failed to initialize encoder" + std::string(ma_result_description(result)));
   }
 
   isFileOpen_.store(true, std::memory_order_release);
-  return OpenFileStatus::Success(filePath_);
+  return OpenFileResult ::Ok(filePath_);
 }
 
 /// @brief Closes the audio file.
@@ -108,9 +108,9 @@ OpenFileStatus MiniAudioFileWriter::openFile(
 /// and retrieves the duration and size of the written audio file.
 /// It should be called only on the JS thread.
 /// @return The status of the file closing operation.
-CloseFileStatus MiniAudioFileWriter::closeFile() {
+CloseFileResult MiniAudioFileWriter::closeFile() {
   if (!isFileOpen()) {
-    return CloseFileStatus::Error("File is not open");
+    return CloseFileResult ::Err("File is not open");
   }
 
   isFileOpen_.store(false, std::memory_order_release);
@@ -158,7 +158,7 @@ CloseFileStatus MiniAudioFileWriter::closeFile() {
   }
 
   filePath_ = "";
-  return CloseFileStatus::Success({fileSizeInMB, durationInSeconds});
+  return CloseFileResult ::Ok({fileSizeInMB, durationInSeconds});
 }
 
 /// @brief Writes audio data to the file.
@@ -275,13 +275,13 @@ ma_result MiniAudioFileWriter::initializeConverterIfNeeded() {
 /// @return MA_SUCCESS if initialization was successful, otherwise an error code.
 ma_result MiniAudioFileWriter::initializeEncoder() {
   ma_result result;
-  ResultStatus<std::string> filePathResult = android::fileoptions::getFilePath(properties_);
+  Result<std::string, std::string> filePathResult = android::fileoptions::getFilePath(properties_);
 
-  if (!filePathResult.isSuccess()) {
+  if (!filePathResult.is_ok()) {
     return MA_ERROR;
   }
 
-  filePath_ = filePathResult.getValue();
+  filePath_ = filePathResult.unwrap();
 
   ma_encoder_config config = ma_encoder_config_init(
       getFormat(properties_),
@@ -292,7 +292,7 @@ ma_result MiniAudioFileWriter::initializeEncoder() {
   encoder_ = std::make_unique<ma_encoder>();
   result = ma_encoder_init_file(filePath_.c_str(), &config, encoder_.get());
 
-return result;
+  return result;
 }
 
 bool MiniAudioFileWriter::isFileOpen() {

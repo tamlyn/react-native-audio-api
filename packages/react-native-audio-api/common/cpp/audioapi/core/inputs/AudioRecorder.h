@@ -1,7 +1,7 @@
 #pragma once
 
 #include <audioapi/core/utils/Locker.h>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>
 #include <mutex>
@@ -24,10 +24,10 @@ class AudioRecorder {
       : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
 
-  virtual ReturnStatus<std::string> start() = 0;
-  virtual ReturnStatus<std::tuple<std::string, double, double>> stop() = 0;
+  virtual Result<std::string, std::string> start() = 0;
+  virtual Result<std::tuple<std::string, double, double>, std::string> stop() = 0;
 
-  virtual ReturnStatus<std::string> enableFileOutput(
+  virtual Result<std::string, std::string> enableFileOutput(
       std::shared_ptr<AudioFileProperties> properties) = 0;
   virtual void disableFileOutput() = 0;
 
@@ -37,7 +37,7 @@ class AudioRecorder {
   virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
   virtual void disconnect() = 0;
 
-  virtual ReturnStatus<void> setOnAudioReadyCallback(
+  virtual Result<NoneType, std::string> setOnAudioReadyCallback(
       float sampleRate,
       size_t bufferLength,
       int channelCount,

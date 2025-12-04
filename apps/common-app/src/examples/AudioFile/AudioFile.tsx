@@ -1,10 +1,10 @@
-import React, { useCallback, useEffect, useState, FC } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
+import React, { FC, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
 import { AudioManager } from 'react-native-audio-api';
-import { Container, Button, Spacer } from '../../components';
-import AudioPlayer from './AudioPlayer';
-import { colors } from '../../styles';
 import BackgroundTimer from 'react-native-background-timer';
+import { Button, Container, Spacer } from '../../components';
+import { colors } from '../../styles';
+import AudioPlayer from './AudioPlayer';
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
@@ -21,6 +21,22 @@ const AudioFile: FC = () => {
       AudioPlayer.setOnPositionChanged((offset) => {
         setPositionPercentage(offset);
       });
+
+      AudioManager.setAudioSessionOptions({
+        iosCategory: 'playback',
+        iosMode: 'default',
+        iosOptions: [],
+      });
+
+      const success = await AudioManager.setAudioSessionActivity(true);
+
+      if (!success) {
+        Alert.alert(
+          'Audio Session Error',
+          'Failed to activate audio session for playback.'
+        );
+        return;
+      }
 
       await AudioPlayer.play();
 
@@ -53,7 +69,6 @@ const AudioFile: FC = () => {
     AudioManager.enableRemoteCommand('remoteSkipForward', true);
     AudioManager.enableRemoteCommand('remoteSkipBackward', true);
     AudioManager.observeAudioInterruptions(true);
-    AudioManager.activelyReclaimSession(true);
 
     const remotePlaySubscription = AudioManager.addSystemEventListener(
       'remotePlay',

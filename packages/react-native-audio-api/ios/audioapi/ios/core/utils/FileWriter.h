@@ -1,6 +1,6 @@
 #pragma once
 
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 
 #include <memory>
 #include <string>
@@ -27,8 +27,10 @@ class FileWriter {
       const std::shared_ptr<AudioFileProperties> &fileProperties);
   ~FileWriter();
 
-  ReturnStatus<std::string> openFile(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
-  ReturnStatus<std::tuple<double, double>> closeFile();
+  Result<std::string, std::string> openFile(
+      AVAudioFormat *bufferFormat,
+      size_t maxInputBufferLength);
+  Result<std::tuple<double, double>, std::string> closeFile();
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
 

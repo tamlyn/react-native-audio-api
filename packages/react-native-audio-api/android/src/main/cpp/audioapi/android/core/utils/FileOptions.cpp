@@ -11,24 +11,24 @@
 
 namespace audioapi::android::fileoptions {
 
-ReturnStatus<void> createDirectoryIfNotExists(const std::string &directoryPath) {
+Result<NoneType, std::string> createDirectoryIfNotExists(const std::string &directoryPath) {
   std::error_code ec;
 
   if (std::filesystem::exists(directoryPath, ec)) {
-    return ReturnStatus<void>::Success();
+    return Result<NoneType, std::string>::Ok(None);
   }
 
   bool created = std::filesystem::create_directories(directoryPath, ec);
 
   if (!created) {
-    return ReturnStatus<void>::Error("Failed to create directory: " + directoryPath);
+    return Result<NoneType, std::string>::Err("Failed to create directory: " + directoryPath);
   }
 
   if (ec) {
-    return ReturnStatus<void>::Error(ec.message());
+    return Result<NoneType, std::string>::Err(ec.message());
   }
 
-  return ReturnStatus<void>::Success();
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 std::string getTimestampString() {
@@ -62,7 +62,8 @@ std::string getFileExtension(const std::shared_ptr<AudioFileProperties> &propert
   }
 }
 
-ReturnStatus<std::string> getFilePath(const std::shared_ptr<AudioFileProperties> &properties) {
+Result<std::string, std::string> getFilePath(
+    const std::shared_ptr<AudioFileProperties> &properties) {
   std::string directory = getDirectory(properties);
   std::string subDirectory = std::format("{}/{}", directory, properties->subDirectory);
   std::string fileTimestamp = getTimestampString();
@@ -70,13 +71,13 @@ ReturnStatus<std::string> getFilePath(const std::shared_ptr<AudioFileProperties>
 
   auto result = createDirectoryIfNotExists(directory);
 
-  if (!result.isSuccess()) {
-    return ReturnStatus<std::string>::Error(result.getMessage());
+  if (!result.is_ok()) {
+    return Result<std::string, std::string>::Err(result.unwrap_err());
   }
 
   auto filePath = std::format(
       "{}/{}_{}.{}", subDirectory, properties->fileNamePrefix, fileTimestamp, extension);
-  return ReturnStatus<std::string>::Success(filePath);
+  return Result<std::string, std::string>::Ok(filePath);
 }
 
 } // namespace audioapi::android::fileoptions

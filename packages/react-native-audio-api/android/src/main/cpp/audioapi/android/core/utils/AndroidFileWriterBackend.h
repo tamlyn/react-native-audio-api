@@ -3,14 +3,14 @@
 #include <tuple>
 #include <string>
 #include <memory>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 
 namespace audioapi {
 
 class AudioFileProperties;
 
-typedef ReturnStatus<std::string> OpenFileStatus;
-typedef ReturnStatus<std::tuple<double, double>> CloseFileStatus;
+typedef Result<std::string, std::string> OpenFileResult;
+typedef Result<std::tuple<double, double>, std::string> CloseFileResult;
 
 class AndroidFileWriterBackend {
  public:
@@ -18,8 +18,8 @@ class AndroidFileWriterBackend {
 
   virtual ~AndroidFileWriterBackend() = default;
 
-  virtual OpenFileStatus openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
-  virtual CloseFileStatus closeFile() = 0;
+  virtual OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) = 0;
+  virtual CloseFileResult closeFile() = 0;
 
   virtual bool writeAudioData(void *data, int numFrames) = 0;
 

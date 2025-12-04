@@ -34,7 +34,7 @@ const Record: FC = () => {
       const permissionStatus = await AudioManager.requestRecordingPermissions();
 
       if (permissionStatus !== 'Granted') {
-        Alert.alert('Baka!', "Recording permissions are no't granted");
+        Alert.alert('Error', "Recording permissions are no't granted");
         return;
       }
 
@@ -51,10 +51,12 @@ const Record: FC = () => {
     const result = Recorder.start();
 
     if (result.status === 'success') {
+      console.log('Recording started, file path:', result.path);
       setState(RecordingState.Recording);
       return;
     }
 
+    console.log('Recording start error:', result);
     Alert.alert('Error', `Failed to start recording: ${result.message}`);
     setState(RecordingState.Idle);
   }, [state, hasPermissions]);

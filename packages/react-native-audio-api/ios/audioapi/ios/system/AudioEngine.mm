@@ -119,6 +119,8 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)rebuildAudioEngine
 {
+  self.audioEngine = [[AVAudioEngine alloc] init];
+
   for (id sourceNodeId in self.sourceNodes) {
     AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
     AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];

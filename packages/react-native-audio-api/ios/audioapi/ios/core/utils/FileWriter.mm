@@ -5,7 +5,7 @@
 #include <audioapi/ios/core/utils/FileOptions.h>
 #include <audioapi/ios/core/utils/FileWriter.h>
 #include <audioapi/utils/AudioFileProperties.h>
-#include <audioapi/utils/ReturnStatus.hpp>
+#include <audioapi/utils/Result.hpp>
 #include <audioapi/utils/UnitConversion.h>
 
 namespace audioapi {
@@ -24,13 +24,13 @@ FileWriter::~FileWriter()
   bufferFormat_ = nil;
 }
 
-ReturnStatus<std::string> FileWriter::openFile(
+Result<std::string, std::string> FileWriter::openFile(
     AVAudioFormat *bufferFormat,
     size_t maxInputBufferLength)
 {
   @autoreleasepool {
     if (audioFile_ != nil) {
-      return ReturnStatus<std::string>::Error("file already open");
+      return Result<std::string, std::string>::Err("file already open");
     }
 
     framesWritten_.store(0, std::memory_order_release);
@@ -41,12 +41,12 @@ ReturnStatus<std::string> FileWriter::openFile(
     fileURL_ = ios::fileoptions::getFileURL(fileProperties_);
 
     if (fileProperties_->sampleRate == 0 || fileProperties_->channelCount == 0) {
-      return ReturnStatus<std::string>::Error(
+      return Result<std::string, std::string>::Err(
           "Invalid file properties: sampleRate and channelCount must be greater than 0");
     }
 
     if (bufferFormat.sampleRate == 0 || bufferFormat.channelCount == 0) {
-      return ReturnStatus<std::string>::Error(
+      return Result<std::string, std::string>::Err(
           "Invalid input format: sampleRate and channelCount must be greater than 0");
     }
 
@@ -57,7 +57,7 @@ ReturnStatus<std::string> FileWriter::openFile(
                                                error:&error];
 
     if (error != nil) {
-      return ReturnStatus<std::string>::Error(
+      return Result<std::string, std::string>::Err(
           std::string("Error creating audio file for writing: ") +
           [[error debugDescription] UTF8String]);
     }
@@ -87,21 +87,21 @@ ReturnStatus<std::string> FileWriter::openFile(
       converterInputBuffer_ = nil;
       converterOutputBuffer_ = nil;
 
-      return ReturnStatus<std::string>::Error("Error creating converter buffers");
+      return Result<std::string, std::string>::Err("Error creating converter buffers");
     }
 
-    return ReturnStatus<std::string>::Success([[fileURL_ path] UTF8String]);
+    return Result<std::string, std::string>::Ok([[fileURL_ path] UTF8String]);
   }
 }
 
-ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
+Result<std::tuple<double, double>, std::string> FileWriter::closeFile()
 {
   @autoreleasepool {
     NSError *error;
     std::string filePath = [[fileURL_ path] UTF8String];
 
     if (audioFile_ == nil) {
-      return ReturnStatus<std::tuple<double, double>>::Error("file is not open: " + filePath);
+      return Result<std::tuple<double, double>, std::string>::Err("file is not open: " + filePath);
     }
 
     // AVAudioFile automatically finalizes the file when deallocated
@@ -122,7 +122,7 @@ ReturnStatus<std::tuple<double, double>> FileWriter::closeFile()
     fileURL_ = nil;
     framesWritten_.store(0, std::memory_order_release);
 
-    return ReturnStatus<std::tuple<double, double>>::Success(
+    return Result<std::tuple<double, double>, std::string>::Ok(
         std::make_tuple(fileDuration, fileSizeBytesMb));
   }
 }
