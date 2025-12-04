@@ -24,15 +24,15 @@ WaveShaperNode::WaveShaperNode(BaseAudioContext *context)
 }
 
 std::string WaveShaperNode::getOversample() const {
-  return toString(oversample_.load(std::memory_order_acquire));
+  return overSampleTypeToString(oversample_.load(std::memory_order_acquire));
 }
 
 void WaveShaperNode::setOversample(const std::string &type) {
   std::scoped_lock<std::mutex> lock(mutex_);
-  oversample_.store(fromString(type), std::memory_order_release);
+  oversample_.store(overSampleTypeFromString(type), std::memory_order_release);
 
   for (int i = 0; i < waveShapers_.size(); i++) {
-    waveShapers_[i]->setOversample(fromString(type));
+    waveShapers_[i]->setOversample(overSampleTypeFromString(type));
   }
 }
 
@@ -48,8 +48,6 @@ void WaveShaperNode::setCurve(const std::shared_ptr<AudioArray> &curve) {
   for (int i = 0; i < waveShapers_.size(); i++) {
     waveShapers_[i]->setCurve(curve);
   }
-
-  curve_ = curve;
 }
 
 std::shared_ptr<AudioBus> WaveShaperNode::processNode(

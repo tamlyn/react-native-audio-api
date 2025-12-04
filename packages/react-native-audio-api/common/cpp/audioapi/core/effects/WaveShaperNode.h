@@ -39,7 +39,7 @@ class WaveShaperNode : public AudioNode {
 
   std::vector<std::unique_ptr<WaveShaper>> waveShapers_{};
 
-  static OverSampleType fromString(const std::string &type) {
+  static OverSampleType overSampleTypeFromString(const std::string &type) {
     std::string lowerType = type;
     std::transform(lowerType.begin(), lowerType.end(), lowerType.begin(), ::tolower);
 
@@ -51,7 +51,7 @@ class WaveShaperNode : public AudioNode {
     return OverSampleType::OVERSAMPLE_NONE;
   }
 
-  static std::string toString(OverSampleType type) {
+  static std::string overSampleTypeToString(OverSampleType type) {
     switch (type) {
       case OverSampleType::OVERSAMPLE_2X:
         return "2x";

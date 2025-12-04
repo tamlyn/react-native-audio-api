@@ -28,12 +28,12 @@ class WaveShaper {
   std::shared_ptr<AudioArray> curve_;
 
   // stage 1 Filters (1x <-> 2x)
-  std::unique_ptr<UpSampler> upSampler_;
-  std::unique_ptr<DownSampler> downSampler_;
+  std::unique_ptr<Resampler> upSampler_;
+  std::unique_ptr<Resampler> downSampler_;
 
   // stage 2 Filters (2x <-> 4x)
-  std::unique_ptr<UpSampler> upSampler2_;
-  std::unique_ptr<DownSampler> downSampler2_;
+  std::unique_ptr<Resampler> upSampler2_;
+  std::unique_ptr<Resampler> downSampler2_;
 
   std::shared_ptr<AudioArray> tempBuffer2x_;
   std::shared_ptr<AudioArray> tempBuffer4x_;
