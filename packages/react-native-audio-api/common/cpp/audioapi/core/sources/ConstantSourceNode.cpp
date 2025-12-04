@@ -7,12 +7,10 @@
 #include <memory>
 
 namespace audioapi {
-ConstantSourceNode::ConstantSourceNode(
-    BaseAudioContext *context,
-    const std::shared_ptr<ConstantSourceOptions> options)
+ConstantSourceNode::ConstantSourceNode(BaseAudioContext *context, ConstantSourceOptions options)
     : AudioScheduledSourceNode(context) {
   offsetParam_ = std::make_shared<AudioParam>(
-      options->offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options.offset, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   isInitialized_ = true;
 }
 

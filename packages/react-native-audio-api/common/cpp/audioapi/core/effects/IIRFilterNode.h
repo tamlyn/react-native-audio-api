@@ -38,7 +38,7 @@ class IIRFilterOptions;
 class IIRFilterNode : public AudioNode {
 
  public:
-  explicit IIRFilterNode(BaseAudioContext *context, std::shared_ptr<IIRFilterOptions> options);
+  explicit IIRFilterNode(BaseAudioContext *context, IIRFilterOptions options);
 
   void getFrequencyResponse(
       const float *frequencyArray,

@@ -23,7 +23,6 @@ export default class AnalyserNode extends AudioNode {
         )}`
       );
     }
-    console.log('finalOptions', finalOptions);
     const analyserNode: IAnalyserNode =
       context.context.createAnalyser(finalOptions);
     super(context, analyserNode);

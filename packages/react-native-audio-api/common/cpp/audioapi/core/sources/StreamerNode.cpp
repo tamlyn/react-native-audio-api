@@ -22,7 +22,7 @@
 #include <utility>
 
 namespace audioapi {
-StreamerNode::StreamerNode(BaseAudioContext *context, std::shared_ptr<StreamerOptions> options)
+StreamerNode::StreamerNode(BaseAudioContext *context, StreamerOptions options)
     : AudioScheduledSourceNode(context),
       fmtCtx_(nullptr),
       codecCtx_(nullptr),
@@ -36,7 +36,7 @@ StreamerNode::StreamerNode(BaseAudioContext *context, std::shared_ptr<StreamerOp
       audio_stream_index_(-1),
       maxResampledSamples_(0),
       processedSamples_(0),
-      streamPath_(options->streamPath) {}
+      streamPath_(options.streamPath) {}
 
 StreamerNode::~StreamerNode() {
 #if !RN_AUDIO_API_FFMPEG_DISABLED

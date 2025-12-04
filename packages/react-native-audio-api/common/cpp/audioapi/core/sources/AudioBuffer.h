@@ -14,7 +14,7 @@ class AudioBufferOptions;
 
 class AudioBuffer : public std::enable_shared_from_this<AudioBuffer> {
  public:
-  explicit AudioBuffer(std::shared_ptr<AudioBufferOptions> options);
+  explicit AudioBuffer(AudioBufferOptions options);
   explicit AudioBuffer(std::shared_ptr<AudioBus> bus);
 
   [[nodiscard]] size_t getLength() const;

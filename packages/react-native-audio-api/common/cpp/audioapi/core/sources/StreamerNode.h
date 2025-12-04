@@ -65,7 +65,7 @@ class StreamerOptions;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(BaseAudioContext *context, std::shared_ptr<StreamerOptions> options);
+  explicit StreamerNode(BaseAudioContext *context, StreamerOptions options);
   ~StreamerNode() override;
 
   /**

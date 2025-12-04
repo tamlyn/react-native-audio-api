@@ -20,18 +20,18 @@ namespace audioapi {
 
 AudioBufferQueueSourceNode::AudioBufferQueueSourceNode(
     BaseAudioContext *context,
-    std::shared_ptr<BaseAudioBufferSourceOptions> options)
+    BaseAudioBufferSourceOptions options)
     : AudioBufferBaseSourceNode(context, options) {
   buffers_ = {};
   stretch_->presetDefault(channelCount_, context_->getSampleRate());
 
-  if (options->pitchCorrection) {
+  if (options.pitchCorrection) {
     // If pitch correction is enabled, add extra frames at the end
     // to compensate for processing latency.
     addExtraTailFrames_ = true;
 
     int extraTailFrames = static_cast<int>(stretch_->inputLatency() + stretch_->outputLatency());
-    auto audioBufferOptions = std::make_shared<AudioBufferOptions>(
+    auto audioBufferOptions = AudioBufferOptions(
         extraTailFrames, static_cast<size_t>(channelCount_), context->getSampleRate());
     tailBuffer_ = std::make_shared<AudioBuffer>(audioBufferOptions);
 

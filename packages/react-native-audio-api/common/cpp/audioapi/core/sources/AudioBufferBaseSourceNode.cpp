@@ -13,16 +13,16 @@
 namespace audioapi {
 AudioBufferBaseSourceNode::AudioBufferBaseSourceNode(
     BaseAudioContext *context,
-    std::shared_ptr<BaseAudioBufferSourceOptions> options)
+    BaseAudioBufferSourceOptions options)
     : AudioScheduledSourceNode(context),
-      pitchCorrection_(options->pitchCorrection),
+      pitchCorrection_(options.pitchCorrection),
       vReadIndex_(0.0) {
   onPositionChangedInterval_ = static_cast<int>(context->getSampleRate() * 0.1);
 
   detuneParam_ = std::make_shared<AudioParam>(
-      options->detune, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options.detune, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   playbackRateParam_ = std::make_shared<AudioParam>(
-      options->playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options.playbackRate, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
 
   playbackRateBus_ =
       std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE * 3, channelCount_, context_->getSampleRate());

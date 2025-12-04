@@ -37,9 +37,7 @@ class AudioPlayer {
       await this.audioContext.resume();
     }
 
-    this.sourceNode = this.audioContext.createBufferSource({
-      pitchCorrection: true,
-    });
+    this.sourceNode = this.audioContext.createBufferSource(true);
     this.sourceNode.buffer = this.audioBuffer;
     this.sourceNode.playbackRate.value = this.playbackRate;
 

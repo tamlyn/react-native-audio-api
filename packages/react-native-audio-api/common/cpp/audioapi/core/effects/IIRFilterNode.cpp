@@ -35,15 +35,8 @@
 
 namespace audioapi {
 
-IIRFilterNode::IIRFilterNode(BaseAudioContext *context, std::shared_ptr<IIRFilterOptions> options)
-    : AudioNode(
-          context,
-          AudioNodeOptions(
-              options->channelCount,
-              options->channelCountMode,
-              options->channelInterpretation)),
-      feedforward_(options->feedforward),
-      feedback_(options->feedback) {
+IIRFilterNode::IIRFilterNode(BaseAudioContext *context, IIRFilterOptions options)
+    : AudioNode(context, options), feedforward_(options.feedforward), feedback_(options.feedback) {
   isInitialized_ = true;
 
   int maxChannels = MAX_CHANNEL_COUNT;

@@ -42,26 +42,21 @@ AudioNodeOptions parseAudioNodeOptions(jsi::Runtime &runtime, const jsi::Object 
 }
 
 GainOptions parseGainOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  GainOptions options(nodeOptions);
+  GainOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.gain = static_cast<float>(optionsObject.getProperty(runtime, "gain").getNumber());
   return options;
 }
 
-std::shared_ptr<StereoPannerOptions> parseStereoPannerOptions(
+StereoPannerOptions parseStereoPannerOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  StereoPannerOptions options(nodeOptions);
+  StereoPannerOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.pan = static_cast<float>(optionsObject.getProperty(runtime, "pan").getNumber());
-  return std::make_shared<StereoPannerOptions>(options);
+  return options;
 }
 
-std::shared_ptr<ConvolverOptions> parseConvolverOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  ConvolverOptions options(nodeOptions);
+ConvolverOptions parseConvolverOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  ConvolverOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.disableNormalization =
       static_cast<bool>(optionsObject.getProperty(runtime, "disableNormalization").getNumber());
   if (optionsObject.hasProperty(runtime, "buffer")) {
@@ -70,22 +65,19 @@ std::shared_ptr<ConvolverOptions> parseConvolverOptions(
                                 .asHostObject<AudioBufferHostObject>(runtime);
     options.bus = bufferHostObject->audioBuffer_;
   }
-  return std::make_shared<ConvolverOptions>(options);
+  return options;
 }
 
-std::shared_ptr<ConstantSourceOptions> parseConstantSourceOptions(
+ConstantSourceOptions parseConstantSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   ConstantSourceOptions options;
   options.offset = static_cast<float>(optionsObject.getProperty(runtime, "offset").getNumber());
-  return std::make_shared<ConstantSourceOptions>(options);
+  return options;
 }
 
-std::shared_ptr<AnalyserOptions> parseAnalyserOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  AnalyserOptions options(nodeOptions);
+AnalyserOptions parseAnalyserOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  AnalyserOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.fftSize = static_cast<int>(optionsObject.getProperty(runtime, "fftSize").getNumber());
   options.minDecibels =
       static_cast<float>(optionsObject.getProperty(runtime, "minDecibels").getNumber());
@@ -93,14 +85,13 @@ std::shared_ptr<AnalyserOptions> parseAnalyserOptions(
       static_cast<float>(optionsObject.getProperty(runtime, "maxDecibels").getNumber());
   options.smoothingTimeConstant =
       static_cast<float>(optionsObject.getProperty(runtime, "smoothingTimeConstant").getNumber());
-  return std::make_shared<AnalyserOptions>(options);
+  return options;
 }
 
-std::shared_ptr<BiquadFilterOptions> parseBiquadFilterOptions(
+BiquadFilterOptions parseBiquadFilterOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  BiquadFilterOptions options(nodeOptions);
+  BiquadFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto typeStr = optionsObject.getProperty(runtime, "type").asString(runtime).utf8(runtime);
 
@@ -128,13 +119,10 @@ std::shared_ptr<BiquadFilterOptions> parseBiquadFilterOptions(
   options.Q = static_cast<float>(optionsObject.getProperty(runtime, "Q").getNumber());
   options.gain = static_cast<float>(optionsObject.getProperty(runtime, "gain").getNumber());
 
-  return std::make_shared<BiquadFilterOptions>(options);
+  return options;
 }
 
-std::shared_ptr<OscillatorOptions> parseOscillatorOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
+OscillatorOptions parseOscillatorOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   OscillatorOptions options;
 
   auto typeStr = optionsObject.getProperty(runtime, "type").asString(runtime).utf8(runtime);
@@ -162,10 +150,10 @@ std::shared_ptr<OscillatorOptions> parseOscillatorOptions(
     options.periodicWave = periodicWaveHostObject->periodicWave_;
   }
 
-  return std::make_shared<OscillatorOptions>(options);
+  return options;
 }
 
-std::shared_ptr<BaseAudioBufferSourceOptions> parseBaseAudioBufferSourceOptions(
+BaseAudioBufferSourceOptions parseBaseAudioBufferSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   BaseAudioBufferSourceOptions options;
@@ -174,15 +162,13 @@ std::shared_ptr<BaseAudioBufferSourceOptions> parseBaseAudioBufferSourceOptions(
       static_cast<float>(optionsObject.getProperty(runtime, "playbackRate").getNumber());
   options.pitchCorrection =
       static_cast<bool>(optionsObject.getProperty(runtime, "pitchCorrection").getBool());
-  return std::make_shared<BaseAudioBufferSourceOptions>(options);
+  return options;
 }
 
-std::shared_ptr<AudioBufferSourceOptions> parseAudioBufferSourceOptions(
+AudioBufferSourceOptions parseAudioBufferSourceOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
-  std::shared_ptr<BaseAudioBufferSourceOptions> baseOptions =
-      parseBaseAudioBufferSourceOptions(runtime, optionsObject);
-  AudioBufferSourceOptions options(*baseOptions.get());
+  AudioBufferSourceOptions options(parseBaseAudioBufferSourceOptions(runtime, optionsObject));
   if (optionsObject.hasProperty(runtime, "buffer")) {
     auto bufferHostObject = optionsObject.getProperty(runtime, "buffer")
                                 .getObject(runtime)
@@ -193,21 +179,19 @@ std::shared_ptr<AudioBufferSourceOptions> parseAudioBufferSourceOptions(
   options.loopStart =
       static_cast<float>(optionsObject.getProperty(runtime, "loopStart").getNumber());
   options.loopEnd = static_cast<float>(optionsObject.getProperty(runtime, "loopEnd").getNumber());
-  return std::make_shared<AudioBufferSourceOptions>(options);
+  return options;
 }
 
-std::shared_ptr<StreamerOptions> parseStreamerOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
+StreamerOptions parseStreamerOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
   auto options = StreamerOptions();
   if (optionsObject.hasProperty(runtime, "streamPath")) {
     options.streamPath =
         optionsObject.getProperty(runtime, "streamPath").asString(runtime).utf8(runtime);
   }
-  return std::make_shared<StreamerOptions>(options);
+  return options;
 }
 
-std::shared_ptr<AudioBufferOptions> parseAudioBufferOptions(
+AudioBufferOptions parseAudioBufferOptions(
     jsi::Runtime &runtime,
     const jsi::Object &optionsObject) {
   AudioBufferOptions options;
@@ -216,26 +200,20 @@ std::shared_ptr<AudioBufferOptions> parseAudioBufferOptions(
   options.length = static_cast<size_t>(optionsObject.getProperty(runtime, "length").getNumber());
   options.sampleRate =
       static_cast<float>(optionsObject.getProperty(runtime, "sampleRate").getNumber());
-  return std::make_shared<AudioBufferOptions>(options);
+  return options;
 }
 
-std::shared_ptr<DelayOptions> parseDelayOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  DelayOptions options(nodeOptions);
+DelayOptions parseDelayOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  DelayOptions options(parseAudioNodeOptions(runtime, optionsObject));
   options.maxDelayTime =
       static_cast<float>(optionsObject.getProperty(runtime, "maxDelayTime").getNumber());
   options.delayTime =
       static_cast<float>(optionsObject.getProperty(runtime, "delayTime").getNumber());
-  return std::make_shared<DelayOptions>(options);
+  return options;
 }
 
-std::shared_ptr<IIRFilterOptions> parseIIRFilterOptions(
-    jsi::Runtime &runtime,
-    const jsi::Object &optionsObject) {
-  auto nodeOptions = parseAudioNodeOptions(runtime, optionsObject);
-  IIRFilterOptions options(nodeOptions);
+IIRFilterOptions parseIIRFilterOptions(jsi::Runtime &runtime, const jsi::Object &optionsObject) {
+  IIRFilterOptions options(parseAudioNodeOptions(runtime, optionsObject));
 
   auto feedforwardArray =
       optionsObject.getProperty(runtime, "feedforward").asObject(runtime).asArray(runtime);
@@ -255,6 +233,6 @@ std::shared_ptr<IIRFilterOptions> parseIIRFilterOptions(
         static_cast<float>(feedbackArray.getValueAtIndex(runtime, i).getNumber()));
   }
 
-  return std::make_shared<IIRFilterOptions>(options);
+  return options;
 }
 } // namespace audioapi::option_parser

@@ -15,13 +15,13 @@ namespace audioapi {
 
 AudioBufferSourceNode::AudioBufferSourceNode(
     BaseAudioContext *context,
-    std::shared_ptr<AudioBufferSourceOptions> options)
+    AudioBufferSourceOptions options)
     : AudioBufferBaseSourceNode(context, options),
-      loop_(options->loop),
+      loop_(options.loop),
       loopSkip_(false),
-      loopStart_(options->loopStart),
-      loopEnd_(options->loopEnd) {
-  buffer_ = std::shared_ptr<AudioBuffer>(options->buffer);
+      loopStart_(options.loopStart),
+      loopEnd_(options.loopEnd) {
+  buffer_ = std::shared_ptr<AudioBuffer>(options.buffer);
   alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
 
   isInitialized_ = true;

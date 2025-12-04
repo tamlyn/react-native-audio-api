@@ -13,19 +13,12 @@
 #include <vector>
 
 namespace audioapi {
-AnalyserNode::AnalyserNode(
-    audioapi::BaseAudioContext *context,
-    std::shared_ptr<AnalyserOptions> options)
-    : AudioNode(
-          context,
-          AudioNodeOptions(
-              options->channelCount,
-              options->channelCountMode,
-              options->channelInterpretation)),
-      fftSize_(options->fftSize),
-      minDecibels_(options->minDecibels),
-      maxDecibels_(options->maxDecibels),
-      smoothingTimeConstant_(options->smoothingTimeConstant),
+AnalyserNode::AnalyserNode(audioapi::BaseAudioContext *context, AnalyserOptions options)
+    : AudioNode(context, options),
+      fftSize_(options.fftSize),
+      minDecibels_(options.minDecibels),
+      maxDecibels_(options.maxDecibels),
+      smoothingTimeConstant_(options.smoothingTimeConstant),
       windowType_(WindowType::BLACKMAN) {
   inputBuffer_ = std::make_unique<CircularAudioArray>(MAX_FFT_SIZE * 2);
   tempBuffer_ = std::make_unique<AudioArray>(fftSize_);

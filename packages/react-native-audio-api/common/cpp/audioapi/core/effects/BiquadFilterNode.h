@@ -55,9 +55,7 @@ class BiquadFilterNode : public AudioNode {
 #endif
 
  public:
-  explicit BiquadFilterNode(
-      BaseAudioContext *context,
-      std::shared_ptr<BiquadFilterOptions> options);
+  explicit BiquadFilterNode(BaseAudioContext *context, BiquadFilterOptions options);
 
   [[nodiscard]] std::string getType();
   void setType(const std::string &type);

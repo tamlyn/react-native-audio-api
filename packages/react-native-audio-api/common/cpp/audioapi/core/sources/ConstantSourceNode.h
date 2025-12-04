@@ -14,9 +14,7 @@ class ConstantSourceOptions;
 
 class ConstantSourceNode : public AudioScheduledSourceNode {
  public:
-  explicit ConstantSourceNode(
-      BaseAudioContext *context,
-      const std::shared_ptr<ConstantSourceOptions> options);
+  explicit ConstantSourceNode(BaseAudioContext *context, ConstantSourceOptions options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getOffsetParam() const;
 

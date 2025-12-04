@@ -14,9 +14,7 @@ class StereoPannerOptions;
 
 class StereoPannerNode : public AudioNode {
  public:
-  explicit StereoPannerNode(
-      BaseAudioContext *context,
-      const std::shared_ptr<StereoPannerOptions> options);
+  explicit StereoPannerNode(BaseAudioContext *context, StereoPannerOptions options);
 
   [[nodiscard]] std::shared_ptr<AudioParam> getPanParam() const;
 

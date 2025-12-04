@@ -39,27 +39,20 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(
-    BaseAudioContext *context,
-    std::shared_ptr<BiquadFilterOptions> options)
-    : AudioNode(
-          context,
-          AudioNodeOptions(
-              options->channelCount,
-              options->channelCountMode,
-              options->channelInterpretation)) {
+BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context, BiquadFilterOptions options)
+    : AudioNode(context, options) {
   frequencyParam_ = std::make_shared<AudioParam>(
-      options->frequency, 0.0f, context->getNyquistFrequency(), context);
+      options.frequency, 0.0f, context->getNyquistFrequency(), context);
   detuneParam_ = std::make_shared<AudioParam>(
-      options->detune,
+      options.detune,
       -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
       context);
   QParam_ = std::make_shared<AudioParam>(
-      options->Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+      options.Q, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
   gainParam_ = std::make_shared<AudioParam>(
-      options->gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = options->type;
+      options.gain, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
+  type_ = options.type;
   isInitialized_ = true;
 }
 

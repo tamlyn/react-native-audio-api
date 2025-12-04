@@ -17,9 +17,7 @@ class AudioBufferSourceOptions;
 
 class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
  public:
-  explicit AudioBufferSourceNode(
-      BaseAudioContext *context,
-      std::shared_ptr<AudioBufferSourceOptions> options);
+  explicit AudioBufferSourceNode(BaseAudioContext *context, AudioBufferSourceOptions options);
   ~AudioBufferSourceNode() override;
 
   [[nodiscard]] bool getLoop() const;
