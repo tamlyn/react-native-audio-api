@@ -123,8 +123,9 @@ ReturnStatus<std::string> IOSAudioRecorder::start()
 
 ReturnStatus<std::tuple<std::string, double, double>> IOSAudioRecorder::stop()
 {
-  Locker callbackLock(callbackMutex_);
   Locker fileWriterLock(fileWriterMutex_);
+  Locker callbackLock(callbackMutex_);
+  Locker adapterLock(adapterNodeMutex_);
 
   std::string filePath = filePath_;
   double outputFileSize = 0;

@@ -44,7 +44,6 @@
 
 - (void)cleanup
 {
-  NSLog(@"[LockScreenManager] cleanup");
   [self toggleRemoteCommands:false];
   [self resetLockScreenInfo];
 }

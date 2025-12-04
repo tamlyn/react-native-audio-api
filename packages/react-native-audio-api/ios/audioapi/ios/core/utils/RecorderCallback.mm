@@ -98,7 +98,7 @@ ReturnStatus<void> RecorderCallback::prepare(
 void RecorderCallback::cleanup()
 {
   @autoreleasepool {
-    sendRemainingData();
+    emitAudioData(true);
 
     converter_ = nil;
     bufferFormat_ = nil;
@@ -178,17 +178,19 @@ void RecorderCallback::receiveAudioData(const AudioBufferList *inputBuffer, int 
   }
 }
 
-void RecorderCallback::emitAudioData()
+void RecorderCallback::emitAudioData(bool flush)
 {
-  while (circularBus_[0]->getNumberOfAvailableFrames() >= bufferLength_) {
-    auto bus = std::make_shared<AudioBus>(bufferLength_, channelCount_, sampleRate_);
+  size_t sizeLimit = flush ? circularBus_[0]->getNumberOfAvailableFrames() : bufferLength_;
+
+  while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
+    auto bus = std::make_shared<AudioBus>(sizeLimit, channelCount_, sampleRate_);
 
     for (int i = 0; i < channelCount_; ++i) {
       auto *outputChannel = bus->getChannel(i)->getData();
-      circularBus_[i]->pop_front(outputChannel, bufferLength_);
+      circularBus_[i]->pop_front(outputChannel, sizeLimit);
     }
 
-    invokeCallback(bus, bufferLength_);
+    invokeCallback(bus, sizeLimit);
   }
 }
 
@@ -204,20 +206,6 @@ void RecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int 
   if (audioEventHandlerRegistry_) {
     audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", callbackId_, eventPayload);
   }
-}
-
-void RecorderCallback::sendRemainingData()
-{
-  auto numberOfFrames = circularBus_[0]->getNumberOfAvailableFrames();
-  auto bus = std::make_shared<AudioBus>(
-      circularBus_[0]->getNumberOfAvailableFrames(), channelCount_, sampleRate_);
-
-  for (int i = 0; i < channelCount_; ++i) {
-    auto *outputChannel = bus->getChannel(i)->getData();
-    circularBus_[i]->pop_front(outputChannel, numberOfFrames);
-  }
-
-  invokeCallback(bus, numberOfFrames);
 }
 
 void RecorderCallback::setOnErrorCallback(uint64_t callbackId)

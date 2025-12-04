@@ -55,6 +55,9 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
 
   Format format = static_cast<Format>(options.getProperty(runtime, "format").getNumber());
 
+  int androidFlushIntervalMs =
+      static_cast<int>(options.getProperty(runtime, "androidFlushIntervalMs").getNumber());
+
   auto presetOptions = options.getProperty(runtime, "preset").getObject(runtime);
 
   size_t sampleRate =
@@ -67,9 +70,6 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
 
   int flacCompressionLevel =
       static_cast<int>(presetOptions.getProperty(runtime, "flacCompressionLevel").getNumber());
-
-  int androidFlushIntervalMs =
-      static_cast<int>(presetOptions.getProperty(runtime, "androidFlushIntervalMs").getNumber());
 
   IOSAudioQuality iosAudioQuality =
       static_cast<IOSAudioQuality>(presetOptions.getProperty(runtime, "iosQuality").getNumber());

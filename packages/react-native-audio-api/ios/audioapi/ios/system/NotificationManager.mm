@@ -22,8 +22,6 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
 - (void)cleanup
 {
-  NSLog(@"[NotificationManager] cleanup");
-
   self.notificationCenter = nil;
 }
 
@@ -141,7 +139,6 @@ static NSString *NotificationManagerContext = @"NotificationManagerContext";
 
 - (void)handleSecondaryAudio:(NSNotification *)notification
 {
-  NSLog(@"handleSecondaryAudio");
   AudioEngine *audioEngine = self.audioAPIModule.audioEngine;
   AudioSessionManager *sessionManager = self.audioAPIModule.audioSessionManager;
   NSInteger secondaryAudioType =

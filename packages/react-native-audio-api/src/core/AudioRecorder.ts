@@ -50,10 +50,10 @@ export default class AudioRecorder {
   }
 
   enableFileOutput(
-    options: AudioRecorderFileOptions
+    options?: AudioRecorderFileOptions
   ): Result<{ path: string }> {
-    this.options_ = options;
-    const parsedOptions = withDefaultOptions(options);
+    this.options_ = options || {};
+    const parsedOptions = withDefaultOptions(this.options_);
     const result = this.recorder.enableFileOutput(parsedOptions);
     this.isFileOutputEnabled = true;
 

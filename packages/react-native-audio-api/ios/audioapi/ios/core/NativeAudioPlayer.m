@@ -10,9 +10,6 @@
   if (self = [super init]) {
     self.sampleRate = sampleRate;
 
-    NSLog(
-        @"NativeAudioPlayer init with sampleRate: %f, channelCount: %d", sampleRate, channelCount);
-
     self.channelCount = channelCount;
     self.renderAudio = [renderAudio copy];
 

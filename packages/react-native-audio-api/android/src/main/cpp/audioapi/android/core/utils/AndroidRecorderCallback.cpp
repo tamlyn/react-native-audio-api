@@ -153,7 +153,7 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
 /// @brief Emits audio data from the circular buffer when enough frames are available.
 /// @param flush If true, emits all available data regardless of buffer length.
 void AndroidRecorderCallback::emitAudioData(bool flush) {
-  size_t sizeLimit = flush ? 0 : bufferLength_;
+  size_t sizeLimit = flush ? circularBus_[0]->getNumberOfAvailableFrames() : bufferLength_;
 
   while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
     auto bus = std::make_shared<AudioBus>(sizeLimit, channelCount_, sampleRate_);
