@@ -292,11 +292,7 @@ ma_result MiniAudioFileWriter::initializeEncoder() {
   encoder_ = std::make_unique<ma_encoder>();
   result = ma_encoder_init_file(filePath_.c_str(), &config, encoder_.get());
 
-  if (result != MA_SUCCESS) {
-    return result;
-  }
-
-  return MA_SUCCESS;
+return result;
 }
 
 bool MiniAudioFileWriter::isFileOpen() {
