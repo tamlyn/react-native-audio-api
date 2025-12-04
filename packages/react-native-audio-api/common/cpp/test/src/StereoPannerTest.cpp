@@ -26,7 +26,7 @@ class StereoPannerTest : public ::testing::Test {
 class TestableStereoPannerNode : public StereoPannerNode {
  public:
   explicit TestableStereoPannerNode(BaseAudioContext *context)
-      : StereoPannerNode(context, std::make_shared<StereoPannerOptions>()) {}
+      : StereoPannerNode(context, StereoPannerOptions()) {}
 
   void setPanParam(float value) {
     getPanParam()->setValue(value);
@@ -40,7 +40,7 @@ class TestableStereoPannerNode : public StereoPannerNode {
 };
 
 TEST_F(StereoPannerTest, StereoPannerCanBeCreated) {
-  auto panner = context->createStereoPanner(std::make_shared<StereoPannerOptions>());
+  auto panner = context->createStereoPanner(StereoPannerOptions());
   ASSERT_NE(panner, nullptr);
 }
 

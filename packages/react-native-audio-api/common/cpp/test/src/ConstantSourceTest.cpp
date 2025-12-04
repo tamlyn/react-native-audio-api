@@ -26,7 +26,7 @@ class ConstantSourceTest : public ::testing::Test {
 class TestableConstantSourceNode : public ConstantSourceNode {
  public:
   explicit TestableConstantSourceNode(BaseAudioContext *context)
-      : ConstantSourceNode(context, std::make_shared<ConstantSourceOptions>()) {}
+      : ConstantSourceNode(context, ConstantSourceOptions()) {}
 
   void setOffsetParam(float value) {
     getOffsetParam()->setValue(value);
@@ -40,7 +40,7 @@ class TestableConstantSourceNode : public ConstantSourceNode {
 };
 
 TEST_F(ConstantSourceTest, ConstantSourceCanBeCreated) {
-  auto constantSource = context->createConstantSource(std::make_shared<ConstantSourceOptions>());
+  auto constantSource = context->createConstantSource(ConstantSourceOptions());
   ASSERT_NE(constantSource, nullptr);
 }
 

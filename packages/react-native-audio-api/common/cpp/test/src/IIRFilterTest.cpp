@@ -92,7 +92,7 @@ class IIRFilterTest : public ::testing::Test {
 TEST_F(IIRFilterTest, IIRFilterCanBeCreated) {
   const std::vector<float> feedforward = {1.0};
   const std::vector<float> feedback = {1.0};
-  auto node = context->createIIRFilter(std::make_shared<IIRFilterOptions>(feedforward, feedback));
+  auto node = context->createIIRFilter(IIRFilterOptions(feedforward, feedback));
   ASSERT_NE(node, nullptr);
 }
 
@@ -100,8 +100,8 @@ TEST_F(IIRFilterTest, GetFrequencyResponse) {
   const std::vector<float> feedforward = {0.0050662636, 0.0101325272, 0.0050662636};
   const std::vector<float> feedback = {1.0632762845, -1.9797349456, 0.9367237155};
 
-  auto node = std::make_shared<IIRFilterNode>(
-      context.get(), std::make_shared<IIRFilterOptions>(feedforward, feedback));
+  auto node =
+      std::make_shared<IIRFilterNode>(context.get(), IIRFilterOptions(feedforward, feedback));
 
   float frequency = 1000.0f;
   float normalizedFrequency = frequency / nyquistFrequency;

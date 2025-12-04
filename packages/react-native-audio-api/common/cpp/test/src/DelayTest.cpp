@@ -25,8 +25,7 @@ class DelayTest : public ::testing::Test {
 
 class TestableDelayNode : public DelayNode {
  public:
-  explicit TestableDelayNode(BaseAudioContext *context)
-      : DelayNode(context, std::make_shared<DelayOptions>()) {}
+  explicit TestableDelayNode(BaseAudioContext *context) : DelayNode(context, DelayOptions()) {}
 
   void setDelayTimeParam(float value) {
     getDelayTimeParam()->setValue(value);
@@ -40,7 +39,7 @@ class TestableDelayNode : public DelayNode {
 };
 
 TEST_F(DelayTest, DelayCanBeCreated) {
-  auto delay = context->createDelay(std::make_shared<DelayOptions>());
+  auto delay = context->createDelay(DelayOptions());
   ASSERT_NE(delay, nullptr);
 }
 
