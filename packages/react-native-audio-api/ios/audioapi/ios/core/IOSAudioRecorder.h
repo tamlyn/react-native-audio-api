@@ -57,16 +57,9 @@ class IOSAudioRecorder : public AudioRecorder {
   double getCurrentDuration() const override;
 
  private:
+  NativeAudioRecorder *nativeRecorder_;
   std::shared_ptr<FileWriter> fileWriter_;
   std::shared_ptr<RecorderCallback> callback_;
-  std::string filePath_{""};
-
-  std::mutex callbackMutex_;
-  std::mutex fileWriterMutex_;
-
-  std::atomic<uint64_t> errorCallbackId_{0};
-
-  NativeAudioRecorder *nativeRecorder_;
 };
 
 } // namespace audioapi

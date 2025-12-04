@@ -96,7 +96,6 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
   [audioEngine stopIfNecessary];
-  NSLog(@"Detaching recorder node");
   [audioEngine detachInputNode];
   [audioEngine restartAudioEngine];
 }

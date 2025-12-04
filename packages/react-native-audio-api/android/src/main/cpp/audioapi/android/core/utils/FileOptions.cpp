@@ -69,7 +69,7 @@ Result<std::string, std::string> getFilePath(
   std::string fileTimestamp = getTimestampString();
   std::string extension = getFileExtension(properties);
 
-  auto result = createDirectoryIfNotExists(directory);
+  auto result = createDirectoryIfNotExists(subDirectory);
 
   if (!result.is_ok()) {
     return Result<std::string, std::string>::Err(result.unwrap_err());

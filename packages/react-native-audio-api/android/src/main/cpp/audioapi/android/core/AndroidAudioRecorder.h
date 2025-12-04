@@ -13,6 +13,7 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioArray;
 class CircularAudioArray;
 class AudioFileProperties;
 class AndroidRecorderCallback;
@@ -56,14 +57,10 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:
-  std::string filePath_;
-  std::shared_ptr<oboe::AudioStream> mStream_;
-
-  std::mutex callbackMutex_;
-  std::mutex fileWriterMutex_;
 
   std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
   std::shared_ptr<AndroidRecorderCallback> callback_;
+  std::shared_ptr<AudioArray> deinterleavingBuffer_;
 
   float streamSampleRate_;
   int32_t streamChannelCount_;
@@ -71,6 +68,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
 
   facebook::jni::global_ref<NativeAudioRecorder> nativeAudioRecorder_;
 
+  std::shared_ptr<oboe::AudioStream> mStream_;
   Result<NoneType, std::string> openAudioStream();
 };
 

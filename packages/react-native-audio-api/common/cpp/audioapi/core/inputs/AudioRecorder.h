@@ -67,13 +67,20 @@ class AudioRecorder {
 
  protected:
   std::atomic<RecorderState> state_{RecorderState::Idle};
+
+  std::string filePath_{""};
+
+  std::atomic<bool> isConnected_{false};
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
-  std::atomic<bool> isConnected_{false};
 
+  std::mutex callbackMutex_;
+  std::mutex fileWriterMutex_;
   mutable std::mutex adapterNodeMutex_;
-  std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
 
+  std::atomic<uint64_t> errorCallbackId_{0};
+
+  std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 
