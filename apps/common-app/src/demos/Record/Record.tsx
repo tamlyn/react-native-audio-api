@@ -17,7 +17,7 @@ AudioManager.setAudioSessionOptions({
   iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
 });
 
-Recorder.enableFileOutput({});
+Recorder.enableFileOutput();
 
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);

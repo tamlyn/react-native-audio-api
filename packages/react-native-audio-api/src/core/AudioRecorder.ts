@@ -50,7 +50,8 @@ export default class AudioRecorder {
   }
 
   enableFileOutput(
-    options?: AudioRecorderFileOptions
+    // TODO: Re-enable 'batchDurationSeconds' once supported
+    options?: Omit<AudioRecorderFileOptions, 'batchDurationSeconds'>
   ): Result<{ path: string }> {
     this.options_ = options || {};
     const parsedOptions = withDefaultOptions(this.options_);
