@@ -15,7 +15,7 @@ AudioFileProperties::AudioFileProperties(
     int channelCount,
     size_t batchDurationSeconds,
     Format format,
-    size_t sampleRate,
+    float sampleRate,
     size_t bitRate,
     BitDepth bitDepth,
     int flacCompressionLevel,
@@ -60,8 +60,8 @@ std::shared_ptr<AudioFileProperties> AudioFileProperties::CreateFromJSIValue(
 
   auto presetOptions = options.getProperty(runtime, "preset").getObject(runtime);
 
-  size_t sampleRate =
-      static_cast<size_t>(presetOptions.getProperty(runtime, "sampleRate").getNumber());
+  float sampleRate =
+      static_cast<float>(presetOptions.getProperty(runtime, "sampleRate").getNumber());
 
   size_t bitRate = static_cast<size_t>(presetOptions.getProperty(runtime, "bitRate").getNumber());
 

@@ -24,7 +24,6 @@ interface OnRouteChangeEventType {
 }
 
 export interface OnRecorderErrorEventType {
-  type: 'todo';
   message: string;
 }
 

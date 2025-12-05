@@ -1,7 +1,7 @@
 #pragma once
 
+#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/utils/Result.hpp>
-
 #include <memory>
 #include <string>
 #include <tuple>
@@ -20,34 +20,27 @@ namespace audioapi {
 class AudioFileProperties;
 class AudioEventHandlerRegistry;
 
-class FileWriter {
+class IOSFileWriter : public AudioFileWriter {
  public:
-  FileWriter(
+  IOSFileWriter(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       const std::shared_ptr<AudioFileProperties> &fileProperties);
-  ~FileWriter();
+  ~IOSFileWriter();
 
   Result<std::string, std::string> openFile(
       AVAudioFormat *bufferFormat,
       size_t maxInputBufferLength);
-  Result<std::tuple<double, double>, std::string> closeFile();
+  Result<std::tuple<double, double>, std::string> closeFile() override;
 
   bool writeAudioData(const AudioBufferList *audioBufferList, int numFrames);
+  double getCurrentDuration() const override;
 
-  double getCurrentDuration() const;
-  std::string getFilePath() const;
+  std::string getFilePath() const override;
 
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
-  void invokeOnErrorCallback(const std::string &message);
-
- private:
+ protected:
   size_t converterInputBufferSize_;
   size_t converterOutputBufferSize_;
-  std::atomic<size_t> framesWritten_{0};
-  std::atomic<uint64_t> errorCallbackId_{0};
 
-  std::shared_ptr<AudioFileProperties> fileProperties_;
   AVAudioFile *audioFile_;
   AVAudioFormat *bufferFormat_;
   AVAudioConverter *converter_;
@@ -55,8 +48,6 @@ class FileWriter {
 
   AVAudioPCMBuffer *converterInputBuffer_;
   AVAudioPCMBuffer *converterOutputBuffer_;
-
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 
 } // namespace audioapi

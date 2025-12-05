@@ -11,8 +11,10 @@ namespace audioapi {
 
 class MiniAudioFileWriter : public AndroidFileWriterBackend {
  public:
-  explicit MiniAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
-  ~MiniAudioFileWriter() override;
+  explicit MiniAudioFileWriter(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties);
+  ~MiniAudioFileWriter();
 
   OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   CloseFileResult closeFile() override;
@@ -20,7 +22,6 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   bool writeAudioData(void *data, int numFrames) override;
 
  private:
-  std::atomic<bool> isFileOpen_{false};
   std::atomic<bool> isConverterRequired_{false};
 
   std::unique_ptr<ma_encoder> encoder_{nullptr};
@@ -32,7 +33,6 @@ class MiniAudioFileWriter : public AndroidFileWriterBackend {
   ma_result initializeEncoder();
   ma_uint64 convertBuffer(void *data, int numFrames);
 
-  bool isFileOpen();
   bool isConverterRequired();
 };
 

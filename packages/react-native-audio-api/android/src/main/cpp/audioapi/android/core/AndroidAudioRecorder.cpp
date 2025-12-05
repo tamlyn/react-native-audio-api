@@ -68,9 +68,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::openAudioStream() {
 }
 
 Result<std::string, std::string> AndroidAudioRecorder::start() {
-  Locker callbackLock(callbackMutex_);
-  Locker fileWriterLock(fileWriterMutex_);
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   if (isRecording()) {
     return Result<std::string, std::string>::Ok(std::format("file://{}", filePath_));
@@ -88,7 +86,8 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
 
   if (usesFileOutput()) {
     auto fileResult =
-        fileWriter_->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+        std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(
@@ -99,7 +98,8 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesCallback()) {
-    callback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   if (isConnected()) {
@@ -120,9 +120,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
 }
 
 Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorder::stop() {
-  Locker callbackLock(callbackMutex_);
-  Locker fileWriterLock(fileWriterMutex_);
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   std::string filePath = std::format("file://{}", filePath_);
   double outputFileSize = 0.0;
@@ -155,7 +153,11 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
   }
 
   if (usesCallback()) {
-    callback_->cleanup();
+    dataCallback_->cleanup();
+  }
+
+  if (isConnected()) {
+    adapterNode_->cleanup();
   }
 
   filePath_ = "";
@@ -165,17 +167,19 @@ Result<std::tuple<std::string, double, double>, std::string> AndroidAudioRecorde
 
 Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties) {
-  Locker fileWriterLock(fileWriterMutex_);
+  std::scoped_lock fileWriterLock(fileWriterMutex_);
 
   if (properties->format == AudioFileProperties::Format::WAV) {
-    fileWriter_ = std::make_shared<MiniAudioFileWriter>(properties);
+    fileWriter_ = std::make_shared<MiniAudioFileWriter>(audioEventHandlerRegistry_, properties);
   } else {
-    fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(properties);
+    fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
+        audioEventHandlerRegistry_, properties);
   }
 
   if (!isIdle()) {
     auto fileResult =
-        fileWriter_->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+        std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+            ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.is_ok()) {
       return Result<std::string, std::string>::Err(
@@ -190,7 +194,7 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
 }
 
 void AndroidAudioRecorder::disableFileOutput() {
-  Locker fileWriterLock(fileWriterMutex_);
+  std::scoped_lock fileWriterLock(fileWriterMutex_);
   fileOutputEnabled_.store(false, std::memory_order_release);
   fileWriter_ = nullptr;
 }
@@ -218,12 +222,13 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
     size_t bufferLength,
     int channelCount,
     uint64_t callbackId) {
-  Locker callbackLock(callbackMutex_);
-  callback_ = std::make_shared<AndroidRecorderCallback>(
+  std::scoped_lock callbackLock(callbackMutex_);
+  dataCallback_ = std::make_shared<AndroidRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    callback_->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
+    std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+        ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
   callbackOutputEnabled_.store(true, std::memory_order_release);
@@ -232,21 +237,13 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
 }
 
 void AndroidAudioRecorder::clearOnAudioReadyCallback() {
-  Locker callbackLock(callbackMutex_);
+  std::scoped_lock callbackLock(callbackMutex_);
   callbackOutputEnabled_.store(false, std::memory_order_release);
-  callback_ = nullptr;
-}
-
-void AndroidAudioRecorder::setOnErrorCallback(uint64_t callbackId) {
-  // audioEventHandlerRegistry_->registerRecorderErrorCallback(callbackId);
-}
-
-void AndroidAudioRecorder::clearOnErrorCallback() {
-  // audioEventHandlerRegistry_->unregisterRecorderErrorCallback();
+  dataCallback_ = nullptr;
 }
 
 void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node) {
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock adapterLock(adapterNodeMutex_);
   adapterNode_ = node;
   deinterleavingBuffer_ = std::make_shared<AudioArray>(streamMaxBufferSizeInFrames_);
 
@@ -258,10 +255,10 @@ void AndroidAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &n
 }
 
 void AndroidAudioRecorder::disconnect() {
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock adapterLock(adapterNodeMutex_);
   isConnected_.store(false, std::memory_order_release);
-  adapterNode_ = nullptr;
   deinterleavingBuffer_ = nullptr;
+  adapterNode_ = nullptr;
 }
 
 oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
@@ -274,13 +271,15 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (usesFileOutput()) {
     if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
-      fileWriter_->writeAudioData(audioData, numFrames);
+      std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+          ->writeAudioData(audioData, numFrames);
     }
   }
 
   if (usesCallback()) {
     if (auto callbackLock = Locker::tryLock(callbackMutex_)) {
-      callback_->receiveAudioData(audioData, numFrames);
+      std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+          ->receiveAudioData(audioData, numFrames);
     }
   }
 
@@ -298,14 +297,6 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
   }
 
   return oboe::DataCallbackResult::Continue;
-}
-
-double AndroidAudioRecorder::getCurrentDuration() const {
-  if (usesFileOutput()) {
-    return fileWriter_->getCurrentDuration();
-  }
-
-  return 0.0;
 }
 
 bool AndroidAudioRecorder::isRecording() const {

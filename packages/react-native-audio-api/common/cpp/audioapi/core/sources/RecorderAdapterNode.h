@@ -23,10 +23,10 @@ class RecorderAdapterNode : public AudioNode {
 
   /// @brief Initialize the RecorderAdapterNode with a buffer size and channel count.
   /// @note This method should be called ONLY ONCE when the buffer size is known.
-  /// @throws std::runtime_error if the node is already initialized.
   /// @param bufferSize The size of the buffer to be used.
   /// @param channelCount The number of channels.
   void init(size_t bufferSize, int channelCount);
+  void cleanup();
 
   int channelCount_;
   // TODO: CircularOverflowableAudioBus

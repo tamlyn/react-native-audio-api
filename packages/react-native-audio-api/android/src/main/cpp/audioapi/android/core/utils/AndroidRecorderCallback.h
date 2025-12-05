@@ -2,8 +2,10 @@
 
 
 #include <audioapi/libs/miniaudio/miniaudio.h>
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <memory>
 #include <vector>
+#include <string>
 
 namespace audioapi {
 
@@ -12,7 +14,7 @@ class AudioArray;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
-class AndroidRecorderCallback {
+class AndroidRecorderCallback : public AudioRecorderCallback {
  public:
   AndroidRecorderCallback(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
@@ -22,33 +24,20 @@ class AndroidRecorderCallback {
       uint64_t callbackId);
   ~AndroidRecorderCallback();
 
-  void prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
-  void cleanup();
+  Result<NoneType, std::string> prepare(float streamSampleRate, int streamChannelCount, size_t maxInputBufferLength);
+  void cleanup() override;
 
   void receiveAudioData(void *data, int numFrames);
-  void emitAudioData(bool flush = false);
 
-  void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
+ protected:
+  float streamSampleRate_{0.0};
+  int streamChannelCount_{0};
+  size_t maxInputBufferLength_{0};
 
- private:
-  float streamSampleRate_;
-  int streamChannelCount_;
-  size_t maxInputBufferLength_;
-
-  float sampleRate_;
-  int channelCount_;
-  size_t bufferLength_;
-  uint64_t callbackId_;
-  size_t ringBufferSize_;
-
-  ma_uint64 processingBufferLength_{0};
   void *processingBuffer_{nullptr};
-
+  ma_uint64 processingBufferLength_{0};
   std::unique_ptr<ma_data_converter> converter_{nullptr};
 
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  // TODO: CircularAudioBus
-  std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
   std::shared_ptr<AudioArray> deinterleavingArray_;
 
   void deinterleaveAndPushAudioData(void *data, int numFrames);

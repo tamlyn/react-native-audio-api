@@ -6,6 +6,7 @@ typedef struct objc_object AudioBufferList;
 typedef struct objc_object AVAudioConverter;
 #endif
 
+#include <audioapi/core/utils/AudioRecorderCallback.h>
 #include <audioapi/utils/Result.hpp>
 #include <memory>
 #include <vector>
@@ -16,44 +17,24 @@ class AudioBus;
 class CircularAudioArray;
 class AudioEventHandlerRegistry;
 
-class RecorderCallback {
+class IOSRecorderCallback : public AudioRecorderCallback {
  public:
-  RecorderCallback(
+  IOSRecorderCallback(
       const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
       float sampleRate,
       size_t bufferLength,
       int channelCount,
       uint64_t callbackId);
-  ~RecorderCallback();
+  ~IOSRecorderCallback();
 
   Result<NoneType, std::string> prepare(AVAudioFormat *bufferFormat, size_t maxInputBufferLength);
-  void cleanup();
+  void cleanup() override;
 
   void receiveAudioData(const AudioBufferList *audioBufferList, int numFrames);
-  void emitAudioData(bool flush = false);
 
-  void invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
-
-  void setOnErrorCallback(uint64_t callbackId);
-  void clearOnErrorCallback();
-  void invokeOnErrorCallback(const std::string &message);
-
- private:
-  std::atomic<bool> isInitialized_{false};
-
-  float sampleRate_;
-  size_t bufferLength_;
-  int channelCount_;
-  uint64_t callbackId_;
-  size_t ringBufferSize_;
+ protected:
   size_t converterInputBufferSize_;
   size_t converterOutputBufferSize_;
-
-  std::atomic<uint64_t> errorCallbackId_{0};
-
-  std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  // TODO: CircularAudioBus
-  std::vector<std::shared_ptr<CircularAudioArray>> circularBus_;
 
   AVAudioFormat *bufferFormat_;
   AVAudioFormat *callbackFormat_;

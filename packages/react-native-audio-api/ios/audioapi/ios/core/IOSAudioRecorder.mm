@@ -6,13 +6,14 @@
 #include <unordered_map>
 
 #include <audioapi/core/sources/RecorderAdapterNode.h>
+#include <audioapi/core/utils/AudioFileWriter.h>
 #include <audioapi/core/utils/Constants.h>
 #include <audioapi/core/utils/Locker.h>
 #include <audioapi/dsp/VectorMath.h>
 #include <audioapi/events/AudioEventHandlerRegistry.h>
 #include <audioapi/ios/core/IOSAudioRecorder.h>
-#include <audioapi/ios/core/utils/FileWriter.h>
-#include <audioapi/ios/core/utils/RecorderCallback.h>
+#include <audioapi/ios/core/utils/IOSFileWriter.h>
+#include <audioapi/ios/core/utils/IOSRecorderCallback.h>
 #include <audioapi/ios/system/AudioEngine.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
@@ -25,18 +26,20 @@ namespace audioapi {
 
 IOSAudioRecorder::IOSAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
-    : AudioRecorder(audioEventHandlerRegistry), fileWriter_(nullptr)
+    : AudioRecorder(audioEventHandlerRegistry)
 {
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (usesFileOutput()) {
       if (auto lock = Locker::tryLock(fileWriterMutex_)) {
-        fileWriter_->writeAudioData(inputBuffer, numFrames);
+        std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+            ->writeAudioData(inputBuffer, numFrames);
       }
     }
 
     if (usesCallback()) {
       if (auto lock = Locker::tryLock(callbackMutex_)) {
-        callback_->receiveAudioData(inputBuffer, numFrames);
+        std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+            ->receiveAudioData(inputBuffer, numFrames);
       }
     }
 
@@ -66,9 +69,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
     return Result<std::string, std::string>::Err("Already recording");
   }
 
-  Locker callbackLock(callbackMutex_);
-  Locker fileWriterLock(fileWriterMutex_);
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock startLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
   AudioSessionManager *audioSessionManager = [AudioSessionManager sharedInstance];
 
   if ([[audioSessionManager checkRecordingPermissions] isEqual:@"Denied"]) {
@@ -93,7 +94,8 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    auto fileResult = fileWriter_->openFile(inputFormat, maxInputBufferLength);
+    auto fileResult = std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+                          ->openFile(inputFormat, maxInputBufferLength);
 
     if (fileResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -104,7 +106,8 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   }
 
   if (usesCallback()) {
-    auto callbackResult = callback_->prepare(inputFormat, maxInputBufferLength);
+    auto callbackResult = std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+                              ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -124,9 +127,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
 
 Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::stop()
 {
-  Locker fileWriterLock(fileWriterMutex_);
-  Locker callbackLock(callbackMutex_);
-  Locker adapterLock(adapterNodeMutex_);
+  std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
 
   std::string filePath = filePath_;
   double outputFileSize = 0;
@@ -152,7 +153,11 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   }
 
   if (usesCallback()) {
-    callback_->cleanup();
+    dataCallback_->cleanup();
+  }
+
+  if (isConnected()) {
+    adapterNode_->cleanup();
   }
 
   filePath_ = "";
@@ -163,12 +168,12 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
 Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
-  Locker lock(fileWriterMutex_);
-  fileWriter_ = std::make_shared<FileWriter>(audioEventHandlerRegistry_, properties);
+  std::scoped_lock lock(fileWriterMutex_, errorCallbackMutex_);
+  fileWriter_ = std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, properties);
 
   if (!isIdle()) {
-    auto result =
-        fileWriter_->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    auto result = std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+                      ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (result.is_err()) {
       return Result<std::string, std::string>::Err(
@@ -178,10 +183,7 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
     filePath_ = result.unwrap();
   }
 
-  // TODO: atomic szpont?
-  if (errorCallbackId_.load(std::memory_order_acquire) != 0) {
-    fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-  }
+  fileWriter_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
   fileOutputEnabled_.store(true, std::memory_order_release);
   return Result<std::string, std::string>::Ok(filePath_);
@@ -189,14 +191,14 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
 
 void IOSAudioRecorder::disableFileOutput()
 {
-  Locker lock(fileWriterMutex_);
+  std::scoped_lock lock(fileWriterMutex_);
   fileOutputEnabled_.store(false, std::memory_order_release);
   fileWriter_ = nullptr;
 }
 
 void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 {
-  Locker lock(adapterNodeMutex_);
+  std::scoped_lock lock(adapterNodeMutex_);
   adapterNode_ = node;
 
   if (!isIdle()) {
@@ -209,7 +211,7 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 
 void IOSAudioRecorder::disconnect()
 {
-  Locker lock(adapterNodeMutex_);
+  std::scoped_lock lock(adapterNodeMutex_);
   adapterNode_ = nullptr;
   isConnected_.store(false, std::memory_order_release);
 }
@@ -265,24 +267,21 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
     int channelCount,
     uint64_t callbackId)
 {
-  Locker lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_, errorCallbackMutex_);
 
-  callback_ = std::make_shared<RecorderCallback>(
+  dataCallback_ = std::make_shared<IOSRecorderCallback>(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    auto result =
-        callback_->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
+    auto result = std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+                      ->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (result.is_err()) {
       return Result<NoneType, std::string>::Err(result.unwrap_err());
     }
   }
 
-  // TODO: atomic szpont?
-  if (errorCallbackId_.load(std::memory_order_acquire) != 0) {
-    callback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
-  }
+  dataCallback_->setOnErrorCallback(errorCallbackId_.load(std::memory_order_acquire));
 
   callbackOutputEnabled_.store(true, std::memory_order_release);
   return Result<NoneType, std::string>::Ok(None);
@@ -290,45 +289,9 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
 
 void IOSAudioRecorder::clearOnAudioReadyCallback()
 {
-  Locker lock(callbackMutex_);
+  std::scoped_lock lock(callbackMutex_);
   callbackOutputEnabled_.store(false, std::memory_order_release);
-  callback_ = nullptr;
-}
-
-void IOSAudioRecorder::setOnErrorCallback(uint64_t callbackId)
-{
-  if (usesFileOutput()) {
-    fileWriter_->setOnErrorCallback(callbackId);
-  }
-
-  if (usesCallback()) {
-    callback_->setOnErrorCallback(callbackId);
-  }
-  errorCallbackId_.store(callbackId, std::memory_order_release);
-}
-
-void IOSAudioRecorder::clearOnErrorCallback()
-{
-  errorCallbackId_.store(0, std::memory_order_release);
-
-  if (usesFileOutput()) {
-    fileWriter_->clearOnErrorCallback();
-  }
-
-  if (usesCallback()) {
-    callback_->clearOnErrorCallback();
-  }
-}
-
-double IOSAudioRecorder::getCurrentDuration() const
-{
-  double duration = 0.0;
-
-  if (usesFileOutput() && fileWriter_) {
-    duration = fileWriter_->getCurrentDuration();
-  }
-
-  return duration;
+  dataCallback_ = nullptr;
 }
 
 } // namespace audioapi

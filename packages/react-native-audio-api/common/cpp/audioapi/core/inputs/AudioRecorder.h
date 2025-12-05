@@ -1,6 +1,5 @@
 #pragma once
 
-#include <audioapi/core/utils/Locker.h>
 #include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>
@@ -11,9 +10,11 @@
 namespace audioapi {
 
 class AudioBus;
+class AudioFileWriter;
 class CircularAudioArray;
 class RecorderAdapterNode;
 class AudioFileProperties;
+class AudioRecorderCallback;
 class AudioEventHandlerRegistry;
 
 class AudioRecorder {
@@ -44,22 +45,14 @@ class AudioRecorder {
       uint64_t callbackId) = 0;
   virtual void clearOnAudioReadyCallback() = 0;
 
-  virtual void setOnErrorCallback(uint64_t callbackId) = 0;
-  virtual void clearOnErrorCallback() = 0;
+  void setOnErrorCallback(uint64_t callbackId);
+  void clearOnErrorCallback();
 
-  virtual double getCurrentDuration() const = 0;
+  virtual double getCurrentDuration() const;
 
-  bool usesCallback() const {
-    return callbackOutputEnabled_.load(std::memory_order_acquire);
-  }
-
-  bool usesFileOutput() const {
-    return fileOutputEnabled_.load(std::memory_order_acquire);
-  }
-
-  bool isConnected() const {
-    return isConnected_.load(std::memory_order_acquire);
-  }
+  bool usesCallback() const;
+  bool usesFileOutput() const;
+  bool isConnected() const;
 
   virtual bool isRecording() const = 0;
   virtual bool isPaused() const = 0;
@@ -68,19 +61,20 @@ class AudioRecorder {
  protected:
   std::atomic<RecorderState> state_{RecorderState::Idle};
 
-  std::string filePath_{""};
-
   std::atomic<bool> isConnected_{false};
   std::atomic<bool> fileOutputEnabled_{false};
   std::atomic<bool> callbackOutputEnabled_{false};
 
   std::mutex callbackMutex_;
   std::mutex fileWriterMutex_;
+  std::mutex errorCallbackMutex_;
   mutable std::mutex adapterNodeMutex_;
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
+  std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
+  std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
 };
 

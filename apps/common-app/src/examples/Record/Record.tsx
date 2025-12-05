@@ -88,6 +88,7 @@ const Record: FC = () => {
   /// This stops only the recording, not the audio context
   const stopEcho = () => {
     audioRecorder.stop();
+    audioRecorder.disconnect();
     setStatus(Status.Idle);
     AudioManager.setAudioSessionActivity(false);
   };

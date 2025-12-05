@@ -51,15 +51,8 @@ class IOSAudioRecorder : public AudioRecorder {
       uint64_t callbackId) override;
   void clearOnAudioReadyCallback() override;
 
-  void setOnErrorCallback(uint64_t callbackId) override;
-  void clearOnErrorCallback() override;
-
-  double getCurrentDuration() const override;
-
- private:
+ protected:
   NativeAudioRecorder *nativeRecorder_;
-  std::shared_ptr<FileWriter> fileWriter_;
-  std::shared_ptr<RecorderCallback> callback_;
 };
 
 } // namespace audioapi

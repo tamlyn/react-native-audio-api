@@ -19,12 +19,13 @@ RecorderAdapterNode::RecorderAdapterNode(BaseAudioContext *context) noexcept(
 
 void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
   if (isInitialized_) {
-    throw std::runtime_error(
-        "RecorderAdapterNode should not be initialized more than once. Just create a new instance.");
+    return;
   }
+
   channelCount_ = channelCount;
 
   buff_.resize(channelCount_);
+
   for (size_t i = 0; i < channelCount_; ++i) {
     buff_[i] = std::make_shared<CircularOverflowableAudioArray>(bufferSize);
   }
@@ -45,9 +46,20 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
   isInitialized_ = true;
 }
 
+void RecorderAdapterNode::cleanup() {
+  isInitialized_ = false;
+  buff_.clear();
+  adapterOutputBus_.reset();
+}
+
 std::shared_ptr<AudioBus> RecorderAdapterNode::processNode(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess) {
+  if (!isInitialized_) {
+    processingBus->zero();
+    return processingBus;
+  }
+
   readFrames(framesToProcess);
 
   processingBus->sum(adapterOutputBus_.get(), ChannelInterpretation::SPEAKERS);

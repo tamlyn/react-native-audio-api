@@ -48,7 +48,7 @@ class AudioFileProperties {
       int channelCount,
       size_t batchDurationSeconds,
       Format format,
-      size_t sampleRate,
+      float sampleRate,
       size_t bitRate,
       BitDepth bitDepth,
       int flacCompressionLevel,
@@ -65,7 +65,7 @@ class AudioFileProperties {
   int channelCount;
   size_t batchDurationSeconds;
   Format format;
-  size_t sampleRate;
+  float sampleRate;
   size_t bitRate;
   BitDepth bitDepth;
   int flacCompressionLevel;

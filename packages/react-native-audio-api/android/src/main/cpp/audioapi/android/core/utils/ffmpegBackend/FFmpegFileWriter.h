@@ -24,8 +24,10 @@ namespace android::ffmpeg {
 
 class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
  public:
-  explicit FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties);
-  ~FFmpegAudioFileWriter() override;
+  explicit FFmpegAudioFileWriter(
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+      const std::shared_ptr<AudioFileProperties> &fileProperties);
+  ~FFmpegAudioFileWriter();
 
   OpenFileResult openFile(float streamSampleRate, int32_t streamChannelCount, int32_t streamMaxBufferSize) override;
   CloseFileResult closeFile() override;
@@ -33,23 +35,17 @@ class FFmpegAudioFileWriter : public AndroidFileWriterBackend {
   bool writeAudioData(void *data, int numFrames) override;
 
  private:
-  std::atomic<bool> isFileOpen_{false};
-  std::atomic<bool> isConverterRequired_{false};
-
   av_unique_ptr<AVCodecContext> encoderCtx_{nullptr};
   av_unique_ptr<AVFormatContext> formatCtx_{nullptr};
   av_unique_ptr<SwrContext> resampleCtx_{nullptr};
+  av_unique_ptr<AVAudioFifo> audioFifo_{nullptr};
   av_unique_ptr<AVPacket> packet_{nullptr};
   av_unique_ptr<AVFrame> frame_{nullptr};
   AVStream* stream_{nullptr};
-  av_unique_ptr<AVAudioFifo> audioFifo_{nullptr};
-  unsigned int nextPts_;
+  unsigned int nextPts_{0};
 
   std::chrono::steady_clock::time_point lastFlushTime_ = std::chrono::steady_clock::now();
   int flushIntervalMs_;
-
-  bool isFileOpen();
-  bool isConverterRequired();
 
   // Initialization helper methods
   Result<NoneType, std::string> initializeFormatContext(const AVCodec* codec);

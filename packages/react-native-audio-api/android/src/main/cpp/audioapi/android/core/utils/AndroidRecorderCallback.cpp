@@ -27,22 +27,27 @@ AndroidRecorderCallback::AndroidRecorderCallback(
     size_t bufferLength,
     int channelCount,
     uint64_t callbackId)
-    : sampleRate_(sampleRate),
-      bufferLength_(bufferLength),
-      channelCount_(channelCount),
-      callbackId_(callbackId),
-      audioEventHandlerRegistry_(audioEventHandlerRegistry) {
-  ringBufferSize_ = std::max(bufferLength * 2, static_cast<size_t>(8192));
-  circularBus_.resize(channelCount_);
-
-  for (size_t i = 0; i < channelCount_; ++i) {
-    circularBus_[i] = std::make_shared<CircularAudioArray>(ringBufferSize_);
-  }
-}
+    : AudioRecorderCallback(
+          audioEventHandlerRegistry,
+          sampleRate,
+          bufferLength,
+          channelCount,
+          callbackId) {}
 
 AndroidRecorderCallback::~AndroidRecorderCallback() {
+  if (converter_ != nullptr) {
+    ma_data_converter_uninit(converter_.get(), NULL);
+    converter_.reset();
+  }
+
+  if (processingBuffer_ != nullptr) {
+    ma_free(processingBuffer_, NULL);
+    processingBuffer_ = nullptr;
+    processingBufferLength_ = 0;
+  }
+
   for (size_t i = 0; i < circularBus_.size(); ++i) {
-    circularBus_[i].reset();
+    circularBus_[i]->zero();
   }
 }
 
@@ -50,7 +55,7 @@ AndroidRecorderCallback::~AndroidRecorderCallback() {
 /// @param streamSampleRate The sample rate of the incoming audio stream.
 /// @param streamChannelCount The channel count of the incoming audio stream.
 /// @param maxInputBufferLength The maximum buffer length of the incoming audio stream.
-void AndroidRecorderCallback::prepare(
+Result<NoneType, std::string> AndroidRecorderCallback::prepare(
     float streamSampleRate,
     int32_t streamChannelCount,
     size_t maxInputBufferLength) {
@@ -72,11 +77,17 @@ void AndroidRecorderCallback::prepare(
   result = ma_data_converter_init(&converterConfig, NULL, converter_.get());
 
   if (result != MA_SUCCESS) {
-    __android_log_print(
-        ANDROID_LOG_ERROR,
-        "AndroidRecorderCallback",
-        "Failed to initialize miniaudio data converter");
-    return;
+    return Result<NoneType, std::string>::Err(
+        "Failed to initialize miniaudio data converter" +
+        std::string(ma_result_description(result)));
+  }
+
+  if (streamSampleRate_ <= 0 || streamChannelCount_ <= 0) {
+    return Result<NoneType, std::string>::Err("Invalid stream sample rate or channel count");
+  }
+
+  if (sampleRate_ <= 0 || channelCount_ <= 0) {
+    return Result<NoneType, std::string>::Err("Invalid callback sample rate or channel count");
   }
 
   ma_data_converter_get_expected_output_frame_count(
@@ -87,6 +98,8 @@ void AndroidRecorderCallback::prepare(
   deinterleavingArray_ = std::make_shared<AudioArray>(processingBufferLength_);
   processingBuffer_ = ma_malloc(
       processingBufferLength_ * channelCount_ * ma_get_bytes_per_sample(ma_format_f32), NULL);
+
+  return Result<NoneType, std::string>::Ok(None);
 }
 
 void AndroidRecorderCallback::cleanup() {
@@ -113,6 +126,10 @@ void AndroidRecorderCallback::cleanup() {
 /// @param data Pointer to the incoming audio data.
 /// @param numFrames Number of frames in the incoming audio data.
 void AndroidRecorderCallback::receiveAudioData(void *data, int numFrames) {
+  if (!isInitialized_.load(std::memory_order_acquire)) {
+    return;
+  }
+
   ma_uint64 inputFrameCount = numFrames;
   ma_uint64 outputFrameCount = 0;
 
@@ -147,36 +164,6 @@ void AndroidRecorderCallback::deinterleaveAndPushAudioData(void *data, int numFr
     }
 
     circularBus_[channel]->push_back(channelData, numFrames);
-  }
-}
-
-/// @brief Emits audio data from the circular buffer when enough frames are available.
-/// @param flush If true, emits all available data regardless of buffer length.
-void AndroidRecorderCallback::emitAudioData(bool flush) {
-  size_t sizeLimit = flush ? circularBus_[0]->getNumberOfAvailableFrames() : bufferLength_;
-
-  while (circularBus_[0]->getNumberOfAvailableFrames() >= sizeLimit) {
-    auto bus = std::make_shared<AudioBus>(sizeLimit, channelCount_, sampleRate_);
-
-    for (int i = 0; i < channelCount_; ++i) {
-      auto *outputChannel = bus->getChannel(i)->getData();
-      circularBus_[i]->pop_front(outputChannel, sizeLimit);
-    }
-
-    invokeCallback(bus, static_cast<int>(sizeLimit));
-  }
-}
-
-void AndroidRecorderCallback::invokeCallback(const std::shared_ptr<AudioBus> &bus, int numFrames) {
-  auto audioBuffer = std::make_shared<AudioBuffer>(bus);
-  auto audioBufferHostObject = std::make_shared<AudioBufferHostObject>(audioBuffer);
-
-  std::unordered_map<std::string, EventValue> eventPayload = {};
-  eventPayload.insert({"buffer", audioBufferHostObject});
-  eventPayload.insert({"numFrames", numFrames});
-
-  if (audioEventHandlerRegistry_) {
-    audioEventHandlerRegistry_->invokeHandlerWithEventBody("audioReady", callbackId_, eventPayload);
   }
 }
 

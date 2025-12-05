@@ -15,18 +15,22 @@ extern "C" {
 #include <audioapi/utils/UnitConversion.h>
 
 #include <algorithm>
+#include <memory>
 #include <string>
 
 constexpr int defaultFrameRatio = 4;
 constexpr int fallbackFIFOSize = 8192;
+constexpr int defaultFlushInterval = 100;
 
 namespace audioapi::android::ffmpeg {
 
-FFmpegAudioFileWriter::FFmpegAudioFileWriter(std::shared_ptr<AudioFileProperties> properties)
-    : AndroidFileWriterBackend(properties) {
+FFmpegAudioFileWriter::FFmpegAudioFileWriter(
+    const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry,
+    const std::shared_ptr<AudioFileProperties> &fileProperties)
+    : AndroidFileWriterBackend(audioEventHandlerRegistry, fileProperties) {
   // Set flush interval from properties, limit minimum to 100ms
   // to avoid people hurting themselves too much
-  flushIntervalMs_ = std::min(properties_->androidFlushIntervalMs, 100);
+  flushIntervalMs_ = std::min(fileProperties_->androidFlushIntervalMs, defaultFlushInterval);
 }
 
 FFmpegAudioFileWriter::~FFmpegAudioFileWriter() {
@@ -52,7 +56,7 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
   framesWritten_.store(0, std::memory_order_release);
   nextPts_ = 0;
   Result<NoneType, std::string> result = Result<NoneType, std::string>::Ok(None);
-  Result<std::string, std::string> filePathResult = fileoptions::getFilePath(properties_);
+  Result<std::string, std::string> filePathResult = fileoptions::getFilePath(fileProperties_);
 
   if (!filePathResult.is_ok()) {
     return OpenFileResult::Err(filePathResult.unwrap_err());
@@ -60,7 +64,7 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
 
   filePath_ = filePathResult.unwrap();
 
-  const AVCodec *codec = getCodec(properties_);
+  const AVCodec *codec = getCodec(fileProperties_);
 
   if (!codec) {
     return OpenFileResult::Err("Unsupported codec for the given file format");
@@ -158,14 +162,6 @@ bool FFmpegAudioFileWriter::writeAudioData(void *data, int numFrames) {
   return true;
 }
 
-bool FFmpegAudioFileWriter::isFileOpen() {
-  return isFileOpen_.load(std::memory_order_acquire);
-}
-
-bool FFmpegAudioFileWriter::isConverterRequired() {
-  return isConverterRequired_.load(std::memory_order_acquire);
-}
-
 /// @brief Initializes the FFmpeg format context for the output file.
 /// @param codec The codec to be used for encoding.
 /// @returns Success status or Error status with message.
@@ -173,7 +169,7 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::initializeFormatContext(con
   AVFormatContext *rawFormatCtx = nullptr;
 
   int result = avformat_alloc_output_context2(
-      &rawFormatCtx, nullptr, getMuxerName(properties_).c_str(), filePath_.c_str());
+      &rawFormatCtx, nullptr, getMuxerName(fileProperties_).c_str(), filePath_.c_str());
 
   if (result < 0 || !rawFormatCtx) {
     return Result<NoneType, std::string>::Err(
@@ -194,18 +190,18 @@ Result<NoneType, std::string> FFmpegAudioFileWriter::configureAndOpenCodec(const
     return Result<NoneType, std::string>::Err("Failed to allocate FFmpeg codec context");
   }
 
-  av_channel_layout_default(&encoderCtx_->ch_layout, properties_->channelCount);
-  encoderCtx_->sample_rate = properties_->sampleRate;
-  encoderCtx_->sample_fmt = getSampleFormat(properties_);
+  av_channel_layout_default(&encoderCtx_->ch_layout, fileProperties_->channelCount);
+  encoderCtx_->sample_rate = static_cast<int>(fileProperties_->sampleRate);
+  encoderCtx_->sample_fmt = getSampleFormat(fileProperties_);
 
-  if (properties_->bitRate > 0) {
-    encoderCtx_->bit_rate = properties_->bitRate;
+  if (fileProperties_->bitRate > 0) {
+    encoderCtx_->bit_rate = fileProperties_->bitRate;
   }
 
   AVDictionary *codecOptions = nullptr;
 
-  if (properties_->flacCompressionLevel >= 0) {
-    av_dict_set_int(&codecOptions, "compression_level", properties_->flacCompressionLevel, 0);
+  if (fileProperties_->flacCompressionLevel >= 0) {
+    av_dict_set_int(&codecOptions, "compression_level", fileProperties_->flacCompressionLevel, 0);
   }
 
   int result = avcodec_open2(encoderCtx_.get(), codec, &codecOptions);
@@ -337,8 +333,8 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
 
   const uint8_t *inputs[1] = {reinterpret_cast<const uint8_t *>(inputData)};
 
-  int convertedSamples =
-      swr_convert(resampleCtx_.get(), frame_->data, outputLength, inputs, inputFrameCount);
+  int convertedSamples = swr_convert(
+      resampleCtx_.get(), frame_->data, static_cast<int>(outputLength), inputs, inputFrameCount);
 
   if (convertedSamples < 0) {
     av_frame_unref(frame_.get());
@@ -445,7 +441,7 @@ int FFmpegAudioFileWriter::prepareFrameForEncoding(int64_t samplesToRead) {
     return 0;
   }
 
-  frame_->nb_samples = samplesToRead;
+  frame_->nb_samples = static_cast<int>(samplesToRead);
   frame_->format = encoderCtx_->sample_fmt;
   frame_->sample_rate = encoderCtx_->sample_rate;
 
@@ -464,7 +460,8 @@ int FFmpegAudioFileWriter::prepareFrameForEncoding(int64_t samplesToRead) {
   if (result < 0) {
     av_frame_unref(frame_.get());
 
-    frame_->nb_samples = samplesToRead;
+    frame_->nb_samples = static_cast<int>(samplesToRead);
+    ;
     frame_->format = encoderCtx_->sample_fmt;
     frame_->sample_rate = encoderCtx_->sample_rate;
     av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
@@ -488,7 +485,7 @@ CloseFileResult FFmpegAudioFileWriter::finalizeOutput() {
   double fileSizeInMB = 0;
 
   if (formatCtx_->pb) {
-    fileSizeInMB = avio_size(formatCtx_->pb) / MB_IN_BYTES;
+    fileSizeInMB = static_cast<double>(avio_size(formatCtx_->pb)) / MB_IN_BYTES;
     avio_closep(&formatCtx_->pb);
   }
 

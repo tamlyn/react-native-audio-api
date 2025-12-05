@@ -42,13 +42,8 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
       override;
   void clearOnAudioReadyCallback() override;
 
-  void setOnErrorCallback(uint64_t callbackId) override;
-  void clearOnErrorCallback() override;
-
   void connect(const std::shared_ptr<RecorderAdapterNode> &node) override;
   void disconnect() override;
-
-  double getCurrentDuration() const override;
 
   oboe::DataCallbackResult onAudioReady(
           oboe::AudioStream *oboeStream,
@@ -57,9 +52,7 @@ class AndroidAudioRecorder : public oboe::AudioStreamCallback, public AudioRecor
   void onErrorAfterClose(oboe::AudioStream *oboeStream, oboe::Result error) override;
 
  private:
-
-  std::shared_ptr<AndroidFileWriterBackend> fileWriter_;
-  std::shared_ptr<AndroidRecorderCallback> callback_;
+  std::string filePath_{""};
   std::shared_ptr<AudioArray> deinterleavingBuffer_;
 
   float streamSampleRate_;
