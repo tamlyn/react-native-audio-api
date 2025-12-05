@@ -1,6 +1,6 @@
-import { createNativeBottomTabNavigator } from '@react-navigation/bottom-tabs/unstable';
 import { NavigationContainer, useNavigation } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
+import { Gauge, ListCheck, Waves } from 'lucide-react-native';
 import type { FC } from 'react';
 import React from 'react';
 import {
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Spacer } from './components';
 import Container from './components/Container';
 import { demos, DemoScreen } from './demos';
@@ -88,7 +89,7 @@ const OtherScreen: FC = () => {
   return <Container headless />;
 };
 
-const MainTabs = createNativeBottomTabNavigator<MainStackProps>({
+const MainTabs = createBottomTabNavigator<MainStackProps>({
   screens: {
     Tests: TestsScreen,
     DemoApps: DemoAppsScreen,
@@ -96,18 +97,45 @@ const MainTabs = createNativeBottomTabNavigator<MainStackProps>({
   },
 });
 
+const tabBarIcon = ({
+  routeName,
+  color,
+  size,
+}: {
+  routeName: string;
+  color: string;
+  size: number;
+}) => {
+  if (routeName === 'Tests') {
+    return <ListCheck color={color} size={size} />;
+  } else if (routeName === 'DemoApps') {
+    return <Gauge color={color} size={size} />;
+  } else if (routeName === 'Other') {
+    return <Waves color={color} size={size} />;
+  }
+  return null;
+};
+
 const MainTabsScreen: FC = () => {
   return (
-    <MainTabs.Navigator>
+    <MainTabs.Navigator
+      screenOptions={({ route }: { route: { name: string } }) => ({
+        tabBarIcon: ({ color, size }: { color: string; size: number }) =>
+          tabBarIcon({ routeName: route.name, color, size }),
+        tabBarActiveTintColor: '#ff7774',
+        tabBarInactiveTintColor: colors.border,
+        tabBarTransparent: true,
+        tabBarStyle: {
+          backgroundColor: colors.background,
+        },
+        headerShown: false,
+      })}
+    >
       <MainTabs.Screen
         name="Tests"
         component={TestsScreen}
         options={{
           title: 'Tests',
-          tabBarIcon: {
-            type: 'sfSymbol',
-            name: 'list.number',
-          },
         }}
       />
       <MainTabs.Screen
@@ -115,10 +143,6 @@ const MainTabsScreen: FC = () => {
         component={DemoAppsScreen}
         options={{
           title: 'Demo Apps',
-          tabBarIcon: {
-            type: 'sfSymbol',
-            name: 'waveform.path',
-          },
         }}
       />
       <MainTabs.Screen
@@ -126,11 +150,6 @@ const MainTabsScreen: FC = () => {
         component={OtherScreen}
         options={{
           title: 'Other',
-
-          tabBarIcon: {
-            type: 'sfSymbol',
-            name: 'gauge',
-          },
         }}
       />
     </MainTabs.Navigator>
