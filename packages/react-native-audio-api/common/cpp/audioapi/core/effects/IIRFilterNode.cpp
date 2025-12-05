@@ -31,12 +31,15 @@
 #include <audioapi/utils/AudioBus.h>
 #include <algorithm>
 #include <memory>
+#include <utility>
 #include <vector>
 
 namespace audioapi {
 
 IIRFilterNode::IIRFilterNode(BaseAudioContext *context, IIRFilterOptions options)
-    : AudioNode(context, options), feedforward_(options.feedforward), feedback_(options.feedback) {
+    : AudioNode(context, options),
+      feedforward_(std::move(options.feedforward)),
+      feedback_(std::move(options.feedback)) {
   isInitialized_ = true;
 
   int maxChannels = MAX_CHANNEL_COUNT;

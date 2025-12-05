@@ -4,6 +4,7 @@ import { IndexSizeError } from '../errors';
 import { IAnalyserNode } from '../interfaces';
 import { WindowType, TAnalyserOptions } from '../types';
 import AudioNode from './AudioNode';
+import { AnalyserOptionsValidator } from '../options-validators';
 
 export default class AnalyserNode extends AudioNode {
   private static allowedFFTSize: number[] = [
@@ -16,13 +17,7 @@ export default class AnalyserNode extends AudioNode {
       ...options,
     };
 
-    if (!AnalyserNode.allowedFFTSize.includes(finalOptions.fftSize!)) {
-      throw new IndexSizeError(
-        `fftSize must be one of the following values: ${AnalyserNode.allowedFFTSize.join(
-          ', '
-        )}`
-      );
-    }
+    AnalyserOptionsValidator.validate(finalOptions);
     const analyserNode: IAnalyserNode =
       context.context.createAnalyser(finalOptions);
     super(context, analyserNode);

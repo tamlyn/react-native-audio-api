@@ -66,6 +66,10 @@ export interface TAnalyserOptions extends TAudioNodeOptions {
   smoothingTimeConstant?: number;
 }
 
+export interface OptionsValidator<T> {
+  validate(options: T): void;
+}
+
 export interface TBiquadFilterOptions extends TAudioNodeOptions {
   type?: BiquadFilterType;
   frequency?: number;

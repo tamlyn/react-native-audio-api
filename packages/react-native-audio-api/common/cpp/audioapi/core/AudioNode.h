@@ -21,6 +21,7 @@ class AudioNodeOptions;
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
   explicit AudioNode(BaseAudioContext *context);
+  // usually options are passed as derived class, keep in mind that object passed as options will be sliced
   explicit AudioNode(BaseAudioContext *context, const AudioNodeOptions &options);
   virtual ~AudioNode();
 

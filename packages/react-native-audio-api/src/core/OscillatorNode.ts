@@ -18,12 +18,6 @@ export default class OscillatorNode extends AudioScheduledSourceNode {
       ...options,
     };
 
-    if (finalOptions.type === 'custom' && !finalOptions.periodicWave) {
-      throw new InvalidStateError(
-        "'type' cannot be set to 'custom' without providing a 'periodicWave'."
-      );
-    }
-
     if (finalOptions.periodicWave) {
       finalOptions.type = 'custom';
     }
