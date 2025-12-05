@@ -328,6 +328,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
   result = prepareFrameForEncoding(outputLength);
 
   if (result < 0) {
+    invokeOnErrorCallback("Failed to prepare frame for resampling: " + parseErrorCode(result));
     return false;
   }
 
@@ -337,6 +338,7 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
       resampleCtx_.get(), frame_->data, static_cast<int>(outputLength), inputs, inputFrameCount);
 
   if (convertedSamples < 0) {
+    invokeOnErrorCallback("Failed to convert audio samples: " + parseErrorCode(convertedSamples));
     av_frame_unref(frame_.get());
     return false;
   }
@@ -345,6 +347,8 @@ bool FFmpegAudioFileWriter::resampleAndPushToFifo(void *inputData, int inputFram
       audioFifo_.get(), reinterpret_cast<void **>(frame_->data), convertedSamples);
 
   if (written < convertedSamples) {
+    invokeOnErrorCallback("Failed to write all samples to FIFO");
+    av_frame_unref(frame_.get());
     return false;
   }
 
@@ -365,11 +369,13 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
     const int chunkSize = std::min(av_audio_fifo_size(audioFifo_.get()), frameSize);
 
     if (prepareFrameForEncoding(chunkSize) < 0) {
+      invokeOnErrorCallback("Failed to prepare frame for encoding");
       return -1;
     }
 
     if (av_audio_fifo_read(audioFifo_.get(), reinterpret_cast<void **>(frame_->data), chunkSize) !=
         chunkSize) {
+      invokeOnErrorCallback("Failed to read data from FIFO");
       return -1;
     }
 
@@ -379,12 +385,14 @@ int FFmpegAudioFileWriter::processFifo(bool flush) {
     result = avcodec_send_frame(encoderCtx_.get(), frame_.get());
 
     if (result < 0) {
+      invokeOnErrorCallback("Failed to send frame to encoder: " + parseErrorCode(result));
       return result;
     }
 
     result = writeEncodedPackets();
 
     if (result < 0) {
+      invokeOnErrorCallback("Failed to write encoded packets: " + parseErrorCode(result));
       return result;
     }
   }
@@ -405,6 +413,7 @@ int FFmpegAudioFileWriter::writeEncodedPackets() {
     if (result == AVERROR(EAGAIN) || result == AVERROR_EOF) {
       return 0;
     } else if (result < 0) {
+      invokeOnErrorCallback("Failed to receive packet from encoder: " + parseErrorCode(result));
       return result;
     }
 
@@ -451,6 +460,7 @@ int FFmpegAudioFileWriter::prepareFrameForEncoding(int64_t samplesToRead) {
     result = av_channel_layout_copy(&frame_->ch_layout, &encoderCtx_->ch_layout);
 
     if (result < 0) {
+      invokeOnErrorCallback("Failed to copy channel layout: " + parseErrorCode(result));
       return result;
     }
   }
