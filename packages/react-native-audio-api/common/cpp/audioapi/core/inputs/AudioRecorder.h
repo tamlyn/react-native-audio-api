@@ -72,6 +72,7 @@ class AudioRecorder {
 
   std::atomic<uint64_t> errorCallbackId_{0};
 
+  std::string filePath_{""};
   std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
   std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
