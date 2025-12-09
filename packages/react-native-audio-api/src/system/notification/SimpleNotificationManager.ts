@@ -1,5 +1,5 @@
-import { NativeAudioAPIModule } from '../../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
+import { NativeAudioAPIModule } from '../../specs';
 import type { NotificationManager, SimpleNotificationOptions } from './types';
 
 /// Simple notification manager for basic notifications with title and text.
@@ -13,9 +13,10 @@ class SimpleNotificationManager
       never
     >
 {
+  private isRegistered_ = false;
+  private isShown_ = false;
+
   private notificationKey = 'simple';
-  private isRegistered = false;
-  private isShown = false;
   private audioEventEmitter: AudioEventEmitter;
 
   constructor() {
@@ -24,7 +25,7 @@ class SimpleNotificationManager
 
   /// Register the simple notification (must be called before showing).
   async register(): Promise<void> {
-    if (this.isRegistered) {
+    if (this.isRegistered_) {
       console.warn('SimpleNotification is already registered');
       return;
     }
@@ -42,12 +43,12 @@ class SimpleNotificationManager
       throw new Error(result.error);
     }
 
-    this.isRegistered = true;
+    this.isRegistered_ = true;
   }
 
   /// Show the notification with initial options.
   async show(options: SimpleNotificationOptions): Promise<void> {
-    if (!this.isRegistered) {
+    if (!this.isRegistered_) {
       throw new Error(
         'SimpleNotification must be registered before showing. Call register() first.'
       );
@@ -66,12 +67,12 @@ class SimpleNotificationManager
       throw new Error(result.error);
     }
 
-    this.isShown = true;
+    this.isShown_ = true;
   }
 
   /// Update the notification with new options.
   async update(options: SimpleNotificationOptions): Promise<void> {
-    if (!this.isShown) {
+    if (!this.isShown_) {
       console.warn('SimpleNotification is not shown. Call show() first.');
       return;
     }
@@ -92,7 +93,7 @@ class SimpleNotificationManager
 
   /// Hide the notification (can be shown again later).
   async hide(): Promise<void> {
-    if (!this.isShown) {
+    if (!this.isShown_) {
       return;
     }
 
@@ -108,16 +109,16 @@ class SimpleNotificationManager
       throw new Error(result.error);
     }
 
-    this.isShown = false;
+    this.isShown_ = false;
   }
 
   /// Unregister the notification (must register again to use).
   async unregister(): Promise<void> {
-    if (!this.isRegistered) {
+    if (!this.isRegistered_) {
       return;
     }
 
-    if (this.isShown) {
+    if (this.isShown_) {
       await this.hide();
     }
 
@@ -133,7 +134,7 @@ class SimpleNotificationManager
       throw new Error(result.error);
     }
 
-    this.isRegistered = false;
+    this.isRegistered_ = false;
   }
 
   /// Check if the notification is currently active.
@@ -145,6 +146,10 @@ class SimpleNotificationManager
     return await NativeAudioAPIModule.isNotificationActive(
       this.notificationKey
     );
+  }
+
+  isRegistered(): boolean {
+    return this.isRegistered_;
   }
 
   /// Add an event listener (SimpleNotification doesn't emit events).

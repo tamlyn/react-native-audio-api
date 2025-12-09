@@ -4,11 +4,11 @@
 
 import type { AudioEventSubscription } from '../../events';
 import type {
+  NotificationEvents,
   NotificationManager,
-  PlaybackNotificationInfo,
   PlaybackControlName,
   PlaybackNotificationEventName,
-  NotificationEvents,
+  PlaybackNotificationInfo,
 } from '../../system';
 
 /// Mock Manager for playback notifications. Does nothing.
@@ -20,8 +20,8 @@ class PlaybackNotificationManager
       PlaybackNotificationEventName
     >
 {
-  private isRegistered = false;
-  private isShown = false;
+  private isRegistered_ = false;
+  private isShown_ = false;
 
   constructor() {}
 
@@ -41,7 +41,11 @@ class PlaybackNotificationManager
   ): Promise<void> {}
 
   async isActive(): Promise<boolean> {
-    return this.isShown;
+    return this.isShown_;
+  }
+
+  isRegistered(): boolean {
+    return this.isRegistered_;
   }
 
   addEventListener<T extends PlaybackNotificationEventName>(
