@@ -42,6 +42,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   return self;
 }
 
+// Note: this method should be called only after the session is activated
 - (AVAudioFormat *)getInputFormat
 {
   AVAudioFormat *format = [AudioEngine.sharedInstance.audioEngine.inputNode inputFormatForBus:0];
@@ -97,7 +98,13 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
   assert(audioEngine != nil);
   [audioEngine stopIfPossible];
   [audioEngine detachInputNode];
-  [audioEngine restartAudioEngine];
+
+  // This makes sure that the engine releases the input properly when we no longer need it
+  // (i.e. no more misleading dot)
+  // Restart only if is not running to avoid interruptions of playback
+  if ([audioEngine getState] != AudioEngineStateRunning) {
+    [audioEngine restartAudioEngine];
+  }
 }
 
 - (void)pause
