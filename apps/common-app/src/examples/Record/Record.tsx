@@ -2,14 +2,14 @@ import React, { FC, useEffect, useState } from 'react';
 import { Alert, Text, View } from 'react-native';
 import {
   AudioBuffer,
-  AudioContext,
   AudioManager,
-  AudioRecorder,
   RecordingNotificationManager,
 } from 'react-native-audio-api';
 
 import { Button, Container } from '../../components';
 import { colors } from '../../styles';
+
+import { audioContext, audioRecorder } from '../../singletons';
 
 enum Status {
   Idle = 'Idle',
@@ -17,9 +17,6 @@ enum Status {
   Recording = 'Recording',
   Playback = 'Playback',
 }
-
-const audioContext = new AudioContext();
-const audioRecorder = new AudioRecorder();
 
 const Record: FC = () => {
   const [status, setStatus] = useState<Status>(Status.Idle);
@@ -176,8 +173,11 @@ const Record: FC = () => {
 
     setStatus(Status.Recording);
 
-    setTimeout(() => {
+    setTimeout(async () => {
       audioRecorder.stop();
+      audioRecorder.clearOnAudioReady();
+      await AudioManager.setAudioSessionActivity(false);
+      await RecordingNotificationManager.unregister();
       setStatus(Status.Idle);
     }, 5000);
   };

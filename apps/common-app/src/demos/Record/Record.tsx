@@ -4,8 +4,8 @@ import { AudioManager } from 'react-native-audio-api';
 import { Alert, StyleSheet, View } from 'react-native';
 import { Container } from '../../components';
 
+import { audioRecorder as Recorder } from '../../singletons';
 import ControlPanel from './ControlPanel';
-import Recorder from './Recorder';
 import RecordingTime from './RecordingTime';
 import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
@@ -16,8 +16,6 @@ AudioManager.setAudioSessionOptions({
   iosMode: 'default',
   iosOptions: ['defaultToSpeaker', 'allowBluetoothA2DP'],
 });
-
-Recorder.enableFileOutput();
 
 const Record: FC = () => {
   const [state, setState] = useState<RecordingState>(RecordingState.Idle);
@@ -139,6 +137,14 @@ const Record: FC = () => {
         setHasPermissions(true);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    Recorder.enableFileOutput();
+
+    return () => {
+      Recorder.disableFileOutput();
+    };
   }, []);
 
   return (

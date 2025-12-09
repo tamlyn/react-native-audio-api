@@ -5,8 +5,8 @@ import Animated, {
   useSharedValue,
 } from 'react-native-reanimated';
 
+import { audioRecorder as Recorder } from '../../singletons';
 import { colors } from '../../styles';
-import Recorder from './Recorder';
 import { RecordingState } from './types';
 
 const AnimatedTextInput = Animated.createAnimatedComponent(TextInput);

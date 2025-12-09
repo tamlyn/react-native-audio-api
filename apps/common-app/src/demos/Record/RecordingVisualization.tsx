@@ -9,7 +9,7 @@ import React, { useEffect, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { useDerivedValue, useSharedValue } from 'react-native-reanimated';
 
-import Recorder from './Recorder';
+import { audioRecorder as Recorder } from '../../singletons';
 import { RecordingState } from './types';
 
 interface RecordingVisualizationProps {
