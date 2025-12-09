@@ -9,7 +9,7 @@ export interface EventTypeWithValue {
 
 interface OnInterruptionEventType {
   type: 'ended' | 'began';
-  isTransient: boolean;
+  shouldResume: boolean;
 }
 
 interface OnRouteChangeEventType {

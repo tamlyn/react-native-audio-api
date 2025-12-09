@@ -17,7 +17,7 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [positionPercentage, setPositionPercentage] = useState(0);
-  const [shouldResume, setShouldResume] = useState(false);
+  const [wasPlaying, setWasPlaying] = useState(false);
 
   const togglePlayPause = async () => {
     if (isPlaying) {
@@ -125,26 +125,21 @@ const AudioFile: FC = () => {
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       async (event) => {
-        if (event.type === 'began') {
-          // Store whether we were playing before interruption
-          setShouldResume(isPlaying && event.isTransient);
+        if (event.type === 'began' && isPlaying) {
+          await AudioPlayer.pause();
+          setIsPlaying(false);
+          setWasPlaying(true);
+          return;
+        }
 
-          if (isPlaying) {
-            await AudioPlayer.pause();
-            setIsPlaying(false);
-          }
-        } else if (event.type === 'ended') {
-          if (shouldResume) {
-            BackgroundTimer.setTimeout(async () => {
-              AudioManager.setAudioSessionActivity(true);
-              await AudioPlayer.play();
-              setIsPlaying(true);
-              console.log('Auto-resumed after transient interruption');
-            }, 500);
-          }
-
-          // Reset the flag
-          setShouldResume(false);
+        if (event.type === 'ended' && wasPlaying) {
+          BackgroundTimer.setTimeout(async () => {
+            AudioManager.setAudioSessionActivity(true);
+            await AudioPlayer.play();
+            setIsPlaying(true);
+            setWasPlaying(false);
+            console.log('Auto-resumed after transient interruption');
+          }, 500);
         }
       }
     );
@@ -159,7 +154,7 @@ const AudioFile: FC = () => {
       AudioPlayer.reset();
       console.log('Cleanup AudioFile component');
     };
-  }, [fetchAudioBuffer, isPlaying, shouldResume]);
+  }, [fetchAudioBuffer, isPlaying, wasPlaying]);
 
   return (
     <Container centered>
