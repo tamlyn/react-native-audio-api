@@ -1,6 +1,7 @@
 #pragma once
 
 #include <audioapi/utils/Result.hpp>
+#include <atomic>
 #include <memory>
 #include <string>
 #include <vector>

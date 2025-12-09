@@ -3,6 +3,7 @@
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
 
+#include <atomic>
 #include <string>
 #include <memory>
 #include <tuple>
