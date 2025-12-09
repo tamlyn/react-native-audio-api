@@ -11,7 +11,6 @@ import java.util.HashMap
 class AudioFocusListener(
   private val audioManager: WeakReference<AudioManager>,
   private val audioAPIModule: WeakReference<AudioAPIModule>,
-  private val lockScreenManager: WeakReference<LockScreenManager>,
 ) : AudioManager.OnAudioFocusChangeListener {
   private var focusRequest: AudioFocusRequest? = null
 
@@ -22,7 +21,7 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("shouldResume", false)
+            put("isTransient", false)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
@@ -31,7 +30,7 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("shouldResume", false)
+            put("isTransient", true)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
@@ -40,7 +39,7 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "ended")
-            put("shouldResume", true)
+            put("isTransient", false)
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }

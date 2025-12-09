@@ -66,15 +66,18 @@ static AudioSessionManager *_sharedInstance = nil;
         (unsigned long)self.audioSession.categoryOptions);
   }
 
-  if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording != self.allowHapticsAndSounds) {
-    [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
-                                                               error:&error];
+  if (@available(iOS 13.0, *)) {
+    if (self.audioSession.allowHapticsAndSystemSoundsDuringRecording !=
+        self.allowHapticsAndSounds) {
+      [self.audioSession setAllowHapticsAndSystemSoundsDuringRecording:self.allowHapticsAndSounds
+                                                                 error:&error];
 
-    if (error != nil) {
-      NSLog(
-          @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
-          [error debugDescription]);
-      return false;
+      if (error != nil) {
+        NSLog(
+            @"Error while setting allowHapticsAndSystemSoundsDuringRecording: %@",
+            [error debugDescription]);
+        return false;
+      }
     }
   }
 

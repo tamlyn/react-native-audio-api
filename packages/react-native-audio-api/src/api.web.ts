@@ -32,10 +32,15 @@ export {
   IOSMode,
   IOSOption,
   SessionOptions,
-  MediaState,
-  LockScreenInfo,
   PermissionStatus,
 } from './system/types';
+
+export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+} from './web-system';
+
+export * from './system/notification/types';
 
 export {
   IndexSizeError,

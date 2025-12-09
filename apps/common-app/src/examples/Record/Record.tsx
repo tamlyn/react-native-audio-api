@@ -5,6 +5,7 @@ import {
   AudioContext,
   AudioManager,
   AudioRecorder,
+  RecordingNotificationManager,
 } from 'react-native-audio-api';
 
 import { Button, Container } from '../../components';
@@ -25,9 +26,10 @@ const Record: FC = () => {
   const [capturedBuffers, setCapturedBuffers] = useState<AudioBuffer[]>([]);
 
   const verifyPermissions = async () => {
-    const permissions = await AudioManager.requestRecordingPermissions();
+    const recPerm = await AudioManager.requestRecordingPermissions();
+    const notPerm = await AudioManager.requestNotificationPermissions();
 
-    return permissions === 'Granted';
+    return recPerm === 'Granted' && notPerm === 'Granted';
   };
 
   const startEcho = async () => {
@@ -71,6 +73,15 @@ const Record: FC = () => {
     const adapter = audioContext.createRecorderAdapter();
     adapter.connect(audioContext.destination);
     audioRecorder.connect(adapter);
+
+    // This is not a proper way to do it, but sufficient for this example
+    RecordingNotificationManager.register().then(() =>
+      RecordingNotificationManager.show({
+        title: 'Recording...',
+        state: 'recording',
+        enabled: true,
+      })
+    );
 
     const result = audioRecorder.start();
 
@@ -143,6 +154,15 @@ const Record: FC = () => {
       );
       return;
     }
+
+    // This is not a proper way to do it, but sufficient for this example
+    RecordingNotificationManager.register().then(() =>
+      RecordingNotificationManager.show({
+        title: 'Recording for replay...',
+        state: 'recording',
+        enabled: true,
+      })
+    );
 
     const startResult = audioRecorder.start();
 

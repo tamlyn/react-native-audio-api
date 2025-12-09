@@ -1,4 +1,5 @@
 import AudioBuffer from '../core/AudioBuffer';
+import { NotificationEvents } from '../system';
 
 export interface EventEmptyType {}
 
@@ -8,7 +9,7 @@ export interface EventTypeWithValue {
 
 interface OnInterruptionEventType {
   type: 'ended' | 'began';
-  shouldResume: boolean;
+  isTransient: boolean;
 }
 
 interface OnRouteChangeEventType {
@@ -87,9 +88,7 @@ interface AudioAPIEvents {
   recorderError: OnRecorderErrorEventType;
 }
 
-type AudioEvents = SystemEvents & AudioAPIEvents;
-
-export type RemoteCommandEventName = keyof RemoteCommandEvents;
+type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;
 
 export type SystemEventName = keyof SystemEvents;
 export type SystemEventCallback<Name extends SystemEventName> = (
