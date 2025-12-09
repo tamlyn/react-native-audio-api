@@ -15,30 +15,30 @@ namespace audioapi {
 
 class AudioFileProperties {
  public:
-  enum class Format {
-    WAV = 1,
-    CAF = 2,
-    M4A = 3,
-    FLAC = 4,
+  enum class FileDirectory {
+    Document = 0,
+    Cache = 1,
   };
 
-  enum class BitDepth {
-    Bit16 = 1,
-    Bit24 = 2,
-    Bit32 = 3,
+  enum class Format {
+    WAV = 0,
+    CAF = 1,
+    M4A = 2,
+    FLAC = 3,
   };
 
   enum class IOSAudioQuality {
-    Min = 1,
-    Low = 2,
-    Medium = 3,
-    High = 4,
-    Max = 5,
+    Min = 0,
+    Low = 1,
+    Medium = 2,
+    High = 3,
+    Max = 4,
   };
 
-  enum class FileDirectory {
-    Document = 1,
-    Cache = 2,
+  enum class BitDepth {
+    Bit16 = 0,
+    Bit24 = 1,
+    Bit32 = 2,
   };
 
   AudioFileProperties(

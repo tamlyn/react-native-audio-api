@@ -44,23 +44,29 @@ export interface OfflineAudioContextOptions {
 }
 
 export enum FileDirectory {
-  Document = 1,
-  Cache = 2,
+  Document = 0,
+  Cache = 1,
 }
 
 export enum FileFormat {
-  Wav = 1,
-  Caf = 2,
-  M4A = 3,
-  Flac = 4,
+  Wav = 0,
+  Caf = 1,
+  M4A = 2,
+  Flac = 3,
 }
 
 export enum IOSAudioQuality {
-  Min = 1,
-  Low = 2,
-  Medium = 3,
-  High = 4,
-  Max = 5,
+  Min = 0,
+  Low = 1,
+  Medium = 2,
+  High = 3,
+  Max = 4,
+}
+
+export enum BitDepth {
+  Bit16 = 0,
+  Bit24 = 1,
+  Bit32 = 2,
 }
 
 export enum FlacCompressionLevel {
@@ -73,12 +79,6 @@ export enum FlacCompressionLevel {
   L6 = 6,
   L7 = 7,
   L8 = 8,
-}
-
-export enum BitDepth {
-  Bit16 = 1,
-  Bit24 = 2,
-  Bit32 = 3,
 }
 
 export interface FilePresetType {
