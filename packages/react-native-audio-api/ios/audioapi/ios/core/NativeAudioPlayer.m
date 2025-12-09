@@ -61,7 +61,7 @@
   assert(audioEngine != nil);
 
   [audioEngine detachSourceNodeWithId:self.sourceNodeId];
-  [audioEngine stopIfNecessary];
+  [audioEngine stopIfPossible];
   self.sourceNodeId = nil;
 }
 

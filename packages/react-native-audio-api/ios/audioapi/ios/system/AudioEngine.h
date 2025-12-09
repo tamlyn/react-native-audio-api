@@ -41,6 +41,8 @@ typedef NS_ENUM(NSInteger, AudioEngineState) {
 - (void)pauseIfNecessary;
 - (void)stopIfNecessary;
 
+- (void)stopIfPossible;
+
 - (void)restartAudioEngine;
 
 - (void)logAudioEngineState;

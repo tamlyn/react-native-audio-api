@@ -31,14 +31,14 @@ IOSAudioRecorder::IOSAudioRecorder(
   AudioReceiverBlock receiverBlock = ^(const AudioBufferList *inputBuffer, int numFrames) {
     if (usesFileOutput()) {
       if (auto lock = Locker::tryLock(fileWriterMutex_)) {
-        std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+        std::static_pointer_cast<IOSFileWriter>(fileWriter_)
             ->writeAudioData(inputBuffer, numFrames);
       }
     }
 
     if (usesCallback()) {
       if (auto lock = Locker::tryLock(callbackMutex_)) {
-        std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+        std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
             ->receiveAudioData(inputBuffer, numFrames);
       }
     }
@@ -76,7 +76,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
     return Result<std::string, std::string>::Err("Microphone permissions are not granted");
   }
 
-  // TODO: recorder should probably request activating the session and setting the options if not set by user
+  // TODO: recorder should probably request the options if not set by user
   // but lets handle that in another PR
   if (![audioSessionManager isSessionActive]) {
     return Result<std::string, std::string>::Err("Audio session is not active");
@@ -90,11 +90,12 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   // Engine will be started again once the native recorder starts
   [AudioEngine.sharedInstance stopIfNecessary];
 
+  // Estimate the maximum input buffer lengths that can be expected from the sink node
   size_t maxInputBufferLength = [nativeRecorder_ getBufferSize];
   auto inputFormat = [nativeRecorder_ getInputFormat];
 
   if (usesFileOutput()) {
-    auto fileResult = std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+    auto fileResult = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
                           ->openFile(inputFormat, maxInputBufferLength);
 
     if (fileResult.is_err()) {
@@ -106,7 +107,7 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   }
 
   if (usesCallback()) {
-    auto callbackResult = std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+    auto callbackResult = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
                               ->prepare(inputFormat, maxInputBufferLength);
 
     if (callbackResult.is_err()) {
@@ -172,7 +173,7 @@ Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
   fileWriter_ = std::make_shared<IOSFileWriter>(audioEventHandlerRegistry_, properties);
 
   if (!isIdle()) {
-    auto result = std::dynamic_pointer_cast<IOSFileWriter>(fileWriter_)
+    auto result = std::static_pointer_cast<IOSFileWriter>(fileWriter_)
                       ->openFile([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (result.is_err()) {
@@ -273,7 +274,7 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    auto result = std::dynamic_pointer_cast<IOSRecorderCallback>(dataCallback_)
+    auto result = std::static_pointer_cast<IOSRecorderCallback>(dataCallback_)
                       ->prepare([nativeRecorder_ getInputFormat], [nativeRecorder_ getBufferSize]);
 
     if (result.is_err()) {

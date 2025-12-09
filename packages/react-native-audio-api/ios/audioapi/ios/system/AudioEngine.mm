@@ -57,8 +57,6 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId
 {
-  NSLog(@"[AudioEngine] detaching source node with ID: %@", sourceNodeId);
-
   AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
 
   if (sourceNode == nil) {
@@ -75,7 +73,6 @@ static AudioEngine *_sharedInstance = nil;
 - (void)attachInputNode:(AVAudioSinkNode *)inputNode
 {
   self.inputNode = inputNode;
-
   AVAudioFormat *format = [self.audioEngine.inputNode inputFormatForBus:0];
 
   [self.audioEngine attachNode:inputNode];
@@ -105,11 +102,39 @@ static AudioEngine *_sharedInstance = nil;
 
 - (void)onInterruptionEnd:(bool)shouldResume
 {
+  NSError *error = nil;
+
   if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    // If engine was not interrupted, do nothing
+    // Not a real condition, but better be safe than sorry :shrug:
     return;
   }
 
-  // TODO: try to recover
+  // Stop just in case, reset the engine and build it from scratch
+  [self stopIfNecessary];
+  [self.audioEngine reset];
+  [self rebuildAudioEngine];
+
+  // If shouldResume is false, mark the engine as paused and wait
+  // for JS-side resume command
+  // TODO: this should be notified to the user f.e. via Event Emitter
+  if (!shouldResume) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    return;
+  }
+
+  [self.audioEngine prepare];
+  [self.audioEngine startAndReturnError:&error];
+
+  if (error != nil) {
+    NSLog(
+        @"Error while restarting the audio engine after interruption: %@",
+        [error debugDescription]);
+    self.state = AudioEngineState::AudioEngineStateIdle;
+    return;
+  }
+
+  self.state = AudioEngineState::AudioEngineStateRunning;
 }
 
 - (AudioEngineState)getState
@@ -117,6 +142,7 @@ static AudioEngine *_sharedInstance = nil;
   return self.state;
 }
 
+/// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
 - (void)rebuildAudioEngine
 {
   self.audioEngine = [[AVAudioEngine alloc] init];
@@ -135,6 +161,7 @@ static AudioEngine *_sharedInstance = nil;
   }
 }
 
+// @brief Starts the audio engine if not already running.
 - (bool)startEngine
 {
   NSError *error = nil;
@@ -202,6 +229,22 @@ static AudioEngine *_sharedInstance = nil;
 - (void)stopIfNecessary
 {
   if (self.state == AudioEngineState::AudioEngineStateIdle) {
+    return;
+  }
+
+  [self stopEngine];
+}
+
+- (void)stopIfPossible
+{
+  if (self.state == AudioEngineState::AudioEngineStateIdle) {
+    return;
+  }
+
+  bool hasInput = self.inputNode != nil;
+  bool hasSources = [self.sourceNodes count] > 0;
+
+  if (hasInput || hasSources) {
     return;
   }
 

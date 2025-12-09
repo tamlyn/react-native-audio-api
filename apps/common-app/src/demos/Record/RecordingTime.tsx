@@ -17,14 +17,20 @@ interface RecordingTimeProps {
 
 const RecordingTime: React.FC<RecordingTimeProps> = ({ state }) => {
   const durationStringSV = useSharedValue('00:00:000');
+  const isMountedSV = useSharedValue(true);
 
   useEffect(() => {
+    isMountedSV.value = true;
     if (![RecordingState.Recording, RecordingState.Paused].includes(state)) {
       durationStringSV.value = '00:00:00';
       return;
     }
 
     const interval = setInterval(() => {
+      if (!isMountedSV.value) {
+        return;
+      }
+
       const elapsedSeconds = Recorder.getCurrentDuration();
 
       const minutes = Math.floor((elapsedSeconds % 3600) / 60)
@@ -39,10 +45,12 @@ const RecordingTime: React.FC<RecordingTimeProps> = ({ state }) => {
 
       durationStringSV.value = `${minutes}:${seconds}:${milliseconds}`;
     }, 100);
+
     return () => {
+      isMountedSV.value = false;
       clearInterval(interval);
     };
-  }, [state, durationStringSV]);
+  }, [state, durationStringSV, isMountedSV]);
 
   const animatedText = useAnimatedProps(() => {
     return {

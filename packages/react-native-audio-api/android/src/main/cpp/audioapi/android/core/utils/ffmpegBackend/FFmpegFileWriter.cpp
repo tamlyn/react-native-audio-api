@@ -1,3 +1,5 @@
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -508,3 +510,5 @@ CloseFileResult FFmpegAudioFileWriter::finalizeOutput() {
 }
 
 } // namespace audioapi::android::ffmpeg
+
+#endif // RN_AUDIO_API_FFMPEG_DISABLED

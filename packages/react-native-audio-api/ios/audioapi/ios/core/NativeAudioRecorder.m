@@ -95,7 +95,7 @@ static inline uint32_t nextPowerOfTwo(uint32_t x)
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
-  [audioEngine stopIfNecessary];
+  [audioEngine stopIfPossible];
   [audioEngine detachInputNode];
   [audioEngine restartAudioEngine];
 }

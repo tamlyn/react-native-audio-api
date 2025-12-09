@@ -1,3 +1,7 @@
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+
+#pragma once
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 #include <libavformat/avformat.h>
@@ -46,3 +50,7 @@ template<> inline void AvDtor<AVAudioFifo>::operator()(AVAudioFifo* fifo) const 
 }
 
 } // namespace audioapi::android::ffmpeg
+
+#else
+
+#endif // RN_AUDIO_API_FFMPEG_DISABLED

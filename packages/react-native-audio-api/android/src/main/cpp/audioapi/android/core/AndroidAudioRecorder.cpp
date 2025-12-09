@@ -2,7 +2,11 @@
 #include <audioapi/android/core/AndroidAudioRecorder.h>
 #include <audioapi/android/core/utils/AndroidFileWriterBackend.h>
 #include <audioapi/android/core/utils/AndroidRecorderCallback.h>
+
+#if !RN_AUDIO_API_FFMPEG_DISABLED
 #include <audioapi/android/core/utils/ffmpegBackend/FFmpegFileWriter.h>
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
+
 #include <audioapi/android/core/utils/miniaudioBackend/MiniAudioFileWriter.h>
 #include <audioapi/core/sources/RecorderAdapterNode.h>
 #include <audioapi/core/utils/Constants.h>
@@ -29,6 +33,25 @@ AndroidAudioRecorder::AndroidAudioRecorder(
 }
 
 AndroidAudioRecorder::~AndroidAudioRecorder() {
+  {
+    std::scoped_lock dtorLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
+
+    if (usesFileOutput()) {
+      fileOutputEnabled_.store(false, std::memory_order_release);
+      fileWriter_->closeFile();
+    }
+
+    if (usesCallback()) {
+      callbackOutputEnabled_.store(false, std::memory_order_release);
+      dataCallback_->cleanup();
+    }
+
+    if (isConnected()) {
+      isConnected_.store(false, std::memory_order_release);
+      adapterNode_->cleanup();
+    }
+  }
+
   nativeAudioRecorder_.release();
 
   if (mStream_) {
@@ -86,7 +109,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
 
   if (usesFileOutput()) {
     auto fileResult =
-        std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
             ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.is_ok()) {
@@ -98,7 +121,7 @@ Result<std::string, std::string> AndroidAudioRecorder::start() {
   }
 
   if (usesCallback()) {
-    std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
         ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
@@ -172,13 +195,18 @@ Result<std::string, std::string> AndroidAudioRecorder::enableFileOutput(
   if (properties->format == AudioFileProperties::Format::WAV) {
     fileWriter_ = std::make_shared<MiniAudioFileWriter>(audioEventHandlerRegistry_, properties);
   } else {
+#if !RN_AUDIO_API_FFMPEG_DISABLED
     fileWriter_ = std::make_shared<android::ffmpeg::FFmpegAudioFileWriter>(
         audioEventHandlerRegistry_, properties);
+#else
+    return Result<std::string, std::string>::Err(
+        "FFmpeg backend is disabled. Cannot create file writer for the requested format. Use WAV format instead.");
+#endif
   }
 
   if (!isIdle()) {
     auto fileResult =
-        std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+        std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
             ->openFile(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
 
     if (!fileResult.is_ok()) {
@@ -227,7 +255,7 @@ Result<NoneType, std::string> AndroidAudioRecorder::setOnAudioReadyCallback(
       audioEventHandlerRegistry_, sampleRate, bufferLength, channelCount, callbackId);
 
   if (!isIdle()) {
-    std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+    std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
         ->prepare(streamSampleRate_, streamChannelCount_, streamMaxBufferSizeInFrames_);
   }
 
@@ -271,14 +299,14 @@ oboe::DataCallbackResult AndroidAudioRecorder::onAudioReady(
 
   if (usesFileOutput()) {
     if (auto fileWriterLock = Locker::tryLock(fileWriterMutex_)) {
-      std::dynamic_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
+      std::static_pointer_cast<AndroidFileWriterBackend>(fileWriter_)
           ->writeAudioData(audioData, numFrames);
     }
   }
 
   if (usesCallback()) {
     if (auto callbackLock = Locker::tryLock(callbackMutex_)) {
-      std::dynamic_pointer_cast<AndroidRecorderCallback>(dataCallback_)
+      std::static_pointer_cast<AndroidRecorderCallback>(dataCallback_)
           ->receiveAudioData(audioData, numFrames);
     }
   }

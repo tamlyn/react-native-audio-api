@@ -1,3 +1,5 @@
+#if !RN_AUDIO_API_FFMPEG_DISABLED
+
 extern "C" {
 #include <libavcodec/avcodec.h>
 }
@@ -108,3 +110,5 @@ std::string parseErrorCode(int errorCode) {
 }
 
 } // namespace audioapi::android::ffmpeg
+
+#endif // RN_AUDIO_API_FFMPEG_DISABLED
