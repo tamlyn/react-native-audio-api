@@ -47,13 +47,13 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class AudioDestinationNode;
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
+  int channelCount_ = 2;
 
   std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;
   int numberOfOutputs_ = 1;
-  int channelCount_ = 2;
   ChannelCountMode channelCountMode_ = ChannelCountMode::MAX;
   ChannelInterpretation channelInterpretation_ =
 
