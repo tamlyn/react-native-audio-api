@@ -134,7 +134,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   double outputFileSize = 0;
   double outputDuration = 0;
 
-  if (!isRecording()) {
+  if (!isIdle()) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err("Not recording");
   }
 
@@ -253,7 +253,7 @@ bool IOSAudioRecorder::isPaused() const
     return false;
   }
 
-  return currentState == RecorderState::Paused &&
+  return currentState == RecorderState::Paused ||
       [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
 }
 
