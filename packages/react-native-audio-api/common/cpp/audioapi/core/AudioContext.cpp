@@ -15,17 +15,8 @@ AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry) {
-#ifdef ANDROID
-  audioPlayer_ = std::make_shared<AudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#else
-  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
-      this->renderAudio(), sampleRate, destination_->getChannelCount());
-#endif
-
+    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry), playerHasBeenStarted_(false) {
   sampleRate_ = sampleRate;
-  playerHasBeenStarted_ = false;
   state_ = ContextState::SUSPENDED;
 }
 
@@ -33,6 +24,17 @@ AudioContext::~AudioContext() {
   if (!isClosed()) {
     close();
   }
+}
+
+void AudioContext::initialize() {
+  BaseAudioContext::initialize();
+#ifdef ANDROID
+  audioPlayer_ = std::make_shared<AudioPlayer>(
+      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+#else
+  audioPlayer_ = std::make_shared<IOSAudioPlayer>(
+      this->renderAudio(), sampleRate_, destination_->getChannelCount());
+#endif
 }
 
 void AudioContext::close() {

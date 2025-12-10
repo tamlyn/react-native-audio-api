@@ -5,7 +5,9 @@
 
 namespace audioapi {
 
-WorkletSourceNode::WorkletSourceNode(BaseAudioContext *context, WorkletsRunner &&workletRunner)
+WorkletSourceNode::WorkletSourceNode(
+    std::shared_ptr<BaseAudioContext> context,
+    WorkletsRunner &&workletRunner)
     : AudioScheduledSourceNode(context), workletRunner_(std::move(workletRunner)) {
   isInitialized_ = true;
 
@@ -49,10 +51,14 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
+        float time = 0.0f;
+        if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+          time = context->getCurrentTime();
+        }
         return workletRunner_.callUnsafe(
             jsiArray,
             jsi::Value(rt, static_cast<int>(nonSilentFramesToProcess)),
-            jsi::Value(rt, this->context_->getCurrentTime()),
+            jsi::Value(rt, time),
             jsi::Value(rt, static_cast<int>(startOffset)));
       });
 

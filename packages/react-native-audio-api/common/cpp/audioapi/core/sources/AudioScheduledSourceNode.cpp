@@ -16,19 +16,21 @@
 
 namespace audioapi {
 
-AudioScheduledSourceNode::AudioScheduledSourceNode(BaseAudioContext *context)
+AudioScheduledSourceNode::AudioScheduledSourceNode(std::shared_ptr<BaseAudioContext> context)
     : AudioNode(context),
       startTime_(-1.0),
       stopTime_(-1.0),
-      playbackState_(PlaybackState::UNSCHEDULED) {
+      playbackState_(PlaybackState::UNSCHEDULED),
+      audioEventHandlerRegistry_(context->audioEventHandlerRegistry_) {
   numberOfInputs_ = 0;
-  audioEventHandlerRegistry_ = context_->audioEventHandlerRegistry_;
 }
 
 void AudioScheduledSourceNode::start(double when) {
 #if !RN_AUDIO_API_TEST
-  if (auto context = dynamic_cast<AudioContext *>(context_)) {
-    context->start();
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    if (auto audioContext = dynamic_cast<AudioContext *>(context.get())) {
+      audioContext->start();
+    }
   }
 #endif
 
@@ -79,11 +81,12 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     return;
   }
 
-  assert(context_ != nullptr);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return;
+  auto sampleRate = context->getSampleRate();
+  auto firstFrame = context->getCurrentSampleFrame();
 
-  auto sampleRate = context_->getSampleRate();
-
-  size_t firstFrame = context_->getCurrentSampleFrame();
   size_t lastFrame = firstFrame + framesToProcess - 1;
 
   size_t startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);

@@ -19,7 +19,7 @@ class AudioParam;
 
 class AudioNode : public std::enable_shared_from_this<AudioNode> {
  public:
-  explicit AudioNode(BaseAudioContext *context);
+  explicit AudioNode(std::shared_ptr<BaseAudioContext> context);
   virtual ~AudioNode();
 
   int getNumberOfInputs() const;
@@ -48,7 +48,7 @@ class AudioNode : public std::enable_shared_from_this<AudioNode> {
   friend class ConvolverNode;
   friend class DelayNodeHostObject;
 
-  BaseAudioContext *context_;
+  std::weak_ptr<BaseAudioContext> context_;
   std::shared_ptr<AudioBus> audioBus_;
 
   int numberOfInputs_ = 1;

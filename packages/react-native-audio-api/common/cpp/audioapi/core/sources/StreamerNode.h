@@ -64,7 +64,7 @@ class AudioBus;
 
 class StreamerNode : public AudioScheduledSourceNode {
  public:
-  explicit StreamerNode(BaseAudioContext *context);
+  explicit StreamerNode(std::shared_ptr<BaseAudioContext> context);
   ~StreamerNode() override;
 
   /**

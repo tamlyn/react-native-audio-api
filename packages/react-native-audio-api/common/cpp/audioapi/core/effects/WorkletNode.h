@@ -17,11 +17,10 @@ namespace audioapi {
 class WorkletNode : public AudioNode {
  public:
   explicit WorkletNode(
-      BaseAudioContext *context,
+      std::shared_ptr<BaseAudioContext> context,
       size_t bufferLength,
       size_t inputChannelCount,
-      WorkletsRunner &&workletRunner)
-      : AudioNode(context) {}
+      WorkletsRunner &&workletRunner);
 
  protected:
   std::shared_ptr<AudioBus> processNode(
@@ -37,7 +36,7 @@ using namespace facebook;
 class WorkletNode : public AudioNode {
  public:
   explicit WorkletNode(
-      BaseAudioContext *context,
+      std::shared_ptr<BaseAudioContext> context,
       size_t bufferLength,
       size_t inputChannelCount,
       WorkletsRunner &&workletRunner);

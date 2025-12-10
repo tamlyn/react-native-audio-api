@@ -6,10 +6,14 @@
 #include <memory>
 
 namespace audioapi {
-ConstantSourceNode::ConstantSourceNode(BaseAudioContext *context)
-    : AudioScheduledSourceNode(context) {
-  offsetParam_ = std::make_shared<AudioParam>(
-      1.0, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
+ConstantSourceNode::ConstantSourceNode(std::shared_ptr<BaseAudioContext> context)
+    : AudioScheduledSourceNode(context),
+      offsetParam_(
+          std::make_shared<AudioParam>(
+              1.0,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)) {
   isInitialized_ = true;
 }
 
@@ -29,9 +33,10 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
     processingBus->zero();
     return processingBus;
   }
-
-  auto offsetBus = offsetParam_->processARateParam(framesToProcess, context_->getCurrentTime());
-
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr)
+    return processingBus;
+  auto offsetBus = offsetParam_->processARateParam(framesToProcess, context->getCurrentTime());
   auto offsetChannelData = offsetBus->getChannel(0)->getData();
 
   for (int channel = 0; channel < processingBus->getNumberOfChannels(); ++channel) {

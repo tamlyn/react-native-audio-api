@@ -38,21 +38,31 @@
 
 namespace audioapi {
 
-BiquadFilterNode::BiquadFilterNode(BaseAudioContext *context) : AudioNode(context) {
-  frequencyParam_ =
-      std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency(), context);
-  detuneParam_ = std::make_shared<AudioParam>(
-      0.0f,
-      -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
-      context);
-  QParam_ = std::make_shared<AudioParam>(
-      1.0f, MOST_NEGATIVE_SINGLE_FLOAT, MOST_POSITIVE_SINGLE_FLOAT, context);
-  gainParam_ = std::make_shared<AudioParam>(
-      0.0f, MOST_NEGATIVE_SINGLE_FLOAT, 40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT, context);
-  type_ = BiquadFilterType::LOWPASS;
-  isInitialized_ = true;
+BiquadFilterNode::BiquadFilterNode(std::shared_ptr<BaseAudioContext> context)
+    : AudioNode(context),
+      frequencyParam_(
+          std::make_shared<AudioParam>(350.0, 0.0f, context->getNyquistFrequency(), context)),
+      detuneParam_(
+          std::make_shared<AudioParam>(
+              0.0f,
+              -1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              1200 * LOG2_MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      QParam_(
+          std::make_shared<AudioParam>(
+              1.0f,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      gainParam_(
+          std::make_shared<AudioParam>(
+              0.0f,
+              MOST_NEGATIVE_SINGLE_FLOAT,
+              40 * LOG10_MOST_POSITIVE_SINGLE_FLOAT,
+              context)),
+      type_(BiquadFilterType::LOWPASS) {
   channelCountMode_ = ChannelCountMode::MAX;
+  isInitialized_ = true;
 }
 
 std::string BiquadFilterNode::getType() {
@@ -114,7 +124,10 @@ void BiquadFilterNode::getFrequencyResponse(
   double a1 = static_cast<double>(a1_);
   double a2 = static_cast<double>(a2_);
 
-  float nyquist = context_->getNyquistFrequency();
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (!context)
+    return;
+  float nyquist = context->getNyquistFrequency();
 
   for (size_t i = 0; i < length; i++) {
     // Convert from frequency in Hz to normalized frequency [0, 1]
@@ -326,17 +339,22 @@ void BiquadFilterNode::setAllpassCoefficients(float frequency, float Q) {
 }
 
 void BiquadFilterNode::applyFilter() {
-  double currentTime = context_->getCurrentTime();
-
-  float frequency = frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+  // NyquistFrequency is half of the sample rate.
+  // Normalized frequency is therefore:
+  // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
+  float normalizedFrequency;
+  double currentTime;
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    currentTime = context->getCurrentTime();
+    float frequency = frequencyParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
+    normalizedFrequency = frequency / context->getNyquistFrequency();
+  } else {
+    return;
+  }
   float detune = detuneParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   auto Q = QParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
   auto gain = gainParam_->processKRateParam(RENDER_QUANTUM_SIZE, currentTime);
 
-  // NyquistFrequency is half of the sample rate.
-  // Normalized frequency is therefore:
-  // frequency / (sampleRate / 2) = (2 * frequency) / sampleRate
-  float normalizedFrequency = frequency / context_->getNyquistFrequency();
   if (detune != 0.0f) {
     normalizedFrequency *= std::pow(2.0f, detune / 1200.0f);
   }
