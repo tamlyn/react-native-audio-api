@@ -20,7 +20,8 @@ class WorkletNode : public AudioNode {
       std::shared_ptr<BaseAudioContext> context,
       size_t bufferLength,
       size_t inputChannelCount,
-      WorkletsRunner &&workletRunner);
+      WorkletsRunner &&workletRunner)
+      : AudioNode(context) {}
 
  protected:
   std::shared_ptr<AudioBus> processNode(
