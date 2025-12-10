@@ -134,7 +134,7 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
   double outputFileSize = 0;
   double outputDuration = 0;
 
-  if (!isIdle()) {
+  if (isIdle()) {
     return Result<std::tuple<std::string, double, double>, std::string>::Err("Not recording");
   }
 
