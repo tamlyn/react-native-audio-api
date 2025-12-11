@@ -9,6 +9,7 @@ import ControlPanel from './ControlPanel';
 import RecordingTime from './RecordingTime';
 import RecordingVisualization from './RecordingVisualization';
 import Status from './Status';
+import TimeStream from './TimeStream';
 import { RecordingState } from './types';
 
 AudioManager.setAudioSessionOptions({
