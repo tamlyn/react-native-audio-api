@@ -5,6 +5,7 @@
 #include <react/jni/JMessageQueueThread.h>
 #include <memory>
 #include <utility>
+#include <string>
 #include <unordered_map>
 
 namespace audioapi {
@@ -28,4 +29,4 @@ class NativeFileInfo : public jni::JavaClass<NativeFileInfo> {
   }
 };
 
-}
+} // namespace audioapi
