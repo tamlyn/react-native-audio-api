@@ -19,6 +19,7 @@ extern "C" {
 #include <algorithm>
 #include <memory>
 #include <string>
+#include <utility>
 
 constexpr int defaultFrameRatio = 4;
 constexpr int fallbackFIFOSize = 8192;
@@ -72,40 +73,18 @@ OpenFileResult FFmpegAudioFileWriter::openFile(
     return OpenFileResult::Err("Unsupported codec for the given file format");
   }
 
-  result = initializeFormatContext(codec);
-
-  if (!result.is_ok()) {
-    return OpenFileResult::Err(result.unwrap_err());
-  }
-
-  result = configureAndOpenCodec(codec);
-
-  if (!result.is_ok()) {
-    return OpenFileResult::Err(result.unwrap_err());
-  }
-
-  result = initializeStream();
-
-  if (!result.is_ok()) {
-    return OpenFileResult::Err(result.unwrap_err());
-  }
-
-  result = openIOAndWriteHeader();
-
-  if (!result.is_ok()) {
-    return OpenFileResult::Err(result.unwrap_err());
-  }
-
-  result = initializeResampler(streamSampleRate, streamChannelCount);
-
-  if (!result.is_ok()) {
-    return OpenFileResult::Err(result.unwrap_err());
-  }
-
-  initializeBuffers(streamMaxBufferSize);
-
-  isFileOpen_.store(true, std::memory_order_release);
-  return OpenFileResult::Ok(filePath_);
+  return initializeFormatContext(codec)
+      .and_then([this, codec](auto) { return configureAndOpenCodec(codec); })
+      .and_then([this](auto) { return initializeStream(); })
+      .and_then([this](auto) { return openIOAndWriteHeader(); })
+      .and_then([this, streamSampleRate, streamChannelCount](auto) {
+        return initializeResampler(streamSampleRate, streamChannelCount);
+      })
+      .and_then([this, streamMaxBufferSize, filePath = std::move(filePath_)](auto) {
+        initializeBuffers(streamMaxBufferSize);
+        isFileOpen_.store(true, std::memory_order_release);
+        return OpenFileResult::Ok(filePath);
+      });
 }
 
 /// @brief Closes the currently opened audio file, flushing any remaining data and finalizing the file.
