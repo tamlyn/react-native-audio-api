@@ -32,8 +32,10 @@ class UpSampler : public Resampler {
   UpSampler();
 
   // N -> 2N
-  int process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output, int framesToProcess)
-      override;
+  int process(
+      const std::shared_ptr<AudioArray> &input,
+      const std::shared_ptr<AudioArray> &output,
+      int framesToProcess) override;
 
  protected:
   void initializeKernel() final;
@@ -44,8 +46,10 @@ class DownSampler : public Resampler {
   DownSampler();
 
   // N -> N / 2
-  int process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output, int framesToProcess)
-      override;
+  int process(
+      const std::shared_ptr<AudioArray> &input,
+      const std::shared_ptr<AudioArray> &output,
+      int framesToProcess) override;
 
  protected:
   void initializeKernel() final;
