@@ -13,6 +13,7 @@ import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
 import Distorted from './Distorted/Distorted';
 import { PlaybackNotificationExample } from './PlaybackNotification/PlaybackNotification';
+import GuitarPedal from './GuitarPedal/GuitarPedal';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -29,6 +30,7 @@ type NavigationParamList = {
   Streamer: undefined;
   Distorted: undefined;
   PlaybackNotification: undefined;
+  GuitarPedal: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -119,5 +121,11 @@ export const Examples: Example[] = [
     title: 'Playback Notification',
     subtitle: 'Media playback notification with controls',
     screen: PlaybackNotificationExample,
+  },
+  {
+    key: 'GuitarPedal',
+    title: 'Guitar Pedal',
+    subtitle: 'Overdrive/Distortion Effect',
+    screen: GuitarPedal,
   },
 ] as const;

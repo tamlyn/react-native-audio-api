@@ -1,4 +1,7 @@
-import { AudioContext, PlaybackNotificationManager } from 'react-native-audio-api';
+import {
+  AudioContext,
+  PlaybackNotificationManager,
+} from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
