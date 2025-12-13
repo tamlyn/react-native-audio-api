@@ -112,7 +112,7 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
       inputArray->getData(),
       inputArray->getSize() * sizeof(float));
 
-  upSampler->process(inputArray, outputArray);
+  upSampler->process(inputArray, outputArray, 4);
 
   for (size_t i = 0; i < outputArray->getSize(); ++i) {
     auto idx = KERNEL_SIZE - KERNEL_SIZE / 2 + i / 2;
@@ -160,7 +160,7 @@ TEST_F(ResamplerTest, DownSamplerProcess) {
       inputArray->getData(),
       inputArray->getSize() * sizeof(float));
 
-  downSampler->process(inputArray, outputArray);
+  downSampler->process(inputArray, outputArray, 8);
 
   for (size_t i = 0; i < outputArray->getSize() / 8; ++i) {
     auto idx = KERNEL_SIZE + i * 2;
@@ -186,8 +186,8 @@ TEST_F(ResamplerTest, UpDownSamplingProcessThrowsNoErrors) {
 
   auto outputArray = std::make_shared<AudioArray>(8);
 
-  EXPECT_NO_THROW(upSampler->process(inputArray, outputArray));
-  EXPECT_NO_THROW(downSampler->process(outputArray, inputArray));
+  EXPECT_NO_THROW(upSampler->process(inputArray, outputArray, 4));
+  EXPECT_NO_THROW(downSampler->process(outputArray, inputArray, 8));
 
   for (size_t i = 0; i < inputArray->getSize(); ++i) {
     ASSERT_NE(inputArray->getData()[i], 0.0f);
