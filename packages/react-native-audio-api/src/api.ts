@@ -29,6 +29,12 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { default as AudioManager } from './system';
 
+// Notification System
+export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+} from './system/notification';
+
 export {
   AudioWorkletRuntime,
   BiquadFilterType,
@@ -44,11 +50,20 @@ export {
   IOSCategory,
   IOSMode,
   IOSOption,
-  LockScreenInfo,
-  MediaState,
   PermissionStatus,
   SessionOptions,
 } from './system/types';
+
+export {
+  NotificationManager,
+  PlaybackNotificationInfo,
+  PlaybackControlName,
+  PlaybackNotificationEventName,
+  RecordingNotificationInfo,
+  RecordingControlName,
+  RecordingNotificationEventName,
+  SimpleNotificationOptions,
+} from './system/notification';
 
 export {
   IndexSizeError,

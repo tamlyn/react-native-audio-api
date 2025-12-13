@@ -1,16 +1,7 @@
+import { SessionOptions, PermissionStatus, AudioDevicesInfo } from './types';
+import { SystemEventName, SystemEventCallback } from '../events/types';
 import { AudioEventEmitter, AudioEventSubscription } from '../events';
-import {
-  RemoteCommandEventName,
-  SystemEventCallback,
-  SystemEventName,
-} from '../events/types';
 import { NativeAudioAPIModule } from '../specs';
-import {
-  AudioDevicesInfo,
-  LockScreenInfo,
-  PermissionStatus,
-  SessionOptions,
-} from './types';
 
 class AudioManager {
   private readonly audioEventEmitter: AudioEventEmitter;
@@ -39,14 +30,6 @@ class AudioManager {
     NativeAudioAPIModule!.disableSessionManagement();
   }
 
-  setLockScreenInfo(info: LockScreenInfo) {
-    NativeAudioAPIModule!.setLockScreenInfo(info);
-  }
-
-  resetLockScreenInfo() {
-    NativeAudioAPIModule!.resetLockScreenInfo();
-  }
-
   observeAudioInterruptions(enabled: boolean) {
     NativeAudioAPIModule!.observeAudioInterruptions(enabled);
   }
@@ -72,10 +55,6 @@ class AudioManager {
     NativeAudioAPIModule!.observeVolumeChanges(enabled);
   }
 
-  enableRemoteCommand(name: RemoteCommandEventName, enabled: boolean) {
-    NativeAudioAPIModule!.enableRemoteCommand(name, enabled);
-  }
-
   addSystemEventListener<Name extends SystemEventName>(
     name: Name,
     callback: SystemEventCallback<Name>
@@ -89,6 +68,14 @@ class AudioManager {
 
   async checkRecordingPermissions(): Promise<PermissionStatus> {
     return NativeAudioAPIModule!.checkRecordingPermissions();
+  }
+
+  async requestNotificationPermissions(): Promise<PermissionStatus> {
+    return NativeAudioAPIModule!.requestNotificationPermissions();
+  }
+
+  async checkNotificationPermissions(): Promise<PermissionStatus> {
+    return NativeAudioAPIModule!.checkNotificationPermissions();
   }
 
   async getDevicesInfo(): Promise<AudioDevicesInfo> {

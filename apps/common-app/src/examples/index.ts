@@ -12,6 +12,7 @@ import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Worklets from './Worklets/Worklets';
 import Streaming from './Streaming/Streaming';
 import Distorted from './Distorted/Distorted';
+import { PlaybackNotificationExample } from './PlaybackNotification/PlaybackNotification';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -27,6 +28,7 @@ type NavigationParamList = {
   Worklets: undefined;
   Streamer: undefined;
   Distorted: undefined;
+  PlaybackNotification: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -111,5 +113,11 @@ export const Examples: Example[] = [
     title: 'Distorted Audio',
     subtitle: 'Apply non-linear distortion effect to audio',
     screen: Distorted,
+  },
+  {
+    key: 'PlaybackNotification',
+    title: 'Playback Notification',
+    subtitle: 'Media playback notification with controls',
+    screen: PlaybackNotificationExample,
   },
 ] as const;

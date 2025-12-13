@@ -1,4 +1,5 @@
 import AudioBuffer from '../core/AudioBuffer';
+import { NotificationEvents } from '../system';
 
 export interface EventEmptyType {}
 
@@ -8,7 +9,7 @@ export interface EventTypeWithValue {
 
 interface OnInterruptionEventType {
   type: 'ended' | 'began';
-  shouldResume: boolean;
+  isTransient: boolean;
 }
 
 interface OnRouteChangeEventType {
@@ -23,22 +24,7 @@ interface OnRouteChangeEventType {
     | 'NoSuitableRouteForCategory';
 }
 
-interface RemoteCommandEvents {
-  remotePlay: EventEmptyType;
-  remotePause: EventEmptyType;
-  remoteStop: EventEmptyType;
-  remoteTogglePlayPause: EventEmptyType;
-  remoteChangePlaybackRate: EventTypeWithValue;
-  remoteNextTrack: EventEmptyType;
-  remotePreviousTrack: EventEmptyType;
-  remoteSkipForward: EventTypeWithValue;
-  remoteSkipBackward: EventTypeWithValue;
-  remoteSeekForward: EventEmptyType;
-  remoteSeekBackward: EventEmptyType;
-  remoteChangePlaybackPosition: EventTypeWithValue;
-}
-
-type SystemEvents = RemoteCommandEvents & {
+type SystemEvents = {
   volumeChange: EventTypeWithValue;
   interruption: OnInterruptionEventType;
   routeChange: OnRouteChangeEventType;
@@ -64,9 +50,7 @@ interface AudioAPIEvents {
   systemStateChanged: EventEmptyType; // to change
 }
 
-type AudioEvents = SystemEvents & AudioAPIEvents;
-
-export type RemoteCommandEventName = keyof RemoteCommandEvents;
+type AudioEvents = SystemEvents & AudioAPIEvents & NotificationEvents;
 
 export type SystemEventName = keyof SystemEvents;
 export type SystemEventCallback<Name extends SystemEventName> = (

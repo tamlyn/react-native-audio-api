@@ -1,6 +1,7 @@
 package com.swmansion.audioapi
 
 import com.facebook.jni.HybridData
+import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.Promise
 import com.facebook.react.bridge.ReactApplicationContext
@@ -9,6 +10,7 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.common.annotations.FrameworkAPI
 import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
+import com.swmansion.audioapi.system.ForegroundServiceManager
 import com.swmansion.audioapi.system.MediaSessionManager
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
@@ -84,7 +86,8 @@ class AudioAPIModule(
 
   override fun invalidate() {
     reactContext.get()?.removeLifecycleEventListener(this)
-    // think about cleaning up resources, singletons etc.
+    // Cleanup foreground service manager
+    ForegroundServiceManager.cleanup()
   }
 
   override fun getDevicePreferredSampleRate(): Double = MediaSessionManager.getDevicePreferredSampleRate()
@@ -109,21 +112,6 @@ class AudioAPIModule(
     // nothing to do here
   }
 
-  override fun setLockScreenInfo(info: ReadableMap?) {
-    MediaSessionManager.setLockScreenInfo(info)
-  }
-
-  override fun resetLockScreenInfo() {
-    MediaSessionManager.resetLockScreenInfo()
-  }
-
-  override fun enableRemoteCommand(
-    name: String?,
-    enabled: Boolean,
-  ) {
-    MediaSessionManager.enableRemoteCommand(name!!, enabled)
-  }
-
   override fun observeAudioInterruptions(enabled: Boolean) {
     MediaSessionManager.observeAudioInterruptions(enabled)
   }
@@ -145,7 +133,167 @@ class AudioAPIModule(
     promise.resolve(MediaSessionManager.checkRecordingPermissions())
   }
 
+  override fun requestNotificationPermissions(promise: Promise) {
+    val permissionRequestListener = PermissionRequestListener(promise)
+    MediaSessionManager.requestNotificationPermissions(permissionRequestListener)
+  }
+
+  override fun checkNotificationPermissions(promise: Promise) {
+    promise.resolve(MediaSessionManager.checkNotificationPermissions())
+  }
+
   override fun getDevicesInfo(promise: Promise) {
     promise.resolve(MediaSessionManager.getDevicesInfo())
+  }
+
+  // New notification system methods
+  override fun registerNotification(
+    type: String?,
+    key: String?,
+    promise: Promise?,
+  ) {
+    try {
+      if (type == null || key == null) {
+        val result = Arguments.createMap()
+        result.putBoolean("success", false)
+        result.putString("error", "Type and key are required")
+        promise?.resolve(result)
+        return
+      }
+
+      MediaSessionManager.registerNotification(type, key)
+
+      val result = Arguments.createMap()
+      result.putBoolean("success", true)
+      promise?.resolve(result)
+    } catch (e: Exception) {
+      val result = Arguments.createMap()
+      result.putBoolean("success", false)
+      result.putString("error", e.message ?: "Unknown error")
+      promise?.resolve(result)
+    }
+  }
+
+  override fun showNotification(
+    key: String?,
+    options: ReadableMap?,
+    promise: Promise?,
+  ) {
+    try {
+      if (key == null) {
+        val result = Arguments.createMap()
+        result.putBoolean("success", false)
+        result.putString("error", "Key is required")
+        promise?.resolve(result)
+        return
+      }
+
+      MediaSessionManager.showNotification(key, options)
+
+      val result = Arguments.createMap()
+      result.putBoolean("success", true)
+      promise?.resolve(result)
+    } catch (e: Exception) {
+      val result = Arguments.createMap()
+      result.putBoolean("success", false)
+      result.putString("error", e.message ?: "Unknown error")
+      promise?.resolve(result)
+    }
+  }
+
+  override fun updateNotification(
+    key: String?,
+    options: ReadableMap?,
+    promise: Promise?,
+  ) {
+    try {
+      if (key == null) {
+        val result = Arguments.createMap()
+        result.putBoolean("success", false)
+        result.putString("error", "Key is required")
+        promise?.resolve(result)
+        return
+      }
+
+      MediaSessionManager.updateNotification(key, options)
+
+      val result = Arguments.createMap()
+      result.putBoolean("success", true)
+      promise?.resolve(result)
+    } catch (e: Exception) {
+      val result = Arguments.createMap()
+      result.putBoolean("success", false)
+      result.putString("error", e.message ?: "Unknown error")
+      promise?.resolve(result)
+    }
+  }
+
+  override fun hideNotification(
+    key: String?,
+    promise: Promise?,
+  ) {
+    try {
+      if (key == null) {
+        val result = Arguments.createMap()
+        result.putBoolean("success", false)
+        result.putString("error", "Key is required")
+        promise?.resolve(result)
+        return
+      }
+
+      MediaSessionManager.hideNotification(key)
+
+      val result = Arguments.createMap()
+      result.putBoolean("success", true)
+      promise?.resolve(result)
+    } catch (e: Exception) {
+      val result = Arguments.createMap()
+      result.putBoolean("success", false)
+      result.putString("error", e.message ?: "Unknown error")
+      promise?.resolve(result)
+    }
+  }
+
+  override fun unregisterNotification(
+    key: String?,
+    promise: Promise?,
+  ) {
+    try {
+      if (key == null) {
+        val result = Arguments.createMap()
+        result.putBoolean("success", false)
+        result.putString("error", "Key is required")
+        promise?.resolve(result)
+        return
+      }
+
+      MediaSessionManager.unregisterNotification(key)
+
+      val result = Arguments.createMap()
+      result.putBoolean("success", true)
+      promise?.resolve(result)
+    } catch (e: Exception) {
+      val result = Arguments.createMap()
+      result.putBoolean("success", false)
+      result.putString("error", e.message ?: "Unknown error")
+      promise?.resolve(result)
+    }
+  }
+
+  override fun isNotificationActive(
+    key: String?,
+    promise: Promise?,
+  ) {
+    try {
+      if (key == null) {
+        promise?.resolve(false)
+        return
+      }
+
+      val isActive = MediaSessionManager.isNotificationActive(key)
+      promise?.resolve(isActive)
+    } catch (e: Exception) {
+      promise?.resolve(false)
+    }
   }
 }
