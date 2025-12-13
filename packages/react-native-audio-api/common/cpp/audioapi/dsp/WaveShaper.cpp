@@ -46,33 +46,33 @@ void WaveShaper::setOversample(OverSampleType type) {
   }
 }
 
-void WaveShaper::process(const std::shared_ptr<AudioArray> &channelData) {
+void WaveShaper::process(const std::shared_ptr<AudioArray> &channelData, int framesToProcess) {
   if (curve_ == nullptr) {
     return;
   }
 
   switch (oversample_) {
     case OverSampleType::OVERSAMPLE_2X:
-      process2x(channelData);
+      process2x(channelData, framesToProcess);
       break;
     case OverSampleType::OVERSAMPLE_4X:
-      process4x(channelData);
+      process4x(channelData, framesToProcess);
       break;
     case OverSampleType::OVERSAMPLE_NONE:
     default:
-      processNone(channelData);
+      processNone(channelData, framesToProcess);
       break;
   }
 }
 
 // based on https://webaudio.github.io/web-audio-api/#WaveShaperNode
-void WaveShaper::processNone(const std::shared_ptr<AudioArray> &channelData) {
+void WaveShaper::processNone(const std::shared_ptr<AudioArray> &channelData, int framesToProcess) {
   auto curveArray = curve_->getData();
   auto curveSize = curve_->getSize();
 
   auto data = channelData->getData();
 
-  for (int i = 0; i < channelData->getSize(); i++) {
+  for (int i = 0; i < framesToProcess; i++) {
     float v = (static_cast<float>(curveSize) - 1) * 0.5f * (data[i] + 1.0f);
 
     if (v <= 0) {
@@ -88,18 +88,18 @@ void WaveShaper::processNone(const std::shared_ptr<AudioArray> &channelData) {
   }
 }
 
-void WaveShaper::process2x(const std::shared_ptr<AudioArray> &channelData) {
-  upSampler_->process(channelData, tempBuffer2x_);
-  processNone(tempBuffer2x_);
-  downSampler_->process(tempBuffer2x_, channelData);
+void WaveShaper::process2x(const std::shared_ptr<AudioArray> &channelData, int framesToProcess) {
+  auto outputFrames = upSampler_->process(channelData, tempBuffer2x_, framesToProcess);
+  processNone(tempBuffer2x_, outputFrames);
+  downSampler_->process(tempBuffer2x_, channelData, outputFrames);
 }
 
-void WaveShaper::process4x(const std::shared_ptr<AudioArray> &channelData) {
-  upSampler_->process(channelData, tempBuffer2x_);
-  upSampler2_->process(tempBuffer2x_, tempBuffer4x_);
-  processNone(tempBuffer4x_);
-  downSampler2_->process(tempBuffer4x_, tempBuffer2x_);
-  downSampler_->process(tempBuffer2x_, channelData);
+void WaveShaper::process4x(const std::shared_ptr<AudioArray> &channelData, int framesToProcess) {
+  auto upSamplerOutputFrames = upSampler_->process(channelData, tempBuffer2x_, framesToProcess);
+  auto upSampler2OutputFrames = upSampler2_->process(tempBuffer2x_, tempBuffer4x_, upSamplerOutputFrames);
+  processNone(tempBuffer4x_, upSampler2OutputFrames);
+  auto downSampler2OutputFrames = downSampler2_->process(tempBuffer4x_, tempBuffer2x_, upSampler2OutputFrames);
+  downSampler_->process(tempBuffer2x_, channelData, downSampler2OutputFrames);
 }
 
 } // namespace audioapi

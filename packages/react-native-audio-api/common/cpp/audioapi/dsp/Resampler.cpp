@@ -119,15 +119,14 @@ void UpSampler::initializeKernel() {
   std::reverse(kData, kData + KERNEL_SIZE);
 }
 
-void UpSampler::process(
+int UpSampler::process(
     const std::shared_ptr<AudioArray> &input,
-    const std::shared_ptr<AudioArray> &output) {
+    const std::shared_ptr<AudioArray> &output,
+    int framesToProcess) {
 
-  auto inputSize = input->getSize();
-  if (inputSize > MAX_BLOCK_SIZE)
-    return;
-  if (output->getSize() < inputSize * 2)
-    return;
+  if (framesToProcess > MAX_BLOCK_SIZE) {
+    return 0;
+  }
 
   const float *inputData = input->getData();
   float *outputData = output->getData();
@@ -135,13 +134,13 @@ void UpSampler::process(
   const float *kernel = kernel_->getData();
 
   // move previous tail to front
-  std::memmove(state, state + inputSize, KERNEL_SIZE * sizeof(float));
+  std::memmove(state, state + framesToProcess, KERNEL_SIZE * sizeof(float));
   // copy new input
-  std::memcpy(state + KERNEL_SIZE, inputData, inputSize * sizeof(float));
+  std::memcpy(state + KERNEL_SIZE, inputData, framesToProcess * sizeof(float));
 
   int halfKernel = KERNEL_SIZE / 2;
 
-  for (int i = 0; i < inputSize; ++i) {
+  for (int i = 0; i < framesToProcess; ++i) {
     int centerIdx = KERNEL_SIZE + i;
 
     // direct copy for even samples
@@ -150,6 +149,8 @@ void UpSampler::process(
     // convolution for odd samples
     outputData[2 * i + 1] = computeConvolution(&state[centerIdx - halfKernel], kernel);
   }
+
+  return framesToProcess * 2;
 }
 
 DownSampler::DownSampler() : Resampler() {
@@ -177,14 +178,13 @@ void DownSampler::initializeKernel() {
   std::reverse(kData, kData + KERNEL_SIZE);
 }
 
-void DownSampler::process(
+int DownSampler::process(
     const std::shared_ptr<AudioArray> &input,
-    const std::shared_ptr<AudioArray> &output) {
-  auto inputSize = input->getSize();
-  if (inputSize > MAX_BLOCK_SIZE * 2)
-    return;
-  if (output->getSize() < inputSize / 2)
-    return;
+    const std::shared_ptr<AudioArray> &output,
+    int framesToProcess) {
+  if (framesToProcess > MAX_BLOCK_SIZE * 2) {
+    return 0;
+  }
 
   const float *inputData = input->getData();
   float *outputData = output->getData();
@@ -193,11 +193,11 @@ void DownSampler::process(
   int halfKernel = KERNEL_SIZE / 2;
 
   // move history (shift by amount processed last time, which is inputSize)
-  std::memmove(state, state + inputSize, KERNEL_SIZE * sizeof(float));
+  std::memmove(state, state + framesToProcess, KERNEL_SIZE * sizeof(float));
   // copy new input
-  std::memcpy(state + KERNEL_SIZE, inputData, inputSize * sizeof(float));
+  std::memcpy(state + KERNEL_SIZE, inputData, framesToProcess * sizeof(float));
 
-  auto outputCount = inputSize / 2;
+  auto outputCount = framesToProcess / 2;
 
   for (int i = 0; i < outputCount; ++i) {
     int centerIdx = KERNEL_SIZE + (2 * i);
@@ -205,5 +205,7 @@ void DownSampler::process(
     // convolution for downsampled samples
     outputData[i] = computeConvolution(&state[centerIdx - halfKernel], kernel);
   }
+
+  return outputCount;
 }
 } // namespace audioapi

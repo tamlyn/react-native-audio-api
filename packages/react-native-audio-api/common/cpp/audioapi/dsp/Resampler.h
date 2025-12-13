@@ -13,9 +13,10 @@ class Resampler {
   Resampler();
   virtual ~Resampler() = default;
 
-  virtual void process(
+  virtual int process(
       const std::shared_ptr<AudioArray> &input,
-      const std::shared_ptr<AudioArray> &output) = 0;
+      const std::shared_ptr<AudioArray> &output,
+      int framesToProcess) = 0;
   void reset();
 
  protected:
@@ -31,7 +32,7 @@ class UpSampler : public Resampler {
   UpSampler();
 
   // N -> 2N
-  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output)
+  int process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output, int framesToProcess)
       override;
 
  protected:
@@ -43,7 +44,7 @@ class DownSampler : public Resampler {
   DownSampler();
 
   // N -> N / 2
-  void process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output)
+  int process(const std::shared_ptr<AudioArray> &input, const std::shared_ptr<AudioArray> &output, int framesToProcess)
       override;
 
  protected:

@@ -70,7 +70,7 @@ std::shared_ptr<AudioBus> WaveShaperNode::processNode(
   for (int channel = 0; channel < processingBus->getNumberOfChannels(); channel++) {
     auto channelData = processingBus->getSharedChannel(channel);
 
-    waveShapers_[channel]->process(channelData);
+    waveShapers_[channel]->process(channelData, framesToProcess);
   }
 
   return processingBus;
