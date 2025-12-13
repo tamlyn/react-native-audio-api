@@ -24,6 +24,11 @@
 
 namespace audioapi {
 
+/// @brief Constructs an IOSAudioRecorder instance.
+/// This constructor initializes the receiver block and native side recorder wrapper (AVAudioSinkNode).
+/// All other necessary fields (like buffers) are initialized in start() method.
+/// This "method" should be called from the JS thread only.
+/// @param audioEventHandlerRegistry Shared pointer to the AudioEventHandlerRegistry for event handling.
 IOSAudioRecorder::IOSAudioRecorder(
     const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
     : AudioRecorder(audioEventHandlerRegistry)
@@ -63,6 +68,9 @@ IOSAudioRecorder::~IOSAudioRecorder()
   [nativeRecorder_ cleanup];
 }
 
+/// @brief Starts the audio recording process and prepares necessary resources.
+/// This method should be called from the JS thread only.
+/// @returns Result containing the file path if recording started successfully, or an error message.
 Result<std::string, std::string> IOSAudioRecorder::start()
 {
   if (isRecording()) {
@@ -126,6 +134,10 @@ Result<std::string, std::string> IOSAudioRecorder::start()
   return Result<std::string, std::string>::Ok(filePath_);
 }
 
+/// @brief Stops the audio recording process and releases resources.
+/// It finalizes any data receiver and closes the stream.
+/// This method should be called from the JS thread only.
+/// @returns Result containing a tuple of the output file path, size, and duration if stopped successfully, or an error message.
 Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::stop()
 {
   std::scoped_lock stopLock(callbackMutex_, fileWriterMutex_, adapterNodeMutex_);
@@ -166,6 +178,11 @@ Result<std::tuple<std::string, double, double>, std::string> IOSAudioRecorder::s
       std::make_tuple(filePath, outputFileSize, outputDuration));
 }
 
+/// @brief Enables file output for the recorder with specified properties.
+/// If the recorder is already active, it will open the file for writing immediately.
+/// This method should be called from the JS thread only.
+/// @param properties Shared pointer to AudioFileProperties defining the output file format.
+/// @returns Result containing the output file path if enabled successfully, or an error message.
 Result<std::string, std::string> IOSAudioRecorder::enableFileOutput(
     std::shared_ptr<AudioFileProperties> properties)
 {
@@ -197,6 +214,10 @@ void IOSAudioRecorder::disableFileOutput()
   fileWriter_ = nullptr;
 }
 
+/// @brief Connects a RecorderAdapterNode to the recorder for audio data routing.
+/// If the recorder is already active, it will initialize the adapter node immediately.
+/// This method should be called from the JS thread only.
+/// @param node Shared pointer to the RecorderAdapterNode to connect.
 void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
 {
   std::scoped_lock lock(adapterNodeMutex_);
@@ -210,6 +231,9 @@ void IOSAudioRecorder::connect(const std::shared_ptr<RecorderAdapterNode> &node)
   isConnected_.store(true, std::memory_order_release);
 }
 
+/// @brief Disconnects the currently connected RecorderAdapterNode from the recorder.
+/// If the recorder is currently active, it will stop routing audio data immediately.
+/// This method should be called from the JS thread only.
 void IOSAudioRecorder::disconnect()
 {
   std::scoped_lock lock(adapterNodeMutex_);
@@ -237,6 +261,11 @@ void IOSAudioRecorder::resume()
   state_.store(RecorderState::Recording, std::memory_order_release);
 }
 
+/// @brief Checks if the recorder is currently recording.
+/// Besides recorder internal state, it also check if the audio engine is running.
+/// this helps with restarts after interruptions or other audio session changes.
+/// This method can be called from any thread.
+/// @returns True if recording, false otherwise.
 bool IOSAudioRecorder::isRecording() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
@@ -244,6 +273,11 @@ bool IOSAudioRecorder::isRecording() const
       [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
+/// @brief Checks if the recorder is currently paused.
+/// Besides recorder internal state, it also check if the audio engine is running.
+/// this helps with restarts after interruptions or other audio session changes.
+/// This method can be called from any thread.
+/// @returns True if paused, false otherwise.
 bool IOSAudioRecorder::isPaused() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
@@ -257,11 +291,22 @@ bool IOSAudioRecorder::isPaused() const
       [audioEngine getState] != AudioEngineState::AudioEngineStateRunning;
 }
 
+/// @brief Checks if the recorder is currently idle (not recording or paused).
+/// This method can be called from any thread.
+/// @returns True if idle, false otherwise.
 bool IOSAudioRecorder::isIdle() const
 {
   return state_.load(std::memory_order_acquire) == RecorderState::Idle;
 }
 
+/// @brief Sets the callback to be invoked when audio data is ready.
+/// If the recorder is already active, it will prepare the callback for receiving audio data immediately.
+/// This method should be called from the JS thread only.
+/// @param sampleRate Desired sample rate for the callback audio data.
+/// @param bufferLength Desired buffer length in frames for the callback audio data.
+/// @param channelCount Number of channels for the callback audio data.
+/// @param callbackId Identifier for the JS callback to be invoked.
+/// @returns Success status or Error status with message.
 Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
     float sampleRate,
     size_t bufferLength,
@@ -288,6 +333,9 @@ Result<NoneType, std::string> IOSAudioRecorder::setOnAudioReadyCallback(
   return Result<NoneType, std::string>::Ok(None);
 }
 
+/// @brief Clears the audio data callback.
+/// If the recorder is currently active, it will stop invoking the callback immediately.
+/// This method should be called from the JS thread only.
 void IOSAudioRecorder::clearOnAudioReadyCallback()
 {
   std::scoped_lock lock(callbackMutex_);
