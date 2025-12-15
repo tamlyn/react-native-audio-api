@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   cancelAnimation,
   Easing,
@@ -10,7 +10,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import constants from './constants';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
+const windowWidth = Dimensions.get('window').width;
 
 const formatTime = (seconds: number) => {
   const m = Math.floor(seconds / 60);
@@ -26,7 +26,7 @@ interface TimeStreamProps {
 function generateInitialTimestamps() {
   const timestamps: number[] = [];
 
-  for (let i = 0; i < 15; i++) {
+  for (let i = -5; i < 15; i++) {
     timestamps.push(i);
   }
 
@@ -34,7 +34,9 @@ function generateInitialTimestamps() {
 }
 
 const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
-  const [timestamps, setTimestamps] = useState<number[]>([]);
+  const [timestamps, setTimestamps] = useState<number[]>(
+    generateInitialTimestamps()
+  );
   const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
@@ -50,7 +52,7 @@ const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
             return prev;
           }
 
-          const cleanList = prev.filter((t) => t > elapsedSeconds - 15);
+          const cleanList = prev.filter((t) => t > elapsedSeconds - 5);
           return [...cleanList, futureSecond];
         });
       }, 500);
@@ -70,7 +72,7 @@ const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="none">
       {timestamps.map((seconds) => (
-        <FlyingTimestamp
+        <Timestamp
           key={seconds}
           spawnSeconds={seconds}
           durationMS={durationMS}
@@ -83,41 +85,44 @@ const TimeStream: React.FC<TimeStreamProps> = ({ isRecording, durationMS }) => {
 
 export default TimeStream;
 
-interface FlyingTimestampProps {
+const textWidth = 60;
+
+interface TimestampProps {
   spawnSeconds: number;
   durationMS: SharedValue<number>;
   isRecording: boolean;
 }
 
-const FlyingTimestamp: React.FC<FlyingTimestampProps> = ({
+const subSeconds = new Array(7).fill(0).map((_, i) => `sub-${i}`);
+
+const Timestamp: React.FC<TimestampProps> = ({
   spawnSeconds,
   durationMS,
   isRecording,
 }) => {
-  const translateX = useSharedValue(SCREEN_WIDTH);
-
-  const TEXT_WIDTH = 60;
-  const VISUAL_NUDGE = 0;
+  const translateX = useSharedValue(2 * windowWidth);
 
   useEffect(() => {
+    const originalPositionOfFirstTimestamp = windowWidth - textWidth / 2;
+    const currentPositionOfFirstTimestamp =
+      originalPositionOfFirstTimestamp -
+      durationMS.value * constants.pixelsPerMS;
+
+    const startX =
+      currentPositionOfFirstTimestamp +
+      spawnSeconds * constants.pixelsPerSecond;
+
+    const endX = -constants.pixelsPerSecond * 2;
+
+    const totalDistance = startX - endX;
+    const duration = (totalDistance / constants.pixelsPerSecond) * 1000;
+
+    translateX.value = startX;
+
     if (!isRecording) {
       cancelAnimation(translateX);
       return;
     }
-
-    const elapsedSeconds = Math.floor(durationMS.value / 1000);
-    const secondsDiff = spawnSeconds - elapsedSeconds;
-
-    const pixelOffset = secondsDiff * constants.pixelsPerSecond;
-
-    const startX = SCREEN_WIDTH + pixelOffset - TEXT_WIDTH / 2 + VISUAL_NUDGE;
-
-    translateX.value = startX;
-
-    const endX = -100;
-    const totalDistance = startX - endX;
-
-    const duration = (totalDistance / constants.pixelsPerSecond) * 1000;
 
     translateX.value = withTiming(endX, {
       duration: duration,
@@ -125,18 +130,36 @@ const FlyingTimestamp: React.FC<FlyingTimestampProps> = ({
     });
   }, [spawnSeconds, durationMS, translateX, isRecording]);
 
-  const style = useAnimatedStyle(() => ({
-    transform: [{ translateX: translateX.value }],
+  const containerStyle = useAnimatedStyle(() => ({
     position: 'absolute',
-    bottom: 0,
+    bottom: 5,
     left: 0,
-    width: TEXT_WIDTH,
+    width: textWidth,
+    alignItems: 'center',
+    transform: [{ translateX: translateX.value }],
   }));
 
   return (
-    <Animated.Text style={[styles.text, style]}>
-      {formatTime(spawnSeconds)}
-    </Animated.Text>
+    <>
+      <Animated.View style={containerStyle}>
+        <View style={styles.smallIndicatorContainer}>
+          {subSeconds.map((key, index) => (
+            <View
+              key={key}
+              style={[
+                styles.subSecondIndicator,
+                (index === 0 || index === subSeconds.length - 1) &&
+                  styles.hidden,
+              ]}
+            />
+          ))}
+        </View>
+        <View style={styles.timeIndicatorLarge} />
+        <Text style={[styles.text, spawnSeconds < 0 && styles.hidden]}>
+          {formatTime(spawnSeconds)}
+        </Text>
+      </Animated.View>
+    </>
   );
 };
 
@@ -147,5 +170,29 @@ const styles = StyleSheet.create({
     fontFamily: 'Menlo',
     fontWeight: '600',
     textAlign: 'center',
+  },
+  timeIndicatorLarge: {
+    width: 2,
+    height: 20,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    marginBottom: 4,
+  },
+  smallIndicatorContainer: {
+    position: 'absolute',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: constants.pixelsPerSecond + 2,
+    height: 15,
+    top: 10,
+    left: textWidth / 2 - 1,
+  },
+  subSecondIndicator: {
+    height: 10,
+    width: 2,
+    backgroundColor: 'rgba(255,255,255, 0.3)',
+    marginBottom: 4,
+  },
+  hidden: {
+    opacity: 0,
   },
 });

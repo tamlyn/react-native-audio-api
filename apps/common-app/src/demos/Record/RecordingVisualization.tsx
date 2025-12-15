@@ -7,35 +7,141 @@ import {
   useCanvasSize,
 } from '@shopify/react-native-skia';
 import React, { useEffect, useMemo } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, View } from 'react-native';
 import {
   cancelAnimation,
   Easing,
+  SharedValue,
   useDerivedValue,
   useSharedValue,
   withRepeat,
   withTiming,
 } from 'react-native-reanimated';
 
+// import { Spacer } from '../../components';
 import { audioRecorder as Recorder } from '../../singletons';
 import constants from './constants';
-import Ruler from './Ruler';
 import TimeStream from './TimeStream';
 import { RecordingState } from './types';
+
+const { width: windowWidth } = Dimensions.get('window');
+
+const historyNumBars = Math.floor(
+  windowWidth / (constants.historyBarWidth + constants.historyBarGap)
+);
+
+function getInitialHistory() {
+  return new Array(historyNumBars).fill(-1);
+}
 
 interface RecordingVisualizationProps {
   state: RecordingState;
 }
 
+interface DrawDefaultWaveformParams {
+  normalized: number;
+  size: { width: number; height: number };
+  barHeights: SharedValue<number[]>;
+  translateX: SharedValue<number>;
+  lastIndex: SharedValue<number>;
+  numBars: number;
+}
+
+interface DrawHistoryWaveformParams {
+  normalized: number;
+  lifetimeSize: { width: number; height: number };
+  history: SharedValue<number[]>;
+  historyHead: SharedValue<number>;
+  durationMS: SharedValue<number>;
+  historyMidpointMS: SharedValue<number>;
+}
+
+function drawDefaultWaveform(params: DrawDefaultWaveformParams) {
+  const { normalized, size, barHeights, translateX, lastIndex, numBars } =
+    params;
+
+  const value = normalized * size.height * 0.8;
+  const newBarHeights = [...barHeights.value];
+
+  let currentIndex =
+    newBarHeights.length / 2 -
+    1 +
+    Math.floor(-translateX.value / (constants.barWidth + constants.barGap));
+
+  newBarHeights[currentIndex] = value;
+
+  if (lastIndex.value !== -1) {
+    for (let i = lastIndex.value + 1; i < currentIndex; i++) {
+      const vInter =
+        newBarHeights[lastIndex.value] +
+        ((value - newBarHeights[lastIndex.value]) * (i - lastIndex.value)) /
+          (currentIndex - lastIndex.value);
+
+      newBarHeights[i] = vInter;
+
+      if (i > numBars / 2) {
+        newBarHeights[i - numBars / 2] = vInter;
+      }
+    }
+  }
+
+  if (currentIndex > numBars / 2) {
+    newBarHeights[currentIndex - numBars / 2] = value;
+  }
+
+  for (let i = 1; i <= 4; i++) {
+    newBarHeights[(currentIndex + i) % newBarHeights.length] = -1;
+  }
+
+  lastIndex.value = currentIndex;
+  barHeights.value = newBarHeights;
+}
+
+function drawHistoryWaveform(params: DrawHistoryWaveformParams) {
+  const {
+    normalized,
+    lifetimeSize,
+    historyHead,
+    durationMS,
+    historyMidpointMS,
+  } = params;
+
+  const value = normalized * lifetimeSize.height * 0.8;
+  const history = [...params.history.value];
+  history[historyHead.value] = value;
+  historyHead.value += 1;
+
+  // downsample if needed
+  if (historyHead.value >= history.length) {
+    const halfLength = history.length / 2;
+    for (let i = 0; i < halfLength; i++) {
+      history[i] = Math.max(history[2 * i], history[2 * i + 1]);
+    }
+
+    historyHead.value = halfLength;
+    historyMidpointMS.value = durationMS.value;
+  }
+
+  params.history.value = history;
+}
+
+// TODO: for tomorrow
+// midpoint maxwidth = 80%
+// keep rendered waveform history in shared value to compute current max value
 const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
   state,
 }) => {
   const canvasRef = useCanvasRef();
-  // const secondaryCanvasRef = useCanvasRef();
+  const lifetimeCanvasRef = useCanvasRef();
 
   const { size } = useCanvasSize(canvasRef);
-  // const { size: secondaryCanvasSize } = useCanvasSize(secondaryCanvasRef);
+  const { size: lifetimeSize } = useCanvasSize(lifetimeCanvasRef);
   const barHeights = useSharedValue<number[]>([]);
+
+  const history = useSharedValue<number[]>(getInitialHistory());
+  const historyHead = useSharedValue(0);
+  const historyMidpointMS = useSharedValue(0);
+
   const translateX = useSharedValue(0);
   const lastIndex = useSharedValue(-1);
   const durationMS = useSharedValue(0);
@@ -75,73 +181,126 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     return path;
   }, [size, numBars]);
 
-  // useEffect(() => {
-  //   if (numBars <= 0) {
-  //     return () => {};
-  //   }
+  // const historyWaveformPath = useDerivedValue(() => {
+  //   const path = Skia.Path.Make();
+  //   // const values = history.value;
+  //   // const canvasHeight = lifetimeSize.height;
 
-  //   if (state !== RecordingState.Recording && state !== RecordingState.Paused) {
-  //     barHeights.value = Array(numBars).fill(-1);
-  //     return () => {};
-  //   }
+  //   // if (values.length === 0 || canvasHeight === 0) {
+  //   //   return path;
+  //   // }
 
-  //   let lastIndex = -1;
-  //   let phase = 0;
-  //   const phaseStep = (2 * Math.PI) / (numBars / 4);
+  //   // if (historyHead.value < historyNumBars) {
+  //   //   for (let i = 0; i < historyHead.value; i++) {
+  //   //     if (values[i] < 0) {
+  //   //       continue;
+  //   //     }
 
-  //   const interval = setInterval(() => {
-  //     const newBarHeights = [...barHeights.value];
+  //   //     const x =
+  //   //       i * (constants.historyBarWidth + constants.historyBarGap) +
+  //   //       constants.historyBarWidth / 2;
+  //   //     const y1 = (canvasHeight - values[i]) / 2;
+  //   //     const y2 = (canvasHeight + values[i]) / 2;
 
-  //     const currentIndex =
-  //       newBarHeights.length / 2 -
-  //       1 +
-  //       Math.floor(-translateX.value / (constants.barWidth + constants.barGap));
-  //     const newValue = ((Math.sin(phase) + 1) / 2) * size.height * 0.8;
-  //     phase += phaseStep;
+  //   //     path.moveTo(x, y1);
+  //   //     path.lineTo(x, y2);
+  //   //   }
 
-  //     newBarHeights[currentIndex] = newValue;
+  //   //   return path;
+  //   // }
 
-  //     // if (lastIndex !== -1 && lastIndex < currentIndex - 1) {
-  //     //   let step =
-  //     //     (newValue - newBarHeights[lastIndex]) / (currentIndex - lastIndex);
-  //     //   for (let i = lastIndex + 1; i < currentIndex; i++) {
-  //     //     newBarHeights[i] = newBarHeights[i - 1] + step;
-  //     //   }
-  //     // }
+  //   // const midpointLength = Math.floor(
+  //   //   (historyMidpointMS.value / durationMS.value) * historyNumBars
+  //   // );
+  //   // const historyMidpointStep = history.value.length / 2 / midpointLength;
 
-  //     if (lastIndex !== -1) {
-  //       for (let i = lastIndex + 1; i < currentIndex; i++) {
-  //         const interpValue =
-  //           newBarHeights[lastIndex] +
-  //           ((newValue - newBarHeights[lastIndex]) * (i - lastIndex)) /
-  //             (currentIndex - lastIndex);
+  //   // for (let i = 0; i < midpointLength; i++) {
+  //   //   let maxValue = -1;
 
-  //         newBarHeights[i] = interpValue;
+  //   //   const startIndex = Math.floor(i * historyMidpointStep);
+  //   //   const endIndex = Math.floor((i + 1) * historyMidpointStep);
 
-  //         if (i > numBars / 2) {
-  //           newBarHeights[i - numBars / 2] = interpValue;
-  //         }
-  //       }
-  //     }
+  //   //   for (let j = startIndex; j < endIndex; j++) {
+  //   //     if (values[j] >= maxValue) {
+  //   //       maxValue = values[j];
+  //   //     }
+  //   //   }
 
-  //     newBarHeights[currentIndex] = newValue;
-  //     newBarHeights[(currentIndex + 1) % newBarHeights.length] = -1;
-  //     newBarHeights[(currentIndex + 2) % newBarHeights.length] = -1;
-  //     newBarHeights[(currentIndex + 3) % newBarHeights.length] = -1;
-  //     newBarHeights[(currentIndex + 4) % newBarHeights.length] = -1;
+  //   //   if (maxValue < 0) {
+  //   //     continue;
+  //   //   }
 
-  //     if (currentIndex > numBars / 2) {
-  //       newBarHeights[currentIndex - numBars / 2] = newValue;
-  //     }
+  //   //   const x =
+  //   //     i * (constants.historyBarWidth + constants.historyBarGap) +
+  //   //     constants.historyBarWidth / 2;
+  //   //   const y1 = (canvasHeight - maxValue) / 2;
+  //   //   const y2 = (canvasHeight + maxValue) / 2;
 
-  //     lastIndex = currentIndex;
-  //     barHeights.value = newBarHeights;
-  //   }, constants.updateIntervalMS);
+  //   //   path.moveTo(x, y1);
+  //   //   path.lineTo(x, y2);
+  //   // }
 
-  //   return () => {
-  //     clearInterval(interval);
-  //   };
-  // }, [state, size, barHeights, numBars, translateX]);
+  //   // const remainingLength = historyNumBars - midpointLength;
+  //   // const remainingStep = history.value.length / 2 / remainingLength;
+
+  //   // for (let i = 0; i < remainingLength; i++) {
+  //   //   let maxValue = -1;
+
+  //   //   const startIndex = Math.floor(
+  //   //     history.value.length / 2 + i * remainingStep
+  //   //   );
+  //   //   const endIndex = Math.floor(
+  //   //     history.value.length / 2 + (i + 1) * remainingStep
+  //   //   );
+
+  //   //   for (let j = startIndex; j < endIndex; j++) {
+  //   //     if (values[j] >= maxValue) {
+  //   //       maxValue = values[j];
+  //   //     }
+  //   //   }
+
+  //   //   if (maxValue < 0) {
+  //   //     continue;
+  //   //   }
+
+  //   //   const x =
+  //   //     (i + midpointLength) *
+  //   //       (constants.historyBarWidth + constants.historyBarGap) +
+  //   //     constants.historyBarWidth / 2;
+  //   //   const y1 = (canvasHeight - maxValue) / 2;
+  //   //   const y2 = (canvasHeight + maxValue) / 2;
+
+  //   //   path.moveTo(x, y1);
+  //   //   path.lineTo(x, y2);
+  //   // }
+  //   // const bucketsInBar = Math.floor(historyHead.value / historyNumBars);
+
+  //   // for (let i = 0; i < historyNumBars; i++) {
+  //   //   let maxValue = -1;
+
+  //   //   for (let j = 0; j < bucketsInBar; j++) {
+  //   //     const index = i * bucketsInBar + j;
+  //   //     if (values[index] > maxValue) {
+  //   //       maxValue = values[index];
+  //   //     }
+  //   //   }
+
+  //   //   if (maxValue < 0) {
+  //   //     continue;
+  //   //   }
+
+  //   //   const x =
+  //   //     i * (constants.historyBarWidth + constants.historyBarGap) +
+  //   //     constants.historyBarWidth / 2;
+  //   //   const y1 = (canvasHeight - maxValue) / 2;
+  //   //   const y2 = (canvasHeight + maxValue) / 2;
+
+  //   //   path.moveTo(x, y1);
+  //   //   path.lineTo(x, y2);
+  //   // }
+
+  //   return path;
+  // }, [lifetimeSize]);
 
   useEffect(() => {
     if (numBars <= 0) {
@@ -181,54 +340,30 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
           (db - constants.minDb) / (constants.maxDb - constants.minDb);
         normalized = Math.max(0, Math.min(1, normalized));
 
-        const value = normalized * size.height * 0.8;
-        const newBarHeights = [...barHeights.value];
-
-        let currentIndex =
-          newBarHeights.length / 2 -
-          1 +
-          Math.floor(
-            -translateX.value / (constants.barWidth + constants.barGap)
-          );
-
-        if (newBarHeights[currentIndex] > 0) {
-          currentIndex += 1;
-        }
-
-        if (lastIndex.value !== -1) {
-          for (let i = lastIndex.value + 1; i < currentIndex; i++) {
-            const vInter =
-              newBarHeights[lastIndex.value] +
-              ((value - newBarHeights[lastIndex.value]) *
-                (i - lastIndex.value)) /
-                (currentIndex - lastIndex.value);
-
-            newBarHeights[i] = vInter;
-
-            if (i > numBars / 2) {
-              newBarHeights[i - numBars / 2] = vInter;
-            }
-          }
-        }
-
-        newBarHeights[currentIndex] = value;
-        if (currentIndex > numBars / 2) {
-          newBarHeights[currentIndex - numBars / 2] = value;
-        }
-
-        for (let i = 1; i <= 4; i++) {
-          newBarHeights[(currentIndex + i) % newBarHeights.length] = -1;
-        }
-
-        lastIndex.value = currentIndex;
-        barHeights.value = newBarHeights;
+        drawDefaultWaveform({
+          normalized,
+          size,
+          barHeights,
+          translateX,
+          lastIndex,
+          numBars,
+        });
+        drawHistoryWaveform({
+          normalized,
+          lifetimeSize,
+          history,
+          historyHead,
+          durationMS,
+          historyMidpointMS,
+        });
       }
     );
 
     return () => {
       Recorder.clearOnAudioReady();
     };
-  }, [state, size, barHeights, numBars, translateX, lastIndex, durationMS]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [numBars, size, lifetimeSize]);
 
   useEffect(() => {
     if (state === RecordingState.Recording) {
@@ -287,7 +422,6 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
     <>
       <View style={styles.container}>
         <Canvas style={styles.canvas} ref={canvasRef}>
-          <Ruler canvasSize={size} state={state} />
           <Group transform={transformPath}>
             <Path
               path={waveformPath}
@@ -305,6 +439,20 @@ const RecordingVisualization: React.FC<RecordingVisualizationProps> = ({
           durationMS={durationMS}
         />
       </View>
+      {/* <Spacer.Vertical size={32} />
+      <View style={styles.lifetimeContainer}>
+        <Canvas style={styles.canvas} ref={lifetimeCanvasRef}>
+          <Group>
+            <Path
+              path={historyWaveformPath}
+              style="stroke"
+              strokeWidth={constants.historyBarWidth}
+              strokeCap="round"
+              color="#ff6259"
+            />
+          </Group>
+        </Canvas>
+      </View> */}
     </>
   );
 };
@@ -312,7 +460,7 @@ export default RecordingVisualization;
 
 const styles = StyleSheet.create({
   container: {
-    height: 250,
+    height: 350,
     width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
     flexDirection: 'column',
@@ -320,15 +468,15 @@ const styles = StyleSheet.create({
   canvas: {
     flex: 1,
   },
-  secondaryContainer: {
+  timeStreamContainer: {
+    height: 20,
+    marginTop: 8,
+  },
+  lifetimeContainer: {
     marginTop: 16,
     height: 75,
     width: '100%',
     backgroundColor: 'rgba(0, 0, 0, 0.15)',
     flexDirection: 'column',
-  },
-  timeStreamContainer: {
-    height: 20,
-    marginTop: 8,
   },
 });
