@@ -12,7 +12,7 @@ import {
 import { Container, VerticalSlider } from '../../components';
 import { makeDistortionCurve } from './makeDistortionCurve';
 
-const URL = 'https://files.catbox.moe/s2i1wn.flac';
+const URL = 'https://files.catbox.moe/xbj6gn.flac';
 
 const MIN_DRIVE_GAIN = 0.05;
 const MAX_DRIVE_GAIN = 50;
@@ -77,7 +77,9 @@ export default function GuitarPedal() {
 
     const source = ctx.createBufferSource();
     source.buffer = buffer;
-    source.loop = true;
+    source.onEnded = () => {
+      setIsActive(false);
+    };
 
     const driveNode = ctx.createGain();
     const shaper = ctx.createWaveShaper();
@@ -97,6 +99,9 @@ export default function GuitarPedal() {
     levelNode.connect(ctx.destination);
 
     source.start();
+    source.onEnded = () => {
+      setIsActive(false);
+    };
 
     sourceNodeRef.current = source;
     driveNodeRef.current = driveNode;
