@@ -110,13 +110,12 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  float time;
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    time = context->getCurrentTime();
-  } else {
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
     processingBus->zero();
     return;
   }
+  auto time = context->getCurrentTime();
   auto playbackRate =
       std::clamp(playbackRateParam_->processKRateParam(framesToProcess, time), 0.0f, 3.0f);
   auto detune =
@@ -126,7 +125,13 @@ void AudioBufferBaseSourceNode::processWithPitchCorrection(
 
   auto framesNeededToStretch = static_cast<int>(playbackRate * static_cast<float>(framesToProcess));
 
-  updatePlaybackInfo(playbackRateBus_, framesNeededToStretch, startOffset, offsetLength);
+  updatePlaybackInfo(
+      playbackRateBus_,
+      framesNeededToStretch,
+      startOffset,
+      offsetLength,
+      context->getSampleRate(),
+      context->getCurrentSampleFrame());
 
   if (playbackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
@@ -151,8 +156,14 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  auto computedPlaybackRate = getComputedPlaybackRateValue(framesToProcess);
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return;
+  }
+  auto computedPlaybackRate =
+      getComputedPlaybackRateValue(framesToProcess, context->getCurrentTime());
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (computedPlaybackRate == 0.0f || (!isPlaying() && !isStopScheduled())) {
     processingBus->zero();
@@ -168,12 +179,7 @@ void AudioBufferBaseSourceNode::processWithoutPitchCorrection(
   sendOnPositionChangedEvent();
 }
 
-float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess) {
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return 0.0f;
-  double time = context->getCurrentTime();
-
+float AudioBufferBaseSourceNode::getComputedPlaybackRateValue(int framesToProcess, double time) {
   auto playbackRate = playbackRateParam_->processKRateParam(framesToProcess, time);
   auto detune = std::pow(2.0f, detuneParam_->processKRateParam(framesToProcess, time) / 1200.0f);
 

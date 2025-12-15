@@ -88,9 +88,8 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
 
   stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
 
-  if (pitchCorrection_) {
-    if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    if (pitchCorrection_) {
       int extraTailFrames =
           static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
       size_t totalSize = buffer_->getLength() + extraTailFrames;
@@ -99,13 +98,9 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
       alignedBus_->copy(buffer_->bus_.get(), 0, 0, buffer_->getLength());
 
       alignedBus_->zero(buffer_->getLength(), extraTailFrames);
+    } else {
+      alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
     }
-  } else {
-    alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
-  }
-
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-
     audioBus_ =
         std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
     playbackRateBus_ = std::make_shared<AudioBus>(
@@ -198,8 +193,15 @@ void AudioBufferSourceNode::processWithoutInterpolation(
   auto readIndex = static_cast<size_t>(vReadIndex_);
   size_t writeIndex = startOffset;
 
-  auto frameStart = static_cast<size_t>(getVirtualStartFrame());
-  auto frameEnd = static_cast<size_t>(getVirtualEndFrame());
+  size_t frameStart;
+  size_t frameEnd;
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    frameStart = static_cast<size_t>(getVirtualStartFrame(context));
+    frameEnd = static_cast<size_t>(getVirtualEndFrame(context));
+  } else {
+    processingBus->zero();
+    return;
+  }
   size_t frameDelta = frameEnd - frameStart;
 
   size_t framesLeft = offsetLength;
@@ -266,8 +268,15 @@ void AudioBufferSourceNode::processWithInterpolation(
 
   size_t writeIndex = startOffset;
 
-  auto vFrameStart = getVirtualStartFrame();
-  auto vFrameEnd = getVirtualEndFrame();
+  double vFrameStart;
+  double vFrameEnd;
+  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+    vFrameStart = getVirtualStartFrame(context);
+    vFrameEnd = getVirtualEndFrame(context);
+  } else {
+    processingBus->zero();
+    return;
+  }
   auto vFrameDelta = vFrameEnd - vFrameStart;
 
   auto frameStart = static_cast<size_t>(vFrameStart);
@@ -314,25 +323,14 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 }
 
-double AudioBufferSourceNode::getVirtualStartFrame() {
-  double loopStartFrame;
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    loopStartFrame = loopStart_ * context->getSampleRate();
-  } else {
-    return 0.0;
-  }
-
+double AudioBufferSourceNode::getVirtualStartFrame(std::shared_ptr<BaseAudioContext> context) {
+  auto loopStartFrame = loopStart_ * context->getSampleRate();
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_ ? loopStartFrame : 0.0;
 }
 
-double AudioBufferSourceNode::getVirtualEndFrame() {
-  double loopEndFrame;
+double AudioBufferSourceNode::getVirtualEndFrame(std::shared_ptr<BaseAudioContext> context) {
   auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    loopEndFrame = loopEnd_ * context->getSampleRate();
-  } else {
-    return inputBufferLength;
-  }
+  auto loopEndFrame = loopEnd_ * context->getSampleRate();
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_
       ? std::min(loopEndFrame, inputBufferLength)

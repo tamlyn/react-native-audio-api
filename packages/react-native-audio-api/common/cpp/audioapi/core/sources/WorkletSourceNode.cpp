@@ -31,7 +31,12 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
   size_t startOffset = 0;
   size_t nonSilentFramesToProcess = framesToProcess;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, nonSilentFramesToProcess);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, nonSilentFramesToProcess, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (nonSilentFramesToProcess == 0) {
     processingBus->zero();
@@ -41,7 +46,7 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
   size_t outputChannelCount = processingBus->getNumberOfChannels();
 
   auto result = workletRunner_.executeOnRuntimeSync(
-      [this, nonSilentFramesToProcess, startOffset](jsi::Runtime &rt) {
+      [this, nonSilentFramesToProcess, startOffset, time = context->getCurrentTime()](jsi::Runtime &rt) {
         auto jsiArray = jsi::Array(rt, this->outputBuffsHandles_.size());
         for (size_t i = 0; i < this->outputBuffsHandles_.size(); ++i) {
           auto arrayBuffer = jsi::ArrayBuffer(rt, this->outputBuffsHandles_[i]);
@@ -51,10 +56,6 @@ std::shared_ptr<AudioBus> WorkletSourceNode::processNode(
         // We call unsafely here because we are already on the runtime thread
         // and the runtime is locked by executeOnRuntimeSync (if
         // shouldLockRuntime is true)
-        float time = 0.0f;
-        if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-          time = context->getCurrentTime();
-        }
         return workletRunner_.callUnsafe(
             jsiArray,
             jsi::Value(rt, static_cast<int>(nonSilentFramesToProcess)),

@@ -27,15 +27,18 @@ std::shared_ptr<AudioBus> ConstantSourceNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
     return processingBus;
   }
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return processingBus;
   auto offsetBus = offsetParam_->processARateParam(framesToProcess, context->getCurrentTime());
   auto offsetChannelData = offsetBus->getChannel(0)->getData();
 

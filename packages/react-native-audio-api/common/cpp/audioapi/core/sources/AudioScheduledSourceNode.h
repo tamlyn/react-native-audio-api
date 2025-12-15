@@ -54,7 +54,9 @@ class AudioScheduledSourceNode : public AudioNode {
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess,
       size_t &startOffset,
-      size_t &nonSilentFramesToProcess);
+      size_t &nonSilentFramesToProcess,
+      float sampleRate,
+      size_t currentSampleFrame);
 
   void handleStopScheduled();
 };

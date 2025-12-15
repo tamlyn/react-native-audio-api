@@ -115,7 +115,7 @@ class StreamerNode : public AudioScheduledSourceNode {
    * @param frame The AVFrame to resample
    * @return true if successful, false otherwise
    */
-  bool processFrameWithResampler(AVFrame *frame);
+  bool processFrameWithResampler(AVFrame *frame, std::shared_ptr<BaseAudioContext> context);
 
   /**
    * @brief Thread function to continuously read and process audio frames

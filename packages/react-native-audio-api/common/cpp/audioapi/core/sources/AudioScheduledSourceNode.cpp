@@ -74,19 +74,16 @@ void AudioScheduledSourceNode::updatePlaybackInfo(
     const std::shared_ptr<AudioBus> &processingBus,
     int framesToProcess,
     size_t &startOffset,
-    size_t &nonSilentFramesToProcess) {
+    size_t &nonSilentFramesToProcess,
+    float sampleRate,
+    size_t currentSampleFrame) {
   if (!isInitialized_) {
     startOffset = 0;
     nonSilentFramesToProcess = 0;
     return;
   }
 
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return;
-  auto sampleRate = context->getSampleRate();
-  auto firstFrame = context->getCurrentSampleFrame();
-
+  auto firstFrame = currentSampleFrame;
   size_t lastFrame = firstFrame + framesToProcess - 1;
 
   size_t startFrame = std::max(dsp::timeToSampleFrame(startTime_, sampleRate), firstFrame);

@@ -36,9 +36,16 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
       const std::shared_ptr<AudioBus> &processingBus,
       int framesToProcess,
       size_t &startOffset,
-      size_t &nonSilentFramesToProcess) {
+      size_t &nonSilentFramesToProcess,
+      float sampleRate,
+      size_t currentSampleFrame) {
     AudioScheduledSourceNode::updatePlaybackInfo(
-        processingBus, framesToProcess, startOffset, nonSilentFramesToProcess);
+        processingBus,
+        framesToProcess,
+        startOffset,
+        nonSilentFramesToProcess,
+        sampleRate,
+        currentSampleFrame);
   }
 
   std::shared_ptr<AudioBus> processNode(const std::shared_ptr<AudioBus> &, int) override {
@@ -50,11 +57,17 @@ class TestableAudioScheduledSourceNode : public AudioScheduledSourceNode {
   }
 
   void playFrames(int frames) {
-    size_t startOffset = 0;
-    size_t nonSilentFramesToProcess = 0;
-    auto processingBus = std::make_shared<AudioBus>(128, 2, static_cast<float>(SAMPLE_RATE));
-    updatePlaybackInfo(processingBus, frames, startOffset, nonSilentFramesToProcess);
     if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
+      size_t startOffset = 0;
+      size_t nonSilentFramesToProcess = 0;
+      auto processingBus = std::make_shared<AudioBus>(128, 2, static_cast<float>(SAMPLE_RATE));
+      updatePlaybackInfo(
+          processingBus,
+          frames,
+          startOffset,
+          nonSilentFramesToProcess,
+          context->getSampleRate(),
+          context->getCurrentSampleFrame());
       context->getDestination()->renderAudio(processingBus, frames);
     }
   }

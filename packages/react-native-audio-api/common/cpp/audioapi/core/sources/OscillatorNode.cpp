@@ -58,16 +58,19 @@ std::shared_ptr<AudioBus> OscillatorNode::processNode(
   size_t startOffset = 0;
   size_t offsetLength = 0;
 
-  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength);
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    processingBus->zero();
+    return processingBus;
+  }
+
+  updatePlaybackInfo(processingBus, framesToProcess, startOffset, offsetLength, context->getSampleRate(), context->getCurrentSampleFrame());
 
   if (!isPlaying() && !isStopScheduled()) {
     processingBus->zero();
     return processingBus;
   }
 
-  std::shared_ptr<BaseAudioContext> context = context_.lock();
-  if (context == nullptr)
-    return processingBus;
   auto time =
       context->getCurrentTime() + static_cast<double>(startOffset) * 1.0 / context->getSampleRate();
   auto detuneParamValues = detuneParam_->processARateParam(framesToProcess, time);

@@ -33,7 +33,7 @@ class AudioContext : public BaseAudioContext {
 #else
   std::shared_ptr<IOSAudioPlayer> audioPlayer_;
 #endif
-  bool playerHasBeenStarted_;
+  bool isInitialized_;
 
   bool isDriverRunning() const override;
 

@@ -15,7 +15,7 @@ AudioContext::AudioContext(
     float sampleRate,
     const std::shared_ptr<IAudioEventHandlerRegistry> &audioEventHandlerRegistry,
     const RuntimeRegistry &runtimeRegistry)
-    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry), playerHasBeenStarted_(false) {
+    : BaseAudioContext(audioEventHandlerRegistry, runtimeRegistry), isInitialized_(false) {
   sampleRate_ = sampleRate;
   state_ = ContextState::SUSPENDED;
 }
@@ -35,6 +35,7 @@ void AudioContext::initialize() {
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
       this->renderAudio(), sampleRate_, destination_->getChannelCount());
 #endif
+  isInitialized_ = true;
 }
 
 void AudioContext::close() {
@@ -54,7 +55,7 @@ bool AudioContext::resume() {
     return true;
   }
 
-  if (playerHasBeenStarted_ && audioPlayer_->resume()) {
+  if (isInitialized_ && audioPlayer_->resume()) {
     state_ = ContextState::RUNNING;
     return true;
   }
@@ -82,10 +83,12 @@ bool AudioContext::start() {
     return false;
   }
 
-  if (!playerHasBeenStarted_ && audioPlayer_->start()) {
-    playerHasBeenStarted_ = true;
-    state_ = ContextState::RUNNING;
+  if (!isInitialized_) {
+    initialize();
+  }
 
+  if (audioPlayer_->start()) {
+    state_ = ContextState::RUNNING;
     return true;
   }
 

@@ -69,8 +69,8 @@ class AudioBufferSourceNode : public AudioBufferBaseSourceNode {
       size_t offsetLength,
       float playbackRate) override;
 
-  double getVirtualStartFrame();
-  double getVirtualEndFrame();
+  double getVirtualStartFrame(std::shared_ptr<BaseAudioContext> context);
+  double getVirtualEndFrame(std::shared_ptr<BaseAudioContext> context);
 };
 
 } // namespace audioapi
