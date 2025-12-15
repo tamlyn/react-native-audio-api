@@ -83,12 +83,10 @@ bool AudioContext::start() {
     return false;
   }
 
-  if (!isInitialized_) {
-    initialize();
-  }
-
-  if (audioPlayer_->start()) {
+  if (!isInitialized_ && audioPlayer_->start()) {
+    isInitialized_ = true;
     state_ = ContextState::RUNNING;
+
     return true;
   }
 

@@ -37,7 +37,7 @@ StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context)
       maxResampledSamples_(0),
       processedSamples_(0) {}
 #else
-StreamerNode::StreamerNode(BaseAudioContext *context) : AudioScheduledSourceNode(context) {}
+StreamerNode::StreamerNode(std::shared_ptr<BaseAudioContext> context) : AudioScheduledSourceNode(context) {}
 #endif // RN_AUDIO_API_FFMPEG_DISABLED
 
 StreamerNode::~StreamerNode() {
