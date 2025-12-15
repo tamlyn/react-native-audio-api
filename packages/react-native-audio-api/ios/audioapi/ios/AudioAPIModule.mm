@@ -110,7 +110,7 @@ RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 #endif
 
   NSLog(@"Successfully installed JSI bindings for react-native-audio-api!");
-  return @YES;
+  return @true;
 }
 
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(getDevicePreferredSampleRate)

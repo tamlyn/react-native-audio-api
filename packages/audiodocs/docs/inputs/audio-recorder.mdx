@@ -11,21 +11,21 @@ import { Optional, ReadOnly, MobileOnly } from '@site/src/components/Badges';
 
 # AudioRecorder
 
-AudioRecorder is the primary interface for capturing audio. It supports three main modes of operations.
+AudioRecorder is a primary interface for capturing audio. It supports three main modes of operations:
 
 - **File recording:** Writing audio data directly to the filesystem.
 - **Data callback:** Emitting raw audio buffers, that can be used in either further processing or streamed.
-- **Graph processing:** connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
+- **Graph processing:** Connect the recorder with either `AudioContext` or `OfflineAudioContext` for further more advanced and/or realtime processing
 
 ## Configuration
 
-To access microphone you need to make sure your app has required permission configuration, check [permission section](/docs/fundamentals/getting-started#special-permissions) of getting started for more information.
+To access microphone you need to make sure your app has required permission configuration - check [getting started permission section](/docs/fundamentals/getting-started#special-permissions) for more information.
 
-Additionally to be able to record audio while application is in background, you need to enable background mode on iOS and configure foreground service on android.
+Additionally to be able to record audio while application is in the background, you need to enable background mode on iOS and configure foreground service on android.
 
 <Tabs queryString="platform">
   <TabItem value="expo" label="Expo" default>
-    In expo application you can do so through `react-native-audio-api` expo plugin, eg.
+    In an Expo application you can do so through `react-native-audio-api` expo plugin, e.g.
 
     ```json
     {
@@ -48,7 +48,7 @@ Additionally to be able to record audio while application is in background, you 
     }
     ```
 
-    for more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
+    For more configuration options, check out the [Expo plugin section](/docs/other/audio-api-plugin).
   </TabItem>
   <TabItem value="iOS" label="iOS">
     For bare react-native applications, background mode is configurable through `Signing & Capabilities` section of your app target config using XCode
@@ -354,7 +354,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-        Creates new instance of the AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have an noticeable impact on the device.
+        Creates new instance of AudioRecorder. It is preferred to create only a single instance of the AudioRecorder class for the best performance, memory and battery consumption reasons. While the idle recorder has minimal impact on anything mentioned, switching between separate recorder instances might have a noticeable impact on the device.
         </div>
         ```tsx
         import { AudioRecorder } from 'react-native-audio-api';
@@ -369,7 +369,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Starts the stream of system audio input device.
+          Starts the stream from system audio input device.
         </div>
         ```tsx
         const result = audioRecorder.start();
@@ -437,7 +437,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns `true` if recorder is in active/recording state
+          Returns `true` if the recorder is in active/recording state
         </div>
         ```tsx
           const isRecording = audioRecorder.isRecording();
@@ -451,7 +451,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns `true` if recorder is in paused state.
+          Returns `true` if the recorder is in paused state.
         </div>
         ```tsx
           const isPaused = audioRecorder.isPaused();
@@ -467,7 +467,7 @@ export default MyRecorder;
         <div class="text-content">
           Sets an error callback for any possible internal error that might happen during file writing, callback invocation or adapter access.
 
-          for details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
+          For details check: [OnRecorderErrorEventType](#onrecordererroreventtype)
         </div>
         ```tsx
           audioRecorder.onError((error: OnRecorderErrorEventType) => {
@@ -507,9 +507,9 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Configures and enables the file output with defined options and stream properties. Optional options property allows for configuration of the output file structure and quality. By default recorder writes to cache directory using high-quality `M4A` file.
+          Configures and enables the file output with defined options and stream properties. Options property allows for configuration of the output file structure and quality. By default the recorder writes to cache directory using high-quality `M4A` file.
 
-          for further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
+          For further information check: [AudioRecorderFileOptions](#audiorecorderfileoptions)
         </div>
         ```tsx
           audioRecorder.enableFileOutput();
@@ -523,7 +523,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Disables the file output and finalizes the currently recorder file if recorder is active.
+          Disables the file output and finalizes the currently recorded file if the recorder is active.
         </div>
         ```tsx
           audioRecorder.disableFileOutput();
@@ -537,7 +537,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Returns current recording duration if recording to file is enabled
+          Returns current recording duration if recording to file is enabled.
         </div>
         ```tsx
           const duration = audioRecorder.getCurrentDuration();
@@ -564,7 +564,7 @@ export default MyRecorder;
           The callback is periodically invoked with audio buffers that match the preferred configuration provided in `options`. These parameters (sample rate, buffer length, and channel count) guide how audio data is chunked and delivered, though the exact values may vary depending on device capabilities.
           <br />
 
-          for further information check:
+          For further information check:
             - [AudioRecorderCallbackOptions](#audiorecordercallbackoptions)
             - [OnAudioReadyEventType](#onaudioreadyeventtype)
         </div>
@@ -614,7 +614,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Connects the AudioRecorder with [RecorderAdapterNode](/docs/sources/recorder-adapter-node) instance that can be used for further audio processing.
+          Connects AudioRecorder with [RecorderAdapterNode](/docs/sources/recorder-adapter-node) instance that can be used for further audio processing.
         </div>
         ```tsx
           const adapter = audioContext.createRecorderAdapter();
@@ -629,7 +629,7 @@ export default MyRecorder;
       </div></td>
       <td>
         <div class="text-content">
-          Disconnects the AudioRecorder from the audio graph.
+          Disconnects AudioRecorder from the audio graph.
         </div>
         ```tsx
           audioRecorder.disconnect();
@@ -702,15 +702,15 @@ interface AudioRecorderFileOptions {
 }
 ```
 
-- `channelCount` - The desired channel count in the resulting file, Note: not all file formats supports all possible channel counts.
-- `format` - The desired extension and file format of the recorder file, check: [FileFormat](#fileformat) below.
-- `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself, check [FilePresetType](#filepresettype) for more details.
+- `channelCount` - The desired channel count in the resulting file. not all file formats supports all possible channel counts.
+- `format` - The desired extension and file format of the recorder file. Check: [FileFormat](#fileformat) below.
+- `preset` - The desired recorder file properties, you can use either one of built-in properties or tweak low-level parameters yourself. Check [FilePresetType](#filepresettype) for more details.
 - `directory` - Either `FileDirectory.Cache` or `FileDirectory.Document` (default: `FileDirectory.Cache`). Determines the system directory that the file will be saved to.
 - `subDirectory` - If configured it will create the recording inside requested directory (default: `undefined`).
 - `fileNamePrefix` - Prefix of the recording files without the unique ID (default: `recording_`).
 - `androidFlushIntervalMs` - How often the recorder should force the system to write data to the device storage (default: `500`).
   - Lower values are good for crash-resilience and are more memory friendly.
-  - Higher values are more battery and storage efficient.
+  - Higher values are more battery- and storage-efficient.
 
 #### FileFormat
 
@@ -732,7 +732,7 @@ Describes audio format that is used during writing to file as well as encoded fi
 
 ##### Built-in file presets
 
-For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope it will, please raise an issue if you find something lacking or misconfigured!).
+For convenience we have provided set of most basic file configurations that should cover most of the cases (or at least we hope they will, please raise an issue if you find something lacking or misconfigured!).
 
 ###### Usage
 
