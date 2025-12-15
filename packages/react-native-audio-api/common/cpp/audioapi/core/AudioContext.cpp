@@ -35,7 +35,6 @@ void AudioContext::initialize() {
   audioPlayer_ = std::make_shared<IOSAudioPlayer>(
       this->renderAudio(), sampleRate_, destination_->getChannelCount());
 #endif
-  isInitialized_ = true;
 }
 
 void AudioContext::close() {
