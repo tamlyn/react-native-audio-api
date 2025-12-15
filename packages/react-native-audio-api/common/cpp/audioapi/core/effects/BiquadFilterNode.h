@@ -31,9 +31,9 @@
 #include <audioapi/core/AudioNode.h>
 #include <audioapi/core/AudioParam.h>
 #include <audioapi/core/types/BiquadFilterType.h>
-#ifdef AUDIO_API_TEST_SUITE
+#if RN_AUDIO_API_TEST
 #include <gtest/gtest_prod.h>
-#endif
+#endif // RN_AUDIO_API_TEST
 
 #include <algorithm>
 #include <cmath>
@@ -48,10 +48,10 @@ namespace audioapi {
 class AudioBus;
 
 class BiquadFilterNode : public AudioNode {
-#ifdef AUDIO_API_TEST_SUITE
+#if RN_AUDIO_API_TEST
   friend class BiquadFilterTest;
   FRIEND_TEST(BiquadFilterTest, GetFrequencyResponse);
-#endif
+#endif // RN_AUDIO_API_TEST
 
  public:
   explicit BiquadFilterNode(std::shared_ptr<BaseAudioContext> context);
@@ -80,11 +80,11 @@ class BiquadFilterNode : public AudioNode {
   std::shared_ptr<AudioParam> gainParam_;
   audioapi::BiquadFilterType type_;
 
-  // delayed samples
-  float x1_ = 0;
-  float x2_ = 0;
-  float y1_ = 0;
-  float y2_ = 0;
+  // delayed samples, one per channel
+  std::vector<float> x1_;
+  std::vector<float> x2_;
+  std::vector<float> y1_;
+  std::vector<float> y2_;
 
   // coefficients
   float b0_ = 1.0;

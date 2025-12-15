@@ -8,7 +8,7 @@
 
 #if !RN_AUDIO_API_TEST
 #include <audioapi/core/AudioContext.h>
-#endif
+#endif // RN_AUDIO_API_TEST
 
 #include <algorithm>
 #include <limits>
@@ -32,7 +32,7 @@ void AudioScheduledSourceNode::start(double when) {
       audioContext->start();
     }
   }
-#endif
+#endif // RN_AUDIO_API_TEST
 
   playbackState_ = PlaybackState::SCHEDULED;
   startTime_ = when;
