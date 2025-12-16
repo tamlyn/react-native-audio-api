@@ -1,17 +1,18 @@
 import { StackNavigationProp } from '@react-navigation/stack';
+import { icons } from 'lucide-react-native';
 
-import Piano from './Piano';
-import Metronome from './Metronome';
-import Oscillator from './Oscillator';
-import DrumMachine from './DrumMachine';
 import AudioFile from './AudioFile';
 import AudioVisualizer from './AudioVisualizer';
+import DrumMachine from './DrumMachine';
+import Metronome from './Metronome';
 import OfflineRendering from './OfflineRendering';
-import Record from './Record/Record';
-import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
-import Worklets from './Worklets/Worklets';
-import Streaming from './Streaming/Streaming';
+import Oscillator from './Oscillator';
+import Piano from './Piano';
 import { PlaybackNotificationExample } from './PlaybackNotification/PlaybackNotification';
+import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
+import Record from './Record/Record';
+import Streaming from './Streaming/Streaming';
+import Worklets from './Worklets/Worklets';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -31,11 +32,16 @@ type NavigationParamList = {
 
 export type ExampleKey = keyof NavigationParamList;
 
+interface SimplifiedIconProps {
+  color?: string;
+  size?: number;
+}
+
 export type MainStackProps = StackNavigationProp<NavigationParamList>;
 export interface Example {
   key: ExampleKey;
   title: string;
-  subtitle: string;
+  Icon: React.FC<SimplifiedIconProps>;
   screen: React.FC;
 }
 
@@ -43,73 +49,73 @@ export const Examples: Example[] = [
   {
     key: 'DrumMachine',
     title: 'Drum Machine',
-    subtitle: 'Create drum patterns',
+    Icon: icons.Drum,
     screen: DrumMachine,
   },
   {
     key: 'Piano',
+    Icon: icons.Piano,
     title: 'Simple Piano',
-    subtitle: 'Play some notes',
     screen: Piano,
   },
   {
     key: 'AudioFile',
     title: 'Audio File',
-    subtitle: 'Play an audio file',
+    Icon: icons.Music,
     screen: AudioFile,
   },
   {
     key: 'PlaybackSpeed',
+    Icon: icons.VenetianMask,
     title: 'Playback Speed',
-    subtitle: 'Control playback speed of audio',
     screen: PlaybackSpeed,
   },
   {
     key: 'Metronome',
     title: 'Metronome',
-    subtitle: 'Keep time with the beat',
+    Icon: icons.Thermometer,
     screen: Metronome,
   },
   {
     key: 'Oscillator',
     title: 'Oscillator',
-    subtitle: 'Generate sound waves',
+    Icon: icons.Waves,
     screen: Oscillator,
   },
   {
     key: 'AudioVisualizer',
     title: 'Audio Visualizer',
-    subtitle: 'Visualize audio data',
+    Icon: icons.Activity,
     screen: AudioVisualizer,
   },
   {
     key: 'OfflineRendering',
     title: 'Offline Rendering',
-    subtitle: 'Rendering audio in offline',
+    Icon: icons.HardDrive,
     screen: OfflineRendering,
   },
   {
     key: 'Record',
     title: 'Record',
-    subtitle: 'Record audio',
+    Icon: icons.Mic,
     screen: Record,
   },
   {
     key: 'Worklets',
     title: 'Worklets',
-    subtitle: 'Process audio on ui thread with worklet support',
+    Icon: icons.Code,
     screen: Worklets,
   },
   {
     key: 'Streamer',
     title: 'Streamer',
-    subtitle: 'Stream audio from a URL',
+    Icon: icons.Radio,
     screen: Streaming,
   },
   {
     key: 'PlaybackNotification',
     title: 'Playback Notification',
-    subtitle: 'Media playback notification with controls',
+    Icon: icons.Bell,
     screen: PlaybackNotificationExample,
-  }
+  },
 ] as const;

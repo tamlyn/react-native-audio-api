@@ -10,29 +10,25 @@ static AudioEngine *_sharedInstance = nil;
   return _sharedInstance;
 }
 
-- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager
+- (instancetype)init
 {
   if (self = [super init]) {
-    self.isInterrupted = false;
-    self.isSupposedToBeRunning = true;
+    self.state = AudioEngineState::AudioEngineStateIdle;
     self.audioEngine = [[AVAudioEngine alloc] init];
     self.inputNode = nil;
 
     self.sourceNodes = [[NSMutableDictionary alloc] init];
     self.sourceFormats = [[NSMutableDictionary alloc] init];
-    self.sourceStates = [[NSMutableDictionary alloc] init];
 
-    self.sessionManager = sessionManager;
+    self.sessionManager = [AudioSessionManager sharedInstance];
   }
 
   _sharedInstance = self;
-
   return self;
 }
 
 - (void)cleanup
 {
-  NSLog(@"[AudioEngine] cleanup");
   if ([self.audioEngine isRunning]) {
     [self.audioEngine stop];
   }
@@ -40,15 +36,117 @@ static AudioEngine *_sharedInstance = nil;
   self.audioEngine = nil;
   self.sourceNodes = nil;
   self.sourceFormats = nil;
-  self.sourceStates = nil;
   self.inputNode = nil;
 
   [self.sessionManager setActive:false];
   self.sessionManager = nil;
 }
 
+- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
+{
+  NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
+
+  [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
+  [self.sourceFormats setValue:format forKey:sourceNodeId];
+
+  [self.audioEngine attachNode:sourceNode];
+  [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
+
+  return sourceNodeId;
+}
+
+- (void)detachSourceNodeWithId:(NSString *)sourceNodeId
+{
+  AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
+
+  if (sourceNode == nil) {
+    NSLog(@"[AudioEngine] No source node found with ID: %@", sourceNodeId);
+    return;
+  }
+
+  [self.audioEngine detachNode:sourceNode];
+
+  [self.sourceNodes removeObjectForKey:sourceNodeId];
+  [self.sourceFormats removeObjectForKey:sourceNodeId];
+}
+
+- (void)attachInputNode:(AVAudioSinkNode *)inputNode
+{
+  self.inputNode = inputNode;
+  AVAudioFormat *format = [self.audioEngine.inputNode inputFormatForBus:0];
+
+  [self.audioEngine attachNode:inputNode];
+  [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:format];
+}
+
+- (void)detachInputNode
+{
+  if (self.inputNode == nil) {
+    return;
+  }
+
+  [self.audioEngine detachNode:self.inputNode];
+  self.inputNode = nil;
+}
+
+- (void)onInterruptionBegin
+{
+  if (self.state != AudioEngineState::AudioEngineStateRunning) {
+    // If engine was not active, do nothing
+    return;
+  }
+
+  // If engine was active or paused (or interrupted :)) mark as interrupted
+  self.state = AudioEngineState::AudioEngineStateInterrupted;
+}
+
+- (void)onInterruptionEnd:(bool)shouldResume
+{
+  NSError *error = nil;
+
+  if (self.state != AudioEngineState::AudioEngineStateInterrupted) {
+    // If engine was not interrupted, do nothing
+    // Not a real condition, but better be safe than sorry :shrug:
+    return;
+  }
+
+  // Stop just in case, reset the engine and build it from scratch
+  [self stopIfNecessary];
+  [self.audioEngine reset];
+  [self rebuildAudioEngine];
+
+  // If shouldResume is false, mark the engine as paused and wait
+  // for JS-side resume command
+  // TODO: this should be notified to the user f.e. via Event Emitter
+  if (!shouldResume) {
+    self.state = AudioEngineState::AudioEngineStatePaused;
+    return;
+  }
+
+  [self.audioEngine prepare];
+  [self.audioEngine startAndReturnError:&error];
+
+  if (error != nil) {
+    NSLog(
+        @"Error while restarting the audio engine after interruption: %@",
+        [error debugDescription]);
+    self.state = AudioEngineState::AudioEngineStateIdle;
+    return;
+  }
+
+  self.state = AudioEngineState::AudioEngineStateRunning;
+}
+
+- (AudioEngineState)getState
+{
+  return self.state;
+}
+
+/// @brief Rebuilds the audio engine by re-attaching and re-connecting all source nodes and input node.
 - (void)rebuildAudioEngine
 {
+  self.audioEngine = [[AVAudioEngine alloc] init];
+
   for (id sourceNodeId in self.sourceNodes) {
     AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
     AVAudioFormat *format = [self.sourceFormats valueForKey:sourceNodeId];
@@ -63,30 +161,12 @@ static AudioEngine *_sharedInstance = nil;
   }
 }
 
-- (bool)rebuildAudioEngineAndStartIfNecessary
-{
-  [self rebuildAudioEngine];
-  return [self startIfNecessary];
-}
-
-- (bool)restartAudioEngine
-{
-  if ([self.audioEngine isRunning]) {
-    [self.audioEngine stop];
-  }
-
-  self.audioEngine = [[AVAudioEngine alloc] init];
-  return [self rebuildAudioEngineAndStartIfNecessary];
-}
-
+// @brief Starts the audio engine if not already running.
 - (bool)startEngine
 {
-  NSLog(@"[AudioEngine] startEngine");
   NSError *error = nil;
-  self.isSupposedToBeRunning = true;
 
-  if ([self.audioEngine isRunning] && ![self isInterrupted]) {
-    NSLog(@"[AudioEngine] Engine is already running");
+  if ([self.audioEngine isRunning] && self.state == AudioEngineState::AudioEngineStateRunning) {
     return true;
   }
 
@@ -94,14 +174,11 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
-  if ([self isInterrupted]) {
+  if (self.state == AudioEngineState::AudioEngineStateInterrupted) {
     NSLog(@"[AudioEngine] rebuilding after interruption");
     [self.audioEngine stop];
     [self.audioEngine reset];
-
     [self rebuildAudioEngine];
-
-    self.isInterrupted = false;
   }
 
   [self.audioEngine prepare];
@@ -112,140 +189,76 @@ static AudioEngine *_sharedInstance = nil;
     return false;
   }
 
+  self.state = AudioEngineState::AudioEngineStateRunning;
   return true;
 }
 
 - (void)stopEngine
 {
-  NSLog(@"[AudioEngine] stopEngine");
-  if (![self.audioEngine isRunning]) {
+  if (self.state == AudioEngineState::AudioEngineStateIdle) {
     return;
   }
 
-  self.isSupposedToBeRunning = false;
   [self.audioEngine stop];
-}
-
-- (void)pauseEngine:(NSString *)sourceNodeId
-{
-  NSLog(@"[AudioEngine] pauseEngine");
-  self.isSupposedToBeRunning = false;
-
-  if (![self.audioEngine isRunning]) {
-    return;
-  }
-
-  [self.sourceStates setValue:@false forKey:sourceNodeId];
-  [self pauseIfNecessary];
-}
-
-- (bool)isRunning
-{
-  return [self.audioEngine isRunning] && !self.isInterrupted;
-}
-
-- (void)markAsInterrupted
-{
-  self.isInterrupted = true;
-  self.isSupposedToBeRunning = false;
-}
-
-- (void)unmarkAsInterrupted
-{
-  self.isInterrupted = false;
-}
-
-- (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format
-{
-  NSString *sourceNodeId = [[NSUUID UUID] UUIDString];
-  NSLog(@"[AudioEngine] attaching new source node with ID: %@", sourceNodeId);
-
-  [self.sourceNodes setValue:sourceNode forKey:sourceNodeId];
-  [self.sourceFormats setValue:format forKey:sourceNodeId];
-  [self.sourceStates setValue:@true forKey:sourceNodeId];
-
-  [self.audioEngine attachNode:sourceNode];
-  [self.audioEngine connect:sourceNode to:self.audioEngine.mainMixerNode format:format];
-
-  return sourceNodeId;
-}
-
-- (void)detachSourceNodeWithId:(NSString *)sourceNodeId
-{
-  NSLog(@"[AudioEngine] detaching source node with ID: %@", sourceNodeId);
-
-  AVAudioSourceNode *sourceNode = [self.sourceNodes valueForKey:sourceNodeId];
-
-  if (sourceNode == nil) {
-    NSLog(@"[AudioEngine] No source node found with ID: %@", sourceNodeId);
-    return;
-  }
-
-  [self.audioEngine detachNode:sourceNode];
-
-  [self.sourceNodes removeObjectForKey:sourceNodeId];
-  [self.sourceFormats removeObjectForKey:sourceNodeId];
-  [self.sourceStates removeObjectForKey:sourceNodeId];
-}
-
-- (void)attachInputNode:(AVAudioSinkNode *)inputNode
-{
-  self.inputNode = inputNode;
-
-  [self.audioEngine attachNode:inputNode];
-  [self.audioEngine connect:self.audioEngine.inputNode to:inputNode format:nil];
-}
-
-- (void)detachInputNode
-{
-  if (self.inputNode == nil) {
-    return;
-  }
-
-  [self.audioEngine detachNode:self.inputNode];
-  self.inputNode = nil;
-  [self restartAudioEngine];
+  self.state = AudioEngineState::AudioEngineStateIdle;
 }
 
 - (bool)startIfNecessary
 {
-  if ([self isRunning]) {
+  if (self.state == AudioEngineState::AudioEngineStateRunning) {
     return true;
   }
 
-  if ([self.sourceNodes count] > 0 || self.inputNode != nil) {
+  if (([self.sourceNodes count] > 0) || self.inputNode != nil) {
     return [self startEngine];
   }
 
   return false;
 }
 
-- (void)stopIfNecessary
-{
-  if (![self isRunning]) {
-    return;
-  }
-
-  if ([self.sourceNodes count] == 0 && self.inputNode == nil) {
-    [self stopEngine];
-  }
-}
-
 - (void)pauseIfNecessary
 {
-  if (![self isRunning]) {
+  if (self.state == AudioEngineState::AudioEngineStatePaused) {
     return;
   }
 
-  for (NSString *sourceId in self.sourceStates) {
-    if ([self.sourceStates[sourceId] boolValue]) {
-      NSLog(@"state %@", self.sourceStates[sourceId]);
-      return;
-    }
+  [self.audioEngine pause];
+  self.state = AudioEngineState::AudioEngineStatePaused;
+}
+
+- (void)stopIfNecessary
+{
+  if (self.state == AudioEngineState::AudioEngineStateIdle) {
+    return;
   }
 
-  NSLog(@"[AudioEngine] pauseEngine");
-  [self.audioEngine pause];
+  [self stopEngine];
+}
+
+- (void)stopIfPossible
+{
+  if (self.state == AudioEngineState::AudioEngineStateIdle) {
+    return;
+  }
+
+  bool hasInput = self.inputNode != nil;
+  bool hasSources = [self.sourceNodes count] > 0;
+
+  if (hasInput || hasSources) {
+    return;
+  }
+
+  [self stopEngine];
+}
+
+- (void)restartAudioEngine
+{
+  if ([self.audioEngine isRunning]) {
+    [self.audioEngine stop];
+  }
+
+  self.audioEngine = [[AVAudioEngine alloc] init];
+  [self rebuildAudioEngine];
 }
 
 - (void)logAudioEngineState
@@ -284,11 +297,6 @@ static AudioEngine *_sharedInstance = nil;
   NSLog(@"📐 Engine output format: %.0f Hz, %u channels", format.sampleRate, format.channelCount);
 
   NSLog(@"=======================================================");
-}
-
-- (bool)isSupposedToRun
-{
-  return self.isSupposedToBeRunning;
 }
 
 @end

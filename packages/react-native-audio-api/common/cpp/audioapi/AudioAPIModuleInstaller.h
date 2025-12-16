@@ -16,6 +16,7 @@
 #include <audioapi/core/utils/worklets/SafeIncludes.h>
 
 #include <memory>
+#include <string>
 #include <vector>
 
 namespace audioapi {
@@ -137,19 +138,10 @@ class AudioAPIModuleInstaller {
             const jsi::Value &thisValue,
             const jsi::Value *args,
             size_t count) -> jsi::Value {
-          auto options = args[0].getObject(runtime);
-
-          auto sampleRate =
-              static_cast<float>(options.getProperty(runtime, "sampleRate").getNumber());
-          auto bufferLength =
-              static_cast<int>(options.getProperty(runtime, "bufferLengthInSamples").getNumber());
-
-          auto audioRecorderHostObject = std::make_shared<AudioRecorderHostObject>(
-              audioEventHandlerRegistry, sampleRate, bufferLength);
+          auto audioRecorderHostObject =
+              std::make_shared<AudioRecorderHostObject>(audioEventHandlerRegistry);
 
           auto jsiObject = jsi::Object::createFromHostObject(runtime, audioRecorderHostObject);
-          jsiObject.setExternalMemoryPressure(
-              runtime, sizeof(float) * bufferLength); // rough estimate of underlying buffer
 
           return jsiObject;
         });

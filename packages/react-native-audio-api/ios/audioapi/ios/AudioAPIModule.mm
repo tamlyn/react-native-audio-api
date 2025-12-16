@@ -57,10 +57,15 @@ RCT_EXPORT_MODULE(AudioAPIModule);
   [super invalidate];
 }
 
+- (dispatch_queue_t)methodQueue
+{
+  return dispatch_queue_create("com.swmansion.audioapi.MainModuleQueue", DISPATCH_QUEUE_SERIAL);
+}
+
 RCT_EXPORT_BLOCKING_SYNCHRONOUS_METHOD(install)
 {
   self.audioSessionManager = [[AudioSessionManager alloc] init];
-  self.audioEngine = [[AudioEngine alloc] initWithAudioSessionManager:self.audioSessionManager];
+  self.audioEngine = [[AudioEngine alloc] init];
   self.notificationManager = [[NotificationManager alloc] initWithAudioAPIModule:self];
   self.notificationRegistry = [[NotificationRegistry alloc] initWithAudioAPIModule:self];
 
@@ -118,14 +123,9 @@ RCT_EXPORT_METHOD(
         resolve reject : (RCTPromiseRejectBlock)reject)
 {
   dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-    if (!self.audioSessionManager.shouldManageSession) {
-      [self.audioSessionManager setShouldManageSession:true];
-    }
-    if ([self.audioSessionManager setActive:enabled]) {
-      resolve(@"true");
-      return;
-    }
-    resolve(@"false");
+    auto success = [self.audioSessionManager setActive:enabled];
+
+    resolve(@(success));
   });
 }
 
@@ -332,11 +332,6 @@ RCT_EXPORT_METHOD(
   if (_eventHandler != nullptr) {
     _eventHandler->invokeHandlerWithEventBody(name, body);
   }
-}
-
-- (dispatch_queue_t)methodQueue
-{
-  return dispatch_queue_create("swmansion.audioapi.Queue", DISPATCH_QUEUE_SERIAL);
 }
 
 @end

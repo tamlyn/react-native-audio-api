@@ -1,10 +1,14 @@
-import React, { useCallback, useEffect, useState, FC } from 'react';
-import { ActivityIndicator, View, StyleSheet } from 'react-native';
-import { AudioManager, PlaybackNotificationManager } from 'react-native-audio-api';
-import { Container, Button, Spacer } from '../../components';
-import AudioPlayer from './AudioPlayer';
-import { colors } from '../../styles';
+import React, { FC, useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Alert, StyleSheet, View } from 'react-native';
+import {
+  AudioManager,
+  PlaybackNotificationManager,
+} from 'react-native-audio-api';
 import BackgroundTimer from 'react-native-background-timer';
+
+import { Button, Container, Spacer } from '../../components';
+import { colors } from '../../styles';
+import AudioPlayer from './AudioPlayer';
 
 const URL =
   'https://software-mansion.github.io/react-native-audio-api/audio/voice/example-voice-01.mp3';
@@ -13,7 +17,7 @@ const AudioFile: FC = () => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [positionPercentage, setPositionPercentage] = useState(0);
-  const [shouldResume, setShouldResume] = useState(false);
+  const [wasPlaying, setWasPlaying] = useState(false);
 
   const togglePlayPause = async () => {
     if (isPlaying) {
@@ -22,6 +26,22 @@ const AudioFile: FC = () => {
       AudioPlayer.setOnPositionChanged((offset) => {
         setPositionPercentage(offset);
       });
+
+      AudioManager.setAudioSessionOptions({
+        iosCategory: 'playback',
+        iosMode: 'default',
+        iosOptions: [],
+      });
+
+      const success = await AudioManager.setAudioSessionActivity(true);
+
+      if (!success) {
+        Alert.alert(
+          'Audio Session Error',
+          'Failed to activate audio session for playback.'
+        );
+        return;
+      }
 
       await AudioPlayer.play();
 
@@ -69,7 +89,6 @@ const AudioFile: FC = () => {
     setupNotification();
 
     AudioManager.observeAudioInterruptions(true);
-    AudioManager.activelyReclaimSession(true);
 
     // Listen to notification control events
     const playListener = PlaybackNotificationManager.addEventListener(
@@ -106,27 +125,21 @@ const AudioFile: FC = () => {
     const interruptionSubscription = AudioManager.addSystemEventListener(
       'interruption',
       async (event) => {
-        if (event.type === 'began') {
-          // Store whether we were playing before interruption
-          setShouldResume(isPlaying && event.isTransient);
+        if (event.type === 'began' && isPlaying) {
+          await AudioPlayer.pause();
+          setIsPlaying(false);
+          setWasPlaying(true);
+          return;
+        }
 
-          if (isPlaying) {
-            await AudioPlayer.pause();
-            setIsPlaying(false);
-          }
-        } else if (event.type === 'ended') {
-
-          if (shouldResume) {
-            BackgroundTimer.setTimeout(async () => {
-              AudioManager.setAudioSessionActivity(true);
-              await AudioPlayer.play();
-              setIsPlaying(true);
-              console.log('Auto-resumed after transient interruption');
-            }, 500);
-          }
-
-          // Reset the flag
-          setShouldResume(false);
+        if (event.type === 'ended' && wasPlaying) {
+          BackgroundTimer.setTimeout(async () => {
+            AudioManager.setAudioSessionActivity(true);
+            await AudioPlayer.play();
+            setIsPlaying(true);
+            setWasPlaying(false);
+            console.log('Auto-resumed after transient interruption');
+          }, 500);
         }
       }
     );
@@ -141,7 +154,7 @@ const AudioFile: FC = () => {
       AudioPlayer.reset();
       console.log('Cleanup AudioFile component');
     };
-  }, [fetchAudioBuffer]);
+  }, [fetchAudioBuffer, isPlaying, wasPlaying]);
 
   return (
     <Container centered>

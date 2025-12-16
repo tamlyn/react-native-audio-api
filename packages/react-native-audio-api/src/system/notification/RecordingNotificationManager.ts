@@ -1,12 +1,12 @@
 import { Platform } from 'react-native';
-import { NativeAudioAPIModule } from '../../specs';
 import { AudioEventEmitter, AudioEventSubscription } from '../../events';
+import { NativeAudioAPIModule } from '../../specs';
 import type {
+  NotificationEvents,
   NotificationManager,
-  RecordingNotificationInfo,
   RecordingControlName,
   RecordingNotificationEventName,
-  NotificationEvents,
+  RecordingNotificationInfo,
 } from './types';
 
 /// Manager for recording notifications with controls.
@@ -18,9 +18,10 @@ class RecordingNotificationManager
       RecordingNotificationEventName
     >
 {
+  private isRegistered_ = false;
+  private isShown_ = false;
+
   private notificationKey = 'recording';
-  private isRegistered = false;
-  private isShown = false;
   private audioEventEmitter: AudioEventEmitter;
   private isIOS = Platform.OS === 'ios';
 
@@ -30,14 +31,14 @@ class RecordingNotificationManager
 
   /// Register the recording notification (must be called before showing).
   async register(): Promise<void> {
-    if (this.isRegistered) {
+    if (this.isRegistered_) {
       console.warn('RecordingNotification is already registered');
       return;
     }
 
     // Recording notifications are only supported on Android
     if (this.isIOS) {
-      this.isRegistered = true;
+      this.isRegistered_ = true;
       return;
     }
 
@@ -54,12 +55,12 @@ class RecordingNotificationManager
       throw new Error(result.error);
     }
 
-    this.isRegistered = true;
+    this.isRegistered_ = true;
   }
 
   /// Show the notification with initial metadata.
   async show(info: RecordingNotificationInfo): Promise<void> {
-    if (!this.isRegistered) {
+    if (!this.isRegistered_) {
       throw new Error(
         'RecordingNotification must be registered before showing. Call register() first.'
       );
@@ -67,7 +68,7 @@ class RecordingNotificationManager
 
     // Recording notifications are only supported on Android
     if (this.isIOS) {
-      this.isShown = true;
+      this.isShown_ = true;
       return;
     }
 
@@ -84,12 +85,12 @@ class RecordingNotificationManager
       throw new Error(result.error);
     }
 
-    this.isShown = true;
+    this.isShown_ = true;
   }
 
   /// Update the notification with new metadata or state.
   async update(info: RecordingNotificationInfo): Promise<void> {
-    if (!this.isShown) {
+    if (!this.isShown_) {
       console.warn('RecordingNotification is not shown. Call show() first.');
       return;
     }
@@ -115,13 +116,13 @@ class RecordingNotificationManager
 
   /// Hide the notification (can be shown again later).
   async hide(): Promise<void> {
-    if (!this.isShown) {
+    if (!this.isShown_) {
       return;
     }
 
     // Recording notifications are only supported on Android
     if (this.isIOS) {
-      this.isShown = false;
+      this.isShown_ = false;
       return;
     }
 
@@ -137,22 +138,22 @@ class RecordingNotificationManager
       throw new Error(result.error);
     }
 
-    this.isShown = false;
+    this.isShown_ = false;
   }
 
   /// Unregister the notification (must register again to use).
   async unregister(): Promise<void> {
-    if (!this.isRegistered) {
+    if (!this.isRegistered_) {
       return;
     }
 
-    if (this.isShown) {
+    if (this.isShown_) {
       await this.hide();
     }
 
     // Recording notifications are only supported on Android
     if (this.isIOS) {
-      this.isRegistered = false;
+      this.isRegistered_ = false;
       return;
     }
 
@@ -168,7 +169,7 @@ class RecordingNotificationManager
       throw new Error(result.error);
     }
 
-    this.isRegistered = false;
+    this.isRegistered_ = false;
   }
 
   /// Enable or disable a specific recording control.
@@ -176,7 +177,7 @@ class RecordingNotificationManager
     control: RecordingControlName,
     enabled: boolean
   ): Promise<void> {
-    if (!this.isRegistered) {
+    if (!this.isRegistered_) {
       console.warn('RecordingNotification is not registered');
       return;
     }
@@ -205,7 +206,7 @@ class RecordingNotificationManager
   async isActive(): Promise<boolean> {
     // Recording notifications are only supported on Android
     if (this.isIOS) {
-      return this.isShown;
+      return this.isShown_;
     }
 
     if (!NativeAudioAPIModule) {
@@ -215,6 +216,10 @@ class RecordingNotificationManager
     return await NativeAudioAPIModule.isNotificationActive(
       this.notificationKey
     );
+  }
+
+  isRegistered(): boolean {
+    return this.isRegistered_;
   }
 
   /// Add an event listener for notification actions.

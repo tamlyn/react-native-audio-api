@@ -4,42 +4,36 @@
 
 @implementation NativeAudioRecorder
 
+static inline uint32_t nextPowerOfTwo(uint32_t x)
+{
+  if (x == 0) {
+    return 1;
+  }
+
+  x--;
+  x |= x >> 1;
+  x |= x >> 2;
+  x |= x >> 4;
+  x |= x >> 8;
+  x |= x >> 16;
+  x++;
+
+  return x;
+}
+
 - (instancetype)initWithReceiverBlock:(AudioReceiverBlock)receiverBlock
-                         bufferLength:(int)bufferLength
-                           sampleRate:(float)sampleRate
 {
   if (self = [super init]) {
-    self.bufferLength = bufferLength;
-    self.sampleRate = sampleRate;
-
     self.receiverBlock = [receiverBlock copy];
-
-    float devicePrefferedSampleRate = [[AVAudioSession sharedInstance] sampleRate];
-
-    if (!devicePrefferedSampleRate) {
-      NSError *error;
-      devicePrefferedSampleRate = sampleRate;
-
-      [[AVAudioSession sharedInstance] setPreferredSampleRate:sampleRate error:&error];
-    }
-
-    self.inputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                                        sampleRate:devicePrefferedSampleRate
-                                                          channels:1
-                                                       interleaved:NO];
-    self.outputFormat = [[AVAudioFormat alloc] initWithCommonFormat:AVAudioPCMFormatFloat32
-                                                         sampleRate:sampleRate
-                                                           channels:1
-                                                        interleaved:NO];
-    self.audioConverter = [[AVAudioConverter alloc] initFromFormat:self.inputFormat
-                                                          toFormat:self.outputFormat];
 
     __weak typeof(self) weakSelf = self;
     self.receiverSinkBlock = ^OSStatus(
         const AudioTimeStamp *_Nonnull timestamp,
         AVAudioFrameCount frameCount,
         const AudioBufferList *_Nonnull inputData) {
-      return [weakSelf processAudioInput:inputData withFrameCount:frameCount atTimestamp:timestamp];
+      weakSelf.receiverBlock(inputData, frameCount);
+
+      return kAudioServicesNoError;
     };
 
     self.sinkNode = [[AVAudioSinkNode alloc] initWithReceiverBlock:self.receiverSinkBlock];
@@ -48,58 +42,36 @@
   return self;
 }
 
-- (OSStatus)processAudioInput:(const AudioBufferList *)inputData
-               withFrameCount:(AVAudioFrameCount)frameCount
-                  atTimestamp:(const AudioTimeStamp *)timestamp
+// Note: this method should be called only after the session is activated
+- (AVAudioFormat *)getInputFormat
 {
-  float inputSampleRate = self.inputFormat.sampleRate;
-  float outputSampleRate = self.outputFormat.sampleRate;
+  AVAudioFormat *format = [AudioEngine.sharedInstance.audioEngine.inputNode inputFormatForBus:0];
 
-  if (inputSampleRate != outputSampleRate) {
-    AVAudioPCMBuffer *inputBuffer = [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.inputFormat
-                                                                  frameCapacity:frameCount];
-    memcpy(
-        inputBuffer.mutableAudioBufferList->mBuffers[0].mData,
-        inputData->mBuffers[0].mData,
-        inputData->mBuffers[0].mDataByteSize);
-    inputBuffer.frameLength = frameCount;
+  if (format.sampleRate == 0 || format.channelCount == 0) {
+    AudioSessionManager *sessionManager = [AudioSessionManager sharedInstance];
 
-    int outputFrameCount = frameCount * outputSampleRate / inputSampleRate;
-
-    AVAudioPCMBuffer *outputBuffer =
-        [[AVAudioPCMBuffer alloc] initWithPCMFormat:self.audioConverter.outputFormat
-                                      frameCapacity:outputFrameCount];
-
-    NSError *error = nil;
-    AVAudioConverterInputBlock inputBlock = ^AVAudioBuffer *_Nullable(
-        AVAudioPacketCount inNumberOfPackets, AVAudioConverterInputStatus *outStatus)
-    {
-      *outStatus = AVAudioConverterInputStatus_HaveData;
-      return inputBuffer;
-    };
-
-    /// IMPORTANT: AVAudioConverter leaks memory without autorelease pool
-    /// more details here:
-    /// https://github.com/poneciak57/AVAudioConverter-memory-leak-repro-electric-boogaloo
-    /// we can try to remove it in the future or refactor to reuse buffers to
-    /// minimize allocations
-    @autoreleasepool {
-      [self.audioConverter convertToBuffer:outputBuffer error:&error withInputFromBlock:inputBlock];
-    }
-
-    if (error) {
-      NSLog(@"Error during audio conversion: %@", error.localizedDescription);
-      return kAudioServicesBadSpecifierSizeError;
-    }
-
-    self.receiverBlock(outputBuffer.audioBufferList, outputBuffer.frameLength);
-
-    return kAudioServicesNoError;
+    format = [[AVAudioFormat alloc]
+        initStandardFormatWithSampleRate:[[sessionManager getDevicePreferredSampleRate] doubleValue]
+                                channels:[[sessionManager getDevicePreferredInputChannelCount]
+                                             intValue]];
   }
 
-  self.receiverBlock(inputData, frameCount);
+  return format;
+}
 
-  return kAudioServicesNoError;
+- (int)getBufferSize
+{
+  // NOTE: this method should be called only after the session is activated
+  AVAudioSession *audioSession = [AVAudioSession sharedInstance];
+
+  // TMPfix: it seems that buffer duration in some cases (background/device change) can switch
+  // to longer values, exceeding buffer size predicted after session start
+  // since it is just a couple of buffers we can set min value of 200ms
+  // to enforce we always have enough frames allocated to pass further down the pipeline
+  float bufferDuration = MAX(audioSession.IOBufferDuration, 0.2);
+
+  // IOS returns buffer duration rounded, but expects the buffer size to be power of two in runtime
+  return nextPowerOfTwo(ceil(bufferDuration * audioSession.sampleRate));
 }
 
 - (void)start
@@ -113,10 +85,9 @@
   // we haven't break rules of at runtime modifications from docs
   // https://developer.apple.com/documentation/avfaudio/avaudioengine?language=objc
   //
-  // Currently we are restarting because we do not see any significant
-  // performance issue and case when you will need to start and stop recorder
-  // very frequently
-  [audioEngine stopEngine];
+  // Currently we are restarting because we do not see any significant performance issue and case when
+  // you will need to start and stop recorder very frequently
+  [audioEngine stopIfNecessary];
   [audioEngine attachInputNode:self.sinkNode];
   [audioEngine startIfNecessary];
 }
@@ -125,8 +96,31 @@
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
   assert(audioEngine != nil);
+  [audioEngine stopIfPossible];
   [audioEngine detachInputNode];
-  [audioEngine stopIfNecessary];
+
+  // This makes sure that the engine releases the input properly when we no longer need it
+  // (i.e. no more misleading dot)
+  // Restart only if is not running to avoid interruptions of playback
+  if ([audioEngine getState] != AudioEngineStateRunning) {
+    [audioEngine restartAudioEngine];
+  }
+}
+
+- (void)pause
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+
+  [audioEngine pauseIfNecessary];
+}
+
+- (void)resume
+{
+  AudioEngine *audioEngine = [AudioEngine sharedInstance];
+  assert(audioEngine != nil);
+
+  [audioEngine startIfNecessary];
 }
 
 - (void)cleanup

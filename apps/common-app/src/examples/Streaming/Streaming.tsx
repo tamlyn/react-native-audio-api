@@ -1,12 +1,8 @@
-import React, { useRef, FC, useEffect, act } from 'react';
-import {
-  AudioContext,
-  StreamerNode,
-  GainNode
-} from 'react-native-audio-api';
+import React, { FC, useEffect, useRef } from 'react';
+import { AudioContext, GainNode, StreamerNode } from 'react-native-audio-api';
 
-import { Container, Button } from '../../components';
 import { View } from 'react-native';
+import { Button, Container } from '../../components';
 
 const SAMPLE_RATE = 44100;
 
@@ -22,7 +18,7 @@ const Streaming: FC = () => {
     return () => {
       aCtxRef.current?.close();
       streamerRef.current?.stop();
-    }
+    };
   }, []);
 
   const startStreaming = () => {
@@ -36,7 +32,9 @@ const Streaming: FC = () => {
     }
     streamerRef.current = aCtxRef.current.createStreamer();
 
-    streamerRef.current.initialize('https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8');
+    streamerRef.current.initialize(
+      'https://liveradio.timesa.pl/2980-1.aac/playlist.m3u8'
+    );
     streamerRef.current.connect(gainRef.current);
     gainRef.current.connect(aCtxRef.current.destination);
     streamerRef.current.start(aCtxRef.current.currentTime);
@@ -51,22 +49,27 @@ const Streaming: FC = () => {
     }
   };
 
-
   return (
     <Container style={{ gap: 40 }}>
       <View style={{ alignItems: 'center', justifyContent: 'center', gap: 5 }}>
         <Button title="Start streaming" onPress={startStreaming} />
         <Button title="Stop streaming" onPress={stopStreaming} />
-        <Button title="Volume to 0.5" onPress={() => {
-          if (gainRef.current) {
-            gainRef.current.gain.value = 0.5;
-          }
-        }} />
-        <Button title="Volume to 2.0" onPress={() => {
-          if (gainRef.current) {
-            gainRef.current.gain.value = 2.0;
-          }
-        }} />
+        <Button
+          title="Volume to 0.5"
+          onPress={() => {
+            if (gainRef.current) {
+              gainRef.current.gain.value = 0.5;
+            }
+          }}
+        />
+        <Button
+          title="Volume to 2.0"
+          onPress={() => {
+            if (gainRef.current) {
+              gainRef.current.gain.value = 2.0;
+            }
+          }}
+        />
       </View>
     </Container>
   );
