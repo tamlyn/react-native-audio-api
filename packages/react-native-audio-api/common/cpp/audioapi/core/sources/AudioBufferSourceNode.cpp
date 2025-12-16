@@ -75,8 +75,9 @@ void AudioBufferSourceNode::setLoopEnd(double loopEnd) {
 
 void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer) {
   Locker locker(getBufferLock());
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
 
-  if (!buffer) {
+  if (buffer == nullptr || context == nullptr) {
     buffer_ = std::shared_ptr<AudioBuffer>(nullptr);
     alignedBus_ = std::shared_ptr<AudioBus>(nullptr);
     loopEnd_ = 0;
@@ -88,24 +89,22 @@ void AudioBufferSourceNode::setBuffer(const std::shared_ptr<AudioBuffer> &buffer
 
   stretch_->presetDefault(channelCount_, buffer_->getSampleRate());
 
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    if (pitchCorrection_) {
-      int extraTailFrames =
-          static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
-      size_t totalSize = buffer_->getLength() + extraTailFrames;
+  if (pitchCorrection_) {
+    int extraTailFrames =
+        static_cast<int>((getInputLatency() + getOutputLatency()) * context->getSampleRate());
+    size_t totalSize = buffer_->getLength() + extraTailFrames;
 
-      alignedBus_ = std::make_shared<AudioBus>(totalSize, channelCount_, buffer_->getSampleRate());
-      alignedBus_->copy(buffer_->bus_.get(), 0, 0, buffer_->getLength());
+    alignedBus_ = std::make_shared<AudioBus>(totalSize, channelCount_, buffer_->getSampleRate());
+    alignedBus_->copy(buffer_->bus_.get(), 0, 0, buffer_->getLength());
 
-      alignedBus_->zero(buffer_->getLength(), extraTailFrames);
-    } else {
-      alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
-    }
-    audioBus_ =
-        std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-    playbackRateBus_ = std::make_shared<AudioBus>(
-        RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
+    alignedBus_->zero(buffer_->getLength(), extraTailFrames);
+  } else {
+    alignedBus_ = std::make_shared<AudioBus>(*buffer_->bus_);
   }
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
+  playbackRateBus_ = std::make_shared<AudioBus>(
+      RENDER_QUANTUM_SIZE * 3, channelCount_, context->getSampleRate());
 
   loopEnd_ = buffer_->getDuration();
 }
@@ -196,8 +195,8 @@ void AudioBufferSourceNode::processWithoutInterpolation(
   size_t frameStart;
   size_t frameEnd;
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    frameStart = static_cast<size_t>(getVirtualStartFrame(context));
-    frameEnd = static_cast<size_t>(getVirtualEndFrame(context));
+    frameStart = static_cast<size_t>(getVirtualStartFrame(context->getSampleRate()));
+    frameEnd = static_cast<size_t>(getVirtualEndFrame(context->getSampleRate()));
   } else {
     processingBus->zero();
     return;
@@ -271,8 +270,8 @@ void AudioBufferSourceNode::processWithInterpolation(
   double vFrameStart;
   double vFrameEnd;
   if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    vFrameStart = getVirtualStartFrame(context);
-    vFrameEnd = getVirtualEndFrame(context);
+    vFrameStart = getVirtualStartFrame(context->getSampleRate());
+    vFrameEnd = getVirtualEndFrame(context->getSampleRate());
   } else {
     processingBus->zero();
     return;
@@ -323,14 +322,14 @@ void AudioBufferSourceNode::processWithInterpolation(
   }
 }
 
-double AudioBufferSourceNode::getVirtualStartFrame(std::shared_ptr<BaseAudioContext> context) {
-  auto loopStartFrame = loopStart_ * context->getSampleRate();
+double AudioBufferSourceNode::getVirtualStartFrame(float sampleRate) {
+  auto loopStartFrame = loopStart_ * sampleRate;
   return loop_ && loopStartFrame >= 0 && loopStart_ < loopEnd_ ? loopStartFrame : 0.0;
 }
 
-double AudioBufferSourceNode::getVirtualEndFrame(std::shared_ptr<BaseAudioContext> context) {
+double AudioBufferSourceNode::getVirtualEndFrame(float sampleRate) {
   auto inputBufferLength = static_cast<double>(alignedBus_->getSize());
-  auto loopEndFrame = loopEnd_ * context->getSampleRate();
+  auto loopEndFrame = loopEnd_ * sampleRate;
 
   return loop_ && loopEndFrame > 0 && loopStart_ < loopEnd_
       ? std::min(loopEndFrame, inputBufferLength)

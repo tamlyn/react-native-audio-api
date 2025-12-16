@@ -48,6 +48,11 @@ StreamerNode::~StreamerNode() {
 
 bool StreamerNode::initialize(const std::string &input_url) {
 #if !RN_AUDIO_API_FFMPEG_DISABLED
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (context == nullptr) {
+    return false;
+  }
+
   if (isInitialized_) {
     cleanup();
   }
@@ -58,7 +63,7 @@ bool StreamerNode::initialize(const std::string &input_url) {
     return false;
   }
 
-  if (!findAudioStream() || !setupDecoder() || !setupResampler()) {
+  if (!findAudioStream() || !setupDecoder() || !setupResampler(context->getSampleRate())) {
     if (VERBOSE)
       printf("Failed to find/setup audio stream\n");
     cleanup();
@@ -76,10 +81,8 @@ bool StreamerNode::initialize(const std::string &input_url) {
   }
 
   channelCount_ = codecpar_->ch_layout.nb_channels;
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    audioBus_ =
-        std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
-  }
+  audioBus_ =
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
 
   auto [sender, receiver] = channels::spsc::channel<
       StreamingData,
@@ -153,7 +156,7 @@ std::shared_ptr<AudioBus> StreamerNode::processNode(
 }
 
 #if !RN_AUDIO_API_FFMPEG_DISABLED
-bool StreamerNode::setupResampler() {
+bool StreamerNode::setupResampler(float outSampleRate) {
   // Allocate resampler context
   swrCtx_ = swr_alloc();
   if (swrCtx_ == nullptr) {
@@ -167,9 +170,7 @@ bool StreamerNode::setupResampler() {
 
   // Set output parameters (float)
   av_opt_set_chlayout(swrCtx_, "out_chlayout", &codecCtx_->ch_layout, 0);
-  if (std::shared_ptr<BaseAudioContext> context = context_.lock()) {
-    av_opt_set_int(swrCtx_, "out_sample_rate", context->getSampleRate(), 0);
-  }
+  av_opt_set_int(swrCtx_, "out_sample_rate", outSampleRate, 0);
   av_opt_set_sample_fmt(swrCtx_, "out_sample_fmt", AV_SAMPLE_FMT_FLTP, 0);
 
   // Initialize the resampler

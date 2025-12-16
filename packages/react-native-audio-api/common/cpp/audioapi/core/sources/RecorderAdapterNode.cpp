@@ -17,7 +17,8 @@ RecorderAdapterNode::RecorderAdapterNode(std::shared_ptr<BaseAudioContext> conte
 }
 
 void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
-  if (isInitialized_) {
+  std::shared_ptr<BaseAudioContext> context = context_.lock();
+  if (isInitialized_ || context == nullptr) {
     return;
   }
 
@@ -41,7 +42,7 @@ void RecorderAdapterNode::init(size_t bufferSize, int channelCount) {
   // context output and not enforcing anything on the system output/input configuration.
   // A lot of words for a couple of lines of implementation :shrug:
   adapterOutputBus_ =
-      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context_->getSampleRate());
+      std::make_shared<AudioBus>(RENDER_QUANTUM_SIZE, channelCount_, context->getSampleRate());
   isInitialized_ = true;
 }
 

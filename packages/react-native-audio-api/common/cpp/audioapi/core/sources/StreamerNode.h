@@ -106,9 +106,10 @@ class StreamerNode : public AudioScheduledSourceNode {
 
   /**
    * @brief Setting up the resampler
+   * @param outSampleRate Sample rate for the output audio
    * @return true if successful, false otherwise
    */
-  bool setupResampler();
+  bool setupResampler(float outSampleRate);
 
   /**
    * @brief Resample the audio frame, change its sample format and channel layout
