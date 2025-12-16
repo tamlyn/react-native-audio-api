@@ -58,11 +58,7 @@ const PlaybackSpeed: FC = () => {
           )
         );
 
-      const source = audioContext.createBufferSource({
-        pitchCorrection: audioSettings.PSOLA
-          ? false
-          : audioSettings.pitchCorrection,
-      });
+      const source = audioContext.createBufferSource(audioSettings.PSOLA ? false : audioSettings.pitchCorrection);
 
       source.buffer = buffer;
       source.playbackRate.value = audioSettings.PSOLA ? 1 : playbackSpeed;
