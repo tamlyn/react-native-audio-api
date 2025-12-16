@@ -62,14 +62,38 @@ if not provided, the original sample rate from the file is used.
 ```tsx
 const url = ... // url to an audio
 
-  const buffer = await fetch(url)
-    .then((response) => response.arrayBuffer())
-    // resample decoded audio to 48000 Hz
-    .then((arrayBuffer) => decodeAudioData(arrayBuffer, 48000))
-    .catch((error) => {
-      console.error('Error decoding audio data source:', error);
-      return null;
-    });
+const buffer = await fetch(url)
+  .then((response) => response.arrayBuffer())
+  // resample decoded audio to 48000 Hz
+  .then((arrayBuffer) => decodeAudioData(arrayBuffer, 48000))
+  .catch((error) => {
+    console.error('Error decoding audio data source:', error);
+    return null;
+  });
+```
+</details>
+
+<details>
+<summary>Example decoding using react native Image component <MobileOnly/> </summary>
+
+:::caution
+React Native by default only support .mp3, .wav, .mp4, .m4a, .aac audio file formats.
+If you want to use other types, refer to [this section](https://reactnative.dev/docs/images#static-non-image-resources) for more info.
+:::
+
+```tsx
+import { Image } from 'react-native';
+
+const uri = Image.resolveAssetSource(require('path/to/file')).uri
+
+const buffer = await fetch(uri)
+  .then((response) => response.arrayBuffer())
+  // sampleRate not provided, so file will be decoded in original sampleRate
+  .then((arrayBuffer) => decodeAudioData(arrayBuffer))
+  .catch((error) => {
+    console.error('Error decoding audio data source:', error);
+    return null;
+  });
 ```
 </details>
 
@@ -79,14 +103,14 @@ const url = ... // url to an audio
 import { Asset } from 'expo-asset';
 
 const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
-    .downloadAsync()
-    .then((asset) =>  {
-      if (!asset.localUri) {
-        throw new Error('Failed to load audio asset');
-      }
-      // sampleRate not provided, so file will be decoded in original sampleRate
-      return decodeAudioData(asset.localUri);
-    })
+  .downloadAsync()
+  .then((asset) =>  {
+    if (!asset.localUri) {
+      console.error('Failed to load audio asset');
+    }
+    // sampleRate not provided, so file will be decoded in original sampleRate
+    return decodeAudioData(asset.localUri);
+  })
 ```
 </details>
 
