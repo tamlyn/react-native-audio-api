@@ -5,30 +5,26 @@
 
 @class AudioSessionManager;
 
+typedef NS_ENUM(NSInteger, AudioEngineState) {
+  AudioEngineStateIdle = 0,
+  AudioEngineStateRunning,
+  AudioEngineStatePaused,
+  AudioEngineStateInterrupted
+};
+
 @interface AudioEngine : NSObject
 
-@property (nonatomic, assign) bool isInterrupted;
-@property (nonatomic, assign) bool isSupposedToBeRunning;
+@property (nonatomic, assign) AudioEngineState state;
 @property (nonatomic, strong) AVAudioEngine *audioEngine;
 @property (nonatomic, strong) NSMutableDictionary *sourceNodes;
 @property (nonatomic, strong) NSMutableDictionary *sourceFormats;
-@property (nonatomic, strong) NSMutableDictionary *sourceStates;
 @property (nonatomic, strong) AVAudioSinkNode *inputNode;
 @property (nonatomic, weak) AudioSessionManager *sessionManager;
 
-- (instancetype)initWithAudioSessionManager:(AudioSessionManager *)sessionManager;
-
+- (instancetype)init;
 + (instancetype)sharedInstance;
+
 - (void)cleanup;
-- (bool)rebuildAudioEngineAndStartIfNecessary;
-- (bool)restartAudioEngine;
-- (bool)startEngine;
-- (void)stopEngine;
-- (void)pauseEngine:(NSString *)sourceNodeId;
-- (bool)isRunning;
-- (void)markAsInterrupted;
-- (void)unmarkAsInterrupted;
-- (bool)isSupposedToRun;
 
 - (NSString *)attachSourceNode:(AVAudioSourceNode *)sourceNode format:(AVAudioFormat *)format;
 - (void)detachSourceNodeWithId:(NSString *)sourceNodeId;
@@ -36,10 +32,19 @@
 - (void)attachInputNode:(AVAudioSinkNode *)inputNode;
 - (void)detachInputNode;
 
-- (void)logAudioEngineState;
+- (void)onInterruptionBegin;
+- (void)onInterruptionEnd:(bool)shouldResume;
+
+- (AudioEngineState)getState;
 
 - (bool)startIfNecessary;
-- (void)stopIfNecessary;
 - (void)pauseIfNecessary;
+- (void)stopIfNecessary;
+
+- (void)stopIfPossible;
+
+- (void)restartAudioEngine;
+
+- (void)logAudioEngineState;
 
 @end

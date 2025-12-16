@@ -21,7 +21,7 @@ IOSAudioPlayer::IOSAudioPlayer(
     while (processedFrames < numFrames) {
       int framesToProcess = std::min(numFrames - processedFrames, RENDER_QUANTUM_SIZE);
 
-      if (isRunning_.load()) {
+      if (isRunning_.load(std::memory_order_acquire)) {
         renderAudio_(audioBus_, framesToProcess);
       } else {
         audioBus_->zero();
@@ -57,13 +57,13 @@ bool IOSAudioPlayer::start()
   }
 
   bool success = [audioPlayer_ start];
-  isRunning_.store(success);
+  isRunning_.store(success, std::memory_order_release);
   return success;
 }
 
 void IOSAudioPlayer::stop()
 {
-  isRunning_.store(false);
+  isRunning_.store(false, std::memory_order_release);
   [audioPlayer_ stop];
 }
 
@@ -74,13 +74,13 @@ bool IOSAudioPlayer::resume()
   }
 
   bool success = [audioPlayer_ resume];
-  isRunning_.store(success);
+  isRunning_.store(success, std::memory_order_release);
   return success;
 }
 
 void IOSAudioPlayer::suspend()
 {
-  isRunning_.store(false);
+  isRunning_.store(false, std::memory_order_release);
   [audioPlayer_ suspend];
 }
 
@@ -88,7 +88,8 @@ bool IOSAudioPlayer::isRunning() const
 {
   AudioEngine *audioEngine = [AudioEngine sharedInstance];
 
-  return isRunning_.load() && [audioEngine isRunning];
+  return isRunning_.load(std::memory_order_acquire) &&
+      [audioEngine getState] == AudioEngineState::AudioEngineStateRunning;
 }
 
 void IOSAudioPlayer::cleanup()

@@ -25,8 +25,14 @@ export { default as StreamerNode } from './core/StreamerNode';
 export { default as WorkletNode } from './core/WorkletNode';
 export { default as WorkletProcessingNode } from './core/WorkletProcessingNode';
 export { default as WorkletSourceNode } from './core/WorkletSourceNode';
+
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { default as AudioManager } from './system';
+
+export * from './errors';
+export * from './system/types';
+export * from './types';
+export { default as FilePreset } from './utils/filePresets';
 
 // Notification System
 export {
@@ -35,39 +41,12 @@ export {
 } from './system/notification';
 
 export {
-  AudioWorkletRuntime,
-  BiquadFilterType,
-  ChannelCountMode,
-  ChannelInterpretation,
-  ContextState,
-  OscillatorType,
-  PeriodicWaveConstraints,
-  WindowType,
-} from './types';
-
-export {
-  IOSCategory,
-  IOSMode,
-  IOSOption,
-  PermissionStatus,
-  SessionOptions,
-} from './system/types';
-
-export {
   NotificationManager,
-  PlaybackNotificationInfo,
   PlaybackControlName,
   PlaybackNotificationEventName,
-  RecordingNotificationInfo,
+  PlaybackNotificationInfo,
   RecordingControlName,
   RecordingNotificationEventName,
+  RecordingNotificationInfo,
   SimpleNotificationOptions,
 } from './system/notification';
-
-export {
-  IndexSizeError,
-  InvalidAccessError,
-  InvalidStateError,
-  NotSupportedError,
-  RangeError,
-} from './errors';

@@ -13,6 +13,7 @@ class AudioFocusListener(
   private val audioAPIModule: WeakReference<AudioAPIModule>,
 ) : AudioManager.OnAudioFocusChangeListener {
   private var focusRequest: AudioFocusRequest? = null
+  private var isTransientLoss: Boolean = false
 
   override fun onAudioFocusChange(focusChange: Int) {
     Log.d("AudioFocusListener", "onAudioFocusChange: $focusChange")
@@ -21,7 +22,8 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("isTransient", false)
+            put("shouldResume", false)
+            isTransientLoss = false
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
@@ -30,7 +32,8 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "began")
-            put("isTransient", true)
+            put("shouldResume", false)
+            isTransientLoss = true
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }
@@ -39,7 +42,8 @@ class AudioFocusListener(
         val body =
           HashMap<String, Any>().apply {
             put("type", "ended")
-            put("isTransient", false)
+            put("shouldResume", isTransientLoss)
+            isTransientLoss = false
           }
         audioAPIModule.get()?.invokeHandlerWithEventNameAndEventBody("interruption", body)
       }

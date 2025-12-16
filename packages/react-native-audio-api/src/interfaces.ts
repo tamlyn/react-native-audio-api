@@ -1,10 +1,14 @@
 import { AudioEventCallback, AudioEventName } from './events/types';
-import {
+import type {
+  AudioRecorderCallbackOptions,
+  AudioRecorderFileOptions,
   BiquadFilterType,
   ChannelCountMode,
   ChannelInterpretation,
   ContextState,
+  FileInfo,
   OscillatorType,
+  Result,
   WindowType,
 } from './types';
 
@@ -285,14 +289,39 @@ export interface IWorkletSourceNode extends IAudioScheduledSourceNode {}
 
 export interface IWorkletProcessingNode extends IAudioNode {}
 
+export interface IAudioRecorderCallbackOptions
+  extends AudioRecorderCallbackOptions {
+  callbackId: string;
+}
+
 export interface IAudioRecorder {
-  start: () => void;
-  stop: () => void;
+  // default recorder methods
+  start: () => Result<{ path: string }>;
+  stop: () => Result<FileInfo>;
+  isRecording: () => boolean;
+  isPaused: () => boolean;
+
+  enableFileOutput: (
+    options: AudioRecorderFileOptions
+  ) => Result<{ path: string }>;
+  disableFileOutput: () => void;
+
+  // pause and resume methods for file recording
+  pause: () => void;
+  resume: () => void;
+
+  // Graph integration methods
   connect: (node: IRecorderAdapterNode) => void;
   disconnect: () => void;
 
-  // passing subscriptionId(uint_64 in cpp, string in js) to the cpp
-  onAudioReady: string;
+  setOnAudioReady: (options: IAudioRecorderCallbackOptions) => Result<void>;
+  clearOnAudioReady: () => void;
+
+  setOnError: (options: { callbackId: string }) => void;
+  clearOnError: () => void;
+
+  getCurrentDuration: () => number;
+  getFilePath: () => string | null;
 }
 
 export interface IAudioDecoder {

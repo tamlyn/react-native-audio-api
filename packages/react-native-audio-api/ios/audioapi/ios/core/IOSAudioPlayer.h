@@ -1,6 +1,6 @@
 #pragma once
 
-#ifdef __OBJC__ // when compiled as Objective-C++
+#ifdef __OBJC__ // when compiled as Objective-C
 #import <NativeAudioPlayer.h>
 #else  // when compiled as C++
 typedef struct objc_object NativeAudioPlayer;

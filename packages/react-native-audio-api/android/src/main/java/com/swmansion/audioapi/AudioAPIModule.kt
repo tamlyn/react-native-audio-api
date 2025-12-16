@@ -12,6 +12,7 @@ import com.facebook.react.module.annotations.ReactModule
 import com.facebook.react.turbomodule.core.CallInvokerHolderImpl
 import com.swmansion.audioapi.system.ForegroundServiceManager
 import com.swmansion.audioapi.system.MediaSessionManager
+import com.swmansion.audioapi.system.NativeFileInfo
 import com.swmansion.audioapi.system.PermissionRequestListener
 import java.lang.ref.WeakReference
 
@@ -63,6 +64,7 @@ class AudioAPIModule(
 
   override fun install(): Boolean {
     MediaSessionManager.initialize(WeakReference(this), reactContext)
+    NativeFileInfo.initialize(reactContext)
     injectJSIBindings()
 
     return true
