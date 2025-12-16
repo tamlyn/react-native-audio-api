@@ -72,7 +72,11 @@ class StreamerNode : public AudioScheduledSourceNode {
   bool initialize(const std::string &inputUrl);
 
   std::string getStreamPath() const {
+#if !RN_AUDIO_API_TEST
     return streamPath_;
+#else
+    return "";
+#endif // RN_AUDIO_API_TEST
   }
 
  protected:
