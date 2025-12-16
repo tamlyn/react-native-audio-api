@@ -1,4 +1,4 @@
-import { AudioContext, AudioManager } from 'react-native-audio-api';
+import { AudioContext, PlaybackNotificationManager } from 'react-native-audio-api';
 import type {
   AudioBufferSourceNode,
   AudioBuffer,
@@ -56,8 +56,9 @@ class AudioPlayer {
 
     this.sourceNode.start(this.audioContext.currentTime, this.offset);
 
-    AudioManager.setLockScreenInfo({
-      state: 'state_playing',
+    PlaybackNotificationManager.update({
+      state: 'playing',
+      elapsedTime: this.offset,
     });
   };
 
@@ -69,8 +70,9 @@ class AudioPlayer {
 
     this.sourceNode?.stop(this.audioContext.currentTime);
 
-    AudioManager.setLockScreenInfo({
-      state: 'state_paused',
+    PlaybackNotificationManager.update({
+      state: 'paused',
+      elapsedTime: this.offset,
     });
 
     await this.audioContext.suspend();
@@ -130,6 +132,10 @@ class AudioPlayer {
     callback: null | ((offset: number) => void) = null
   ) => {
     this.onPositionChanged = callback;
+  };
+
+  getDuration = (): number => {
+    return this.audioBuffer?.duration ?? 0;
   };
 }
 

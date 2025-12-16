@@ -28,6 +28,12 @@ export { default as WorkletSourceNode } from './core/WorkletSourceNode';
 export { default as useSystemVolume } from './hooks/useSystemVolume';
 export { default as PeriodicWave } from './core/PeriodicWave';
 
+// Notification System
+export {
+  PlaybackNotificationManager,
+  RecordingNotificationManager,
+} from './system/notification';
+
 export {
   OscillatorType,
   ChannelCountMode,
@@ -43,11 +49,20 @@ export {
   IOSCategory,
   IOSMode,
   IOSOption,
-  LockScreenInfo,
-  MediaState,
   PermissionStatus,
   SessionOptions,
 } from './system/types';
+
+export {
+  NotificationManager,
+  PlaybackNotificationInfo,
+  PlaybackControlName,
+  PlaybackNotificationEventName,
+  RecordingNotificationInfo,
+  RecordingControlName,
+  RecordingNotificationEventName,
+  SimpleNotificationOptions,
+} from './system/notification';
 
 export {
   IndexSizeError,
