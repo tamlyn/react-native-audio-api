@@ -13,8 +13,6 @@ import PlaybackSpeed from './PlaybackSpeed/PlaybackSpeed';
 import Record from './Record/Record';
 import Streaming from './Streaming/Streaming';
 import Worklets from './Worklets/Worklets';
-import Distorted from './Distorted/Distorted';
-import GuitarPedal from './GuitarPedal/GuitarPedal';
 
 type NavigationParamList = {
   Oscillator: undefined;
@@ -29,9 +27,7 @@ type NavigationParamList = {
   Record: undefined;
   Worklets: undefined;
   Streamer: undefined;
-  Distorted: undefined;
   PlaybackNotification: undefined;
-  GuitarPedal: undefined;
 };
 
 export type ExampleKey = keyof NavigationParamList;
@@ -117,21 +113,9 @@ export const Examples: Example[] = [
     screen: Streaming,
   },
   {
-    key: 'Distorted',
-    title: 'Distorted Audio',
-    Icon: icons.Volume,
-    screen: Distorted,
-  },
-  {
     key: 'PlaybackNotification',
     title: 'Playback Notification',
     Icon: icons.Bell,
     screen: PlaybackNotificationExample,
-  },
-  {
-    key: 'GuitarPedal',
-    title: 'Guitar Pedal',
-    Icon: icons.Volume,
-    screen: GuitarPedal,
   },
 ] as const;

@@ -2,7 +2,6 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import {
-  AudioContext,
   GainNode,
   WaveShaperNode,
   BiquadFilterNode,
@@ -11,6 +10,7 @@ import {
 } from 'react-native-audio-api';
 import { Container, VerticalSlider } from '../../components';
 import { makeDistortionCurve } from './makeDistortionCurve';
+import { audioContext } from '../../singletons';
 
 const URL = 'https://files.catbox.moe/xbj6gn.flac';
 
@@ -28,7 +28,6 @@ export default function GuitarPedal() {
   const [tone, setTone] = useState(0.5);
   const [level, setLevel] = useState(0.5);
 
-  const audioCtxRef = useRef<AudioContext | null>(null);
   const sourceNodeRef = useRef<AudioBufferSourceNode | null>(null);
   const driveNodeRef = useRef<GainNode | null>(null);
   const shaperNodeRef = useRef<WaveShaperNode | null>(null);
@@ -38,8 +37,6 @@ export default function GuitarPedal() {
   useEffect(() => {
     const init = async () => {
       setIsLoading(true);
-      const ctx = new AudioContext();
-      audioCtxRef.current = ctx;
 
       try {
         const audioBuffer = await fetch(URL, {
@@ -49,7 +46,7 @@ export default function GuitarPedal() {
           },
         })
           .then((response) => response.arrayBuffer())
-          .then((arrayBuffer) => ctx.decodeAudioData(arrayBuffer));
+          .then((arrayBuffer) => audioContext.decodeAudioData(arrayBuffer));
 
         setBuffer(audioBuffer);
       } catch (error) {
@@ -62,32 +59,30 @@ export default function GuitarPedal() {
 
     return () => {
       stopAudio();
-      audioCtxRef.current?.close();
-      audioCtxRef.current = null;
+      audioContext.suspend();
     };
   }, []);
 
   const startAudio = async () => {
-    if (!audioCtxRef.current || !buffer) return;
-    const ctx = audioCtxRef.current;
+    if (!buffer) return;
 
-    if (ctx.state === 'suspended') {
-      await ctx.resume();
+    if (audioContext.state === 'suspended') {
+      await audioContext.resume();
     }
 
-    const source = ctx.createBufferSource();
+    const source = audioContext.createBufferSource();
     source.buffer = buffer;
     source.onEnded = () => {
       setIsActive(false);
     };
 
-    const driveNode = ctx.createGain();
-    const shaper = ctx.createWaveShaper();
-    const toneNode = ctx.createBiquadFilter();
-    const levelNode = ctx.createGain();
+    const driveNode = audioContext.createGain();
+    const shaper = audioContext.createWaveShaper();
+    const toneNode = audioContext.createBiquadFilter();
+    const levelNode = audioContext.createGain();
 
     shaper.oversample = '4x';
-    shaper.curve = makeDistortionCurve(50, ctx.sampleRate);
+    shaper.curve = makeDistortionCurve(50, audioContext.sampleRate);
 
     toneNode.type = 'lowpass';
     toneNode.Q.value = 1;
@@ -96,7 +91,7 @@ export default function GuitarPedal() {
     driveNode.connect(shaper);
     shaper.connect(toneNode);
     toneNode.connect(levelNode);
-    levelNode.connect(ctx.destination);
+    levelNode.connect(audioContext.destination);
 
     source.start();
     source.onEnded = () => {
@@ -148,7 +143,7 @@ export default function GuitarPedal() {
     const freq = MIN_FREQ * Math.pow(MAX_FREQ / MIN_FREQ, t);
     toneNodeRef.current.frequency.value = freq;
 
-    levelNodeRef.current.gain.value = l * 3;
+    levelNodeRef.current.gain.value = l;
   };
 
   useEffect(() => {
