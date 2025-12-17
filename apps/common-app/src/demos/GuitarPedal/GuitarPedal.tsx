@@ -15,7 +15,7 @@ import { audioContext } from '../../singletons';
 const URL = 'https://files.catbox.moe/xbj6gn.flac';
 
 const MIN_DRIVE_GAIN = 0.05;
-const MAX_DRIVE_GAIN = 50;
+const MAX_DRIVE_GAIN = 10;
 const MIN_FREQ = 500;
 const MAX_FREQ = 20000;
 
@@ -59,7 +59,6 @@ export default function GuitarPedal() {
 
     return () => {
       stopAudio();
-      audioContext.suspend();
     };
   }, []);
 
@@ -177,16 +176,25 @@ export default function GuitarPedal() {
             <View
               style={[
                 styles.led,
-                { backgroundColor: isActive ? '#ff0000' : '#330000' },
+                {
+                  backgroundColor:
+                    isActive && !isLoading ? '#ff0000' : '#330000',
+                },
               ]}
             />
             <GestureDetector
-              gesture={Gesture.Tap().runOnJS(true).onEnd(togglePower)}>
-              <View style={styles.stompSwitch}>
+              gesture={Gesture.Tap()
+                .enabled(!isLoading)
+                .runOnJS(true)
+                .onEnd(togglePower)}
+            >
+              <View style={[styles.stompSwitch, isLoading && { opacity: 0.5 }]}>
                 <View style={styles.stompInner} />
               </View>
             </GestureDetector>
-            <Text style={styles.switchLabel}>{isActive ? 'ON' : 'BYPASS'}</Text>
+            <Text style={styles.switchLabel}>
+              {isLoading ? 'LOADING' : isActive ? 'ON' : 'BYPASS'}
+            </Text>
           </View>
         </View>
       </View>
