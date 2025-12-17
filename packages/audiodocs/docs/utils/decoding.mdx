@@ -60,6 +60,8 @@ if not provided, the original sample rate from the file is used.
 <details>
 <summary>Example decoding with memory block</summary>
 ```tsx
+import { decodeAudioData } from 'react-native-audio-api';
+
 const url = ... // url to an audio
 
 const buffer = await fetch(url)
@@ -83,8 +85,9 @@ If you want to use other types, refer to [this section](https://reactnative.dev/
 
 ```tsx
 import { Image } from 'react-native';
+import { decodeAudioData } from 'react-native-audio-api';
 
-const uri = Image.resolveAssetSource(require('path/to/file')).uri
+const uri = Image.resolveAssetSource(require('path/to/file')).uri;
 
 const buffer = await fetch(uri)
   .then((response) => response.arrayBuffer())
@@ -101,16 +104,25 @@ const buffer = await fetch(uri)
 <summary>Example using expo-asset library</summary>
 ```tsx
 import { Asset } from 'expo-asset';
+import { AudioContext } from 'react-native-audio-api';
 
-const buffer = await Asset.fromModule(require('@/assets/music/example.mp3'))
+const uri = await Asset.fromModule(require('@/assets/music/example.mp3'))
   .downloadAsync()
   .then((asset) =>  {
     if (!asset.localUri) {
       console.error('Failed to load audio asset');
     }
-    // sampleRate not provided, so file will be decoded in original sampleRate
-    return decodeAudioData(asset.localUri);
+    return asset.localUri;
   })
+  
+const context = new AudioContext();
+if (uri) {
+  const buffer = await fetch(uri)
+  .then((response) => response.arrayBuffer())
+  .then((arrayBuffer) => context.decodeAudioData(arrayBuffer));
+  console.log('Audio buffer loaded:', buffer);
+}
+
 ```
 </details>
 
