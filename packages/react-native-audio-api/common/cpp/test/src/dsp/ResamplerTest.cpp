@@ -2,18 +2,21 @@
 #include <audioapi/dsp/Resampler.h>
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
+#include <audioapi/core/utils/Constants.h>
 #include <gtest/gtest.h>
 #include <memory>
 
 using namespace audioapi;
 
 class ResamplerTest : public ::testing::Test {
- protected:
+  protected:
+    static constexpr int KERNEL_SIZE = RENDER_QUANTUM_SIZE;
 };
 
 class TestableUpSampler : public UpSampler {
  public:
-  explicit TestableUpSampler() : UpSampler() {}
+  explicit TestableUpSampler(int maxBlockSize, int kernelSize)
+      : UpSampler(maxBlockSize, kernelSize) {}
 
   std::shared_ptr<AudioArray> getKernel() {
     return kernel_;
@@ -22,7 +25,8 @@ class TestableUpSampler : public UpSampler {
 
 class TestableDownSampler : public DownSampler {
  public:
-  explicit TestableDownSampler() : DownSampler() {}
+  explicit TestableDownSampler(int maxBlockSize, int kernelSize)
+      : DownSampler(maxBlockSize, kernelSize) {}
 
   std::shared_ptr<AudioArray> getKernel() {
     return kernel_;
@@ -30,17 +34,17 @@ class TestableDownSampler : public DownSampler {
 };
 
 TEST_F(ResamplerTest, UpSamplerCanBeCreated) {
-  auto upSampler = std::make_unique<UpSampler>();
+  auto upSampler = std::make_unique<UpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
   ASSERT_NE(upSampler, nullptr);
 }
 
 TEST_F(ResamplerTest, DownSamplerCanBeCreated) {
-  auto downSampler = std::make_unique<DownSampler>();
+  auto downSampler = std::make_unique<DownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
   ASSERT_NE(downSampler, nullptr);
 }
 
 TEST_F(ResamplerTest, UpSamplerKernelSymmetry) {
-  auto upSampler = std::make_unique<TestableUpSampler>();
+  auto upSampler = std::make_unique<TestableUpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
   auto kernel = upSampler->getKernel();
 
   // check for symmetry around the center point
@@ -50,7 +54,8 @@ TEST_F(ResamplerTest, UpSamplerKernelSymmetry) {
 }
 
 TEST_F(ResamplerTest, DownSamplerKernelSymmetry) {
-  auto downSampler = std::make_unique<TestableDownSampler>();
+  auto downSampler =
+      std::make_unique<TestableDownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
   auto kernel = downSampler->getKernel();
 
   // check for symmetry around the center point
@@ -64,7 +69,7 @@ TEST_F(ResamplerTest, DownSamplerKernelSymmetry) {
 }
 
 TEST_F(ResamplerTest, UpSamplerKernelSum) {
-  auto upSampler = std::make_unique<TestableUpSampler>();
+  auto upSampler = std::make_unique<TestableUpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
   auto kernel = upSampler->getKernel();
 
   float sum = 0.0f;
@@ -76,7 +81,8 @@ TEST_F(ResamplerTest, UpSamplerKernelSum) {
 }
 
 TEST_F(ResamplerTest, DownSamplerKernelSum) {
-  auto downSampler = std::make_unique<TestableDownSampler>();
+  auto downSampler =
+      std::make_unique<TestableDownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
   auto kernel = downSampler->getKernel();
 
   float sum = 0.0f;
@@ -88,10 +94,10 @@ TEST_F(ResamplerTest, DownSamplerKernelSum) {
 }
 
 TEST_F(ResamplerTest, UpSamplerProcess) {
-  auto upSampler = std::make_unique<TestableUpSampler>();
+  auto upSampler = std::make_unique<TestableUpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
   auto kernel = upSampler->getKernel();
 
-  auto stateBuffer = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
+  auto stateBuffer = std::make_shared<AudioArray>(2 * RENDER_QUANTUM_SIZE);
   stateBuffer->zero();
 
   auto inputArray = std::make_shared<AudioArray>(4);
@@ -102,11 +108,6 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
 
   auto outputArray = std::make_shared<AudioArray>(8);
 
-  // update history buffer
-  memmove(
-      stateBuffer->getData(),
-      stateBuffer->getData() + inputArray->getSize(),
-      KERNEL_SIZE * sizeof(float));
   memcpy(
       stateBuffer->getData() + KERNEL_SIZE,
       inputArray->getData(),
@@ -115,7 +116,7 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
   upSampler->process(inputArray, outputArray, 4);
 
   for (size_t i = 0; i < outputArray->getSize(); ++i) {
-    auto idx = KERNEL_SIZE - KERNEL_SIZE / 2 + i / 2;
+    auto idx = RENDER_QUANTUM_SIZE - RENDER_QUANTUM_SIZE / 2 + i / 2;
 
     if (i % 2 == 0) {
       EXPECT_FLOAT_EQ(outputArray->getData()[i], stateBuffer->getData()[idx]);
@@ -123,7 +124,7 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
       float sum = 0.0f;
 
       for (size_t k = 0; k < kernel->getSize(); ++k) {
-        sum += stateBuffer->getData()[idx + k] * kernel->getData()[k];
+        sum += stateBuffer->getData()[i / 2 + 1 + k] * kernel->getData()[k];
       }
 
       EXPECT_FLOAT_EQ(outputArray->getData()[i], sum);
@@ -132,10 +133,11 @@ TEST_F(ResamplerTest, UpSamplerProcess) {
 }
 
 TEST_F(ResamplerTest, DownSamplerProcess) {
-  auto downSampler = std::make_unique<TestableDownSampler>();
+  auto downSampler =
+      std::make_unique<TestableDownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
   auto kernel = downSampler->getKernel();
 
-  auto stateBuffer = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
+  auto stateBuffer = std::make_shared<AudioArray>(4 * RENDER_QUANTUM_SIZE);
   stateBuffer->zero();
 
   auto inputArray = std::make_shared<AudioArray>(8);
@@ -150,11 +152,6 @@ TEST_F(ResamplerTest, DownSamplerProcess) {
 
   auto outputArray = std::make_shared<AudioArray>(4);
 
-  // update history buffer
-  memmove(
-      stateBuffer->getData(),
-      stateBuffer->getData() + inputArray->getSize(),
-      KERNEL_SIZE * sizeof(float));
   memcpy(
       stateBuffer->getData() + KERNEL_SIZE,
       inputArray->getData(),
@@ -163,7 +160,7 @@ TEST_F(ResamplerTest, DownSamplerProcess) {
   downSampler->process(inputArray, outputArray, 8);
 
   for (size_t i = 0; i < outputArray->getSize() / 8; ++i) {
-    auto idx = KERNEL_SIZE + i * 2;
+    auto idx = RENDER_QUANTUM_SIZE + i * 2;
     float sum = 0.0f;
 
     for (size_t k = 0; k < kernel->getSize(); ++k) {
@@ -175,8 +172,9 @@ TEST_F(ResamplerTest, DownSamplerProcess) {
 }
 
 TEST_F(ResamplerTest, UpDownSamplingProcessThrowsNoErrors) {
-  auto upSampler = std::make_unique<TestableUpSampler>();
-  auto downSampler = std::make_unique<TestableDownSampler>();
+  auto upSampler = std::make_unique<TestableUpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
+  auto downSampler =
+      std::make_unique<TestableDownSampler>(RENDER_QUANTUM_SIZE * 2, RENDER_QUANTUM_SIZE * 2);
 
   auto inputArray = std::make_shared<AudioArray>(4);
   (*inputArray)[0] = 1.0f;
@@ -188,8 +186,4 @@ TEST_F(ResamplerTest, UpDownSamplingProcessThrowsNoErrors) {
 
   EXPECT_NO_THROW(upSampler->process(inputArray, outputArray, 4));
   EXPECT_NO_THROW(downSampler->process(outputArray, inputArray, 8));
-
-  for (size_t i = 0; i < inputArray->getSize(); ++i) {
-    ASSERT_NE(inputArray->getData()[i], 0.0f);
-  }
 }

@@ -1,16 +1,19 @@
 #pragma once
 
 #include <audioapi/utils/AudioArray.h>
+#include <audioapi/core/utils/Constants.h>
 #include <memory>
 #include <vector>
 
 namespace audioapi {
-constexpr int KERNEL_SIZE = 128;
-constexpr int MAX_BLOCK_SIZE = 1024;
 
 class Resampler {
  public:
-  Resampler();
+  /// Constructor
+  /// @param maxBlockSize Maximum block size that will be processed
+  /// @param kernelSize Size of the resampling kernel
+  /// @note maxBlockSize >= kernelSize
+  Resampler(int maxBlockSize, int kernelSize);
   virtual ~Resampler() = default;
 
   virtual int process(
@@ -20,16 +23,20 @@ class Resampler {
   void reset();
 
  protected:
-  static float computeConvolution(const float *stateStart, const float *kernelStart);
+  [[nodiscard]] float computeBlackmanWindow(double x) const;
+  float computeConvolution(const float *stateStart, const float *kernelStart) const;
   virtual void initializeKernel() = 0;
 
+  int kernelSize_;
+
   std::shared_ptr<AudioArray> kernel_;
+  // [ HISTORY | NEW DATA ]
   std::shared_ptr<AudioArray> stateBuffer_;
 };
 
 class UpSampler : public Resampler {
  public:
-  UpSampler();
+  UpSampler(int maxBlockSize, int kernelSize);
 
   // N -> 2N
   int process(
@@ -43,7 +50,7 @@ class UpSampler : public Resampler {
 
 class DownSampler : public Resampler {
  public:
-  DownSampler();
+  DownSampler(int maxBlockSize, int kernelSize);
 
   // N -> N / 2
   int process(

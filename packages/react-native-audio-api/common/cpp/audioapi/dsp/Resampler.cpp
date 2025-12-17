@@ -41,25 +41,24 @@
 
 namespace audioapi {
 
-static constexpr float PI = std::numbers::pi_v<float>;
-
-// https://en.wikipedia.org/wiki/Window_function
-static float blackmanWindow(double x) {
-  double alpha = 0.16;
-  double a0 = 0.5 * (1.0 - alpha);
-  double a1 = 0.5;
-  double a2 = 0.5 * alpha;
-  double n = x / KERNEL_SIZE;
-  return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
-}
-
-Resampler::Resampler() {
-  kernel_ = std::make_shared<AudioArray>(KERNEL_SIZE);
-  stateBuffer_ = std::make_shared<AudioArray>(KERNEL_SIZE + MAX_BLOCK_SIZE);
+Resampler::Resampler(int maxBlockSize, int kernelSize):
+    kernelSize_(kernelSize),
+    kernel_(std::make_shared<AudioArray>(kernelSize)),
+    stateBuffer_(std::make_shared<AudioArray>(2 * maxBlockSize)) {
   stateBuffer_->zero();
 }
 
-float Resampler::computeConvolution(const float *stateStart, const float *kernelStart) {
+// https://en.wikipedia.org/wiki/Window_function
+float Resampler::computeBlackmanWindow(double x) const {
+    double alpha = 0.16;
+    double a0 = 0.5 * (1.0 - alpha);
+    double a1 = 0.5;
+    double a2 = 0.5 * alpha;
+    double n = x / kernelSize_;
+    return static_cast<float>(a0 - a1 * std::cos(2.0 * PI * n) + a2 * std::cos(4.0 * PI * n));
+}
+
+float Resampler::computeConvolution(const float *stateStart, const float *kernelStart) const {
   float sum = 0.0f;
   int k = 0;
 
@@ -67,7 +66,7 @@ float Resampler::computeConvolution(const float *stateStart, const float *kernel
   float32x4_t vSum = vdupq_n_f32(0.0f);
 
   // process 4 samples at a time
-  for (; k <= KERNEL_SIZE - 4; k += 4) {
+  for (; k <= kernelSize_ - 4; k += 4) {
     float32x4_t vState = vld1q_f32(stateStart + k);
     float32x4_t vKernel = vld1q_f32(kernelStart + k);
 
@@ -81,7 +80,7 @@ float Resampler::computeConvolution(const float *stateStart, const float *kernel
   sum += vgetq_lane_f32(vSum, 2);
   sum += vgetq_lane_f32(vSum, 3);
 #endif
-  for (; k < KERNEL_SIZE; ++k) {
+  for (; k < kernelSize_; ++k) {
     sum += stateStart[k] * kernelStart[k];
   }
 
@@ -94,16 +93,16 @@ void Resampler::reset() {
   }
 }
 
-UpSampler::UpSampler() : Resampler() {
+UpSampler::UpSampler(int maxBlockSize, int kernelSize) : Resampler(maxBlockSize, kernelSize) {
   initializeKernel();
 }
 
 void UpSampler::initializeKernel() {
   auto kData = kernel_->getData();
-  int halfSize = KERNEL_SIZE / 2;
+  int halfSize = kernelSize_ / 2;
   double subSampleOffset = -0.5;
 
-  for (int i = 0; i < KERNEL_SIZE; ++i) {
+  for (int i = 0; i < kernelSize_; ++i) {
     // we want to sample the sinc function halfway between integer points
     auto x = static_cast<double>(i - halfSize) - subSampleOffset;
 
@@ -112,11 +111,11 @@ void UpSampler::initializeKernel() {
     double sinc = (std::abs(x) < 1e-9) ? 1.0 : std::sin(x * PI) / (x * PI);
 
     // apply window in order smooth out the edges, because sinc extends to infinity in both directions
-    kData[i] = static_cast<float>(sinc * blackmanWindow(i - subSampleOffset));
+    kData[i] = static_cast<float>(sinc * computeBlackmanWindow(i - subSampleOffset));
   }
 
   // reverse kernel to match convolution implementation
-  std::reverse(kData, kData + KERNEL_SIZE);
+  std::reverse(kData, kData + kernelSize_);
 }
 
 int UpSampler::process(
@@ -124,44 +123,40 @@ int UpSampler::process(
     const std::shared_ptr<AudioArray> &output,
     int framesToProcess) {
 
-  if (framesToProcess > MAX_BLOCK_SIZE) {
-    return 0;
-  }
-
   const float *inputData = input->getData();
   float *outputData = output->getData();
   float *state = stateBuffer_->getData();
   const float *kernel = kernel_->getData();
 
-  // move previous tail to front
-  std::memmove(state, state + framesToProcess, KERNEL_SIZE * sizeof(float));
-  // copy new input
-  std::memcpy(state + KERNEL_SIZE, inputData, framesToProcess * sizeof(float));
+  // copy new input [ HISTORY | NEW DATA ]
+  std::memcpy(state + kernelSize_, inputData, framesToProcess * sizeof(float));
 
-  int halfKernel = KERNEL_SIZE / 2;
+  int halfKernel = kernelSize_ / 2;
 
   for (int i = 0; i < framesToProcess; ++i) {
-    int centerIdx = KERNEL_SIZE + i;
-
-    // direct copy for even samples
-    outputData[2 * i] = state[centerIdx - halfKernel];
+    // direct copy for even samples with half kernel latency compensation
+    outputData[2 * i] = state[kernelSize_ + i - halfKernel];
 
     // convolution for odd samples
-    outputData[2 * i + 1] = computeConvolution(&state[centerIdx - halfKernel], kernel);
+    // symmetric Linear Phase filter has latency of half kernel size
+    outputData[2 * i + 1] = computeConvolution(&state[i + 1], kernel);
   }
+
+  // move new data to history [ NEW DATA | EMPTY ]
+  std::memmove(state, state + framesToProcess, kernelSize_ * sizeof(float));
 
   return framesToProcess * 2;
 }
 
-DownSampler::DownSampler() : Resampler() {
-  initializeKernel();
+DownSampler::DownSampler(int maxBlockSize, int kernelSize) : Resampler(maxBlockSize, kernelSize) {
+    initializeKernel();
 }
 
 void DownSampler::initializeKernel() {
   auto kData = kernel_->getData();
-  int halfSize = KERNEL_SIZE / 2;
+  int halfSize = kernelSize_ / 2;
 
-  for (int i = 0; i < KERNEL_SIZE; ++i) {
+  for (int i = 0; i < kernelSize_; ++i) {
     // we want to sample the sinc function halfway between integer points
     auto x = static_cast<double>(i - halfSize);
 
@@ -171,40 +166,34 @@ void DownSampler::initializeKernel() {
     sinc *= 0.5;
 
     // apply window in order smooth out the edges, because sinc extends to infinity in both directions
-    kData[i] = static_cast<float>(sinc * blackmanWindow(i));
+    kData[i] = static_cast<float>(sinc * computeBlackmanWindow(i));
   }
 
   // reverse kernel to match convolution implementation
-  std::reverse(kData, kData + KERNEL_SIZE);
+  std::reverse(kData, kData + kernelSize_);
 }
 
 int DownSampler::process(
     const std::shared_ptr<AudioArray> &input,
     const std::shared_ptr<AudioArray> &output,
     int framesToProcess) {
-  if (framesToProcess > MAX_BLOCK_SIZE * 2) {
-    return 0;
-  }
-
   const float *inputData = input->getData();
   float *outputData = output->getData();
   float *state = stateBuffer_->getData();
   const float *kernel = kernel_->getData();
-  int halfKernel = KERNEL_SIZE / 2;
 
-  // move history (shift by amount processed last time, which is inputSize)
-  std::memmove(state, state + framesToProcess, KERNEL_SIZE * sizeof(float));
-  // copy new input
-  std::memcpy(state + KERNEL_SIZE, inputData, framesToProcess * sizeof(float));
+  // copy new input [ HISTORY | NEW DATA ]
+  std::memcpy(state + kernelSize_, inputData, framesToProcess * sizeof(float));
 
   auto outputCount = framesToProcess / 2;
 
   for (int i = 0; i < outputCount; ++i) {
-    int centerIdx = KERNEL_SIZE + (2 * i);
-
     // convolution for downsampled samples
-    outputData[i] = computeConvolution(&state[centerIdx - halfKernel], kernel);
+    outputData[i] = computeConvolution(&state[2 * i + 1], kernel);
   }
+
+  // move new data to history [ NEW DATA | EMPTY ]
+  std::memmove(state, state + framesToProcess, kernelSize_ * sizeof(float));
 
   return outputCount;
 }

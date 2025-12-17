@@ -16,10 +16,10 @@ WaveShaper::WaveShaper(const std::shared_ptr<AudioArray> &curve) : curve_(curve)
   tempBuffer4x_ = std::make_shared<AudioArray>(RENDER_QUANTUM_SIZE * 4);
   tempBuffer4x_->zero();
 
-  upSampler_ = std::make_unique<UpSampler>();
-  downSampler_ = std::make_unique<DownSampler>();
-  upSampler2_ = std::make_unique<UpSampler>();
-  downSampler2_ = std::make_unique<DownSampler>();
+  upSampler_ = std::make_unique<UpSampler>(RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
+  downSampler_ = std::make_unique<DownSampler>(2 * RENDER_QUANTUM_SIZE, 2 * RENDER_QUANTUM_SIZE);
+  upSampler2_ = std::make_unique<UpSampler>(2 * RENDER_QUANTUM_SIZE, RENDER_QUANTUM_SIZE);
+  downSampler2_ = std::make_unique<DownSampler>(4 * RENDER_QUANTUM_SIZE, 2 * RENDER_QUANTUM_SIZE);
 }
 
 void WaveShaper::setCurve(const std::shared_ptr<AudioArray> &curve) {
