@@ -4,11 +4,11 @@
 
 import type { AudioEventSubscription } from '../../events';
 import type {
+  NotificationEvents,
   NotificationManager,
-  RecordingNotificationInfo,
   RecordingControlName,
   RecordingNotificationEventName,
-  NotificationEvents,
+  RecordingNotificationInfo,
 } from '../../system';
 
 /// Mock Manager for recording notifications. Does nothing.
@@ -20,8 +20,8 @@ class RecordingNotificationManager
       RecordingNotificationEventName
     >
 {
-  private isRegistered = false;
-  private isShown = false;
+  private isRegistered_ = false;
+  private isShown_ = false;
 
   constructor() {}
 
@@ -41,7 +41,11 @@ class RecordingNotificationManager
   ): Promise<void> {}
 
   async isActive(): Promise<boolean> {
-    return this.isShown;
+    return this.isShown_;
+  }
+
+  isRegistered(): boolean {
+    return this.isRegistered_;
   }
 
   addEventListener<T extends RecordingNotificationEventName>(

@@ -36,6 +36,7 @@ class CentralizedForegroundService : Service() {
       ACTION_START -> {
         startForegroundWithNotification()
       }
+
       ACTION_STOP -> {
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()

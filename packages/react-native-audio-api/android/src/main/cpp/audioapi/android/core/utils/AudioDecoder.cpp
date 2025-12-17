@@ -5,7 +5,6 @@
 #include <audioapi/utils/AudioArray.h>
 #include <audioapi/utils/AudioBus.h>
 
-#define MINIAUDIO_IMPLEMENTATION
 #include <audioapi/libs/miniaudio/decoders/libopus/miniaudio_libopus.h>
 #include <audioapi/libs/miniaudio/decoders/libvorbis/miniaudio_libvorbis.h>
 #include <audioapi/libs/miniaudio/miniaudio.h>
@@ -43,6 +42,7 @@ std::vector<float> AudioDecoder::readAllPcmFrames(ma_decoder &decoder, int outpu
   if (outFramesRead == 0) {
     __android_log_print(ANDROID_LOG_ERROR, "AudioDecoder", "Failed to decode");
   }
+  return buffer;
 }
 
 std::shared_ptr<AudioBuffer> AudioDecoder::makeAudioBufferFromFloatBuffer(

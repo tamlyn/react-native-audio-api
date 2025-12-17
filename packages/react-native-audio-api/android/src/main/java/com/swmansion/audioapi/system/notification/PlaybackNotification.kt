@@ -283,6 +283,7 @@ class PlaybackNotification(
         "playing" -> {
           playbackPlayingState = PlaybackStateCompat.STATE_PLAYING
         }
+
         "paused" -> {
           playbackPlayingState = PlaybackStateCompat.STATE_PAUSED
         }

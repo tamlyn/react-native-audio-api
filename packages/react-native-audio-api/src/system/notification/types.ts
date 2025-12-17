@@ -97,6 +97,7 @@ export type RecordingNotificationEventName = keyof RecordingNotificationEvent;
 
 export type NotificationEvents = PlaybackNotificationEvent &
   RecordingNotificationEvent;
+
 export type NotificationEventName = keyof NotificationEvents;
 
 export type NotificationCallback<Name extends NotificationEventName> = (

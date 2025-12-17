@@ -6,7 +6,6 @@ import type {
   IAudioStretcher,
   IOfflineAudioContext,
 } from '../interfaces';
-import type { AudioRecorderOptions } from '../types';
 
 /* eslint-disable no-var */
 declare global {
@@ -23,7 +22,7 @@ declare global {
     audioWorkletRuntime: any
   ) => IOfflineAudioContext;
 
-  var createAudioRecorder: (options: AudioRecorderOptions) => IAudioRecorder;
+  var createAudioRecorder: () => IAudioRecorder;
 
   var createAudioDecoder: () => IAudioDecoder;
 

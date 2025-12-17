@@ -1,62 +1,82 @@
 #pragma once
 
+#include <audioapi/utils/Result.hpp>
 #include <atomic>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <tuple>
 
 namespace audioapi {
 
-class RecorderAdapterNode;
 class AudioBus;
+class AudioFileWriter;
 class CircularAudioArray;
-class CircularOverflowableAudioArray;
+class RecorderAdapterNode;
+class AudioFileProperties;
+class AudioRecorderCallback;
 class AudioEventHandlerRegistry;
 
 class AudioRecorder {
  public:
+  enum class RecorderState { Idle = 0, Recording, Paused };
   explicit AudioRecorder(
-      float sampleRate,
-      int bufferLength,
-      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry);
-
+      const std::shared_ptr<AudioEventHandlerRegistry> &audioEventHandlerRegistry)
+      : audioEventHandlerRegistry_(audioEventHandlerRegistry) {}
   virtual ~AudioRecorder() = default;
 
-  void setOnAudioReadyCallbackId(uint64_t callbackId);
-  void invokeOnAudioReadyCallback(const std::shared_ptr<AudioBus> &bus, int numFrames);
-  void sendRemainingData();
+  virtual Result<std::string, std::string> start() = 0;
+  virtual Result<std::tuple<std::string, double, double>, std::string> stop() = 0;
 
-  /// @brief
-  /// # Connects the recorder to the adapter node.
-  ///
-  /// The adapter node will be used to read audio data from the recorder.
-  /// @note Few frames of audio might not yet be written to the buffer when connecting.
-  void connect(const std::shared_ptr<RecorderAdapterNode> &node);
+  virtual Result<std::string, std::string> enableFileOutput(
+      std::shared_ptr<AudioFileProperties> properties) = 0;
+  virtual void disableFileOutput() = 0;
 
-  /// @brief
-  /// # Disconnects the recorder from the adapter node.
-  ///
-  /// The adapter node will no longer be used to read audio data from the recorder.
-  /// @note Last few frames of audio might be written to the buffer after disconnecting.
-  void disconnect();
+  virtual void pause() = 0;
+  virtual void resume() = 0;
 
-  virtual void start() = 0;
-  virtual void stop() = 0;
+  virtual void connect(const std::shared_ptr<RecorderAdapterNode> &node) = 0;
+  virtual void disconnect() = 0;
+
+  virtual Result<NoneType, std::string> setOnAudioReadyCallback(
+      float sampleRate,
+      size_t bufferLength,
+      int channelCount,
+      uint64_t callbackId) = 0;
+  virtual void clearOnAudioReadyCallback() = 0;
+
+  void setOnErrorCallback(uint64_t callbackId);
+  void clearOnErrorCallback();
+
+  virtual double getCurrentDuration() const;
+
+  bool usesCallback() const;
+  bool usesFileOutput() const;
+  bool isConnected() const;
+
+  virtual bool isRecording() const = 0;
+  virtual bool isPaused() const = 0;
+  virtual bool isIdle() const = 0;
 
  protected:
-  float sampleRate_;
-  int bufferLength_;
-  size_t ringBufferSize_;
+  std::atomic<RecorderState> state_{RecorderState::Idle};
 
-  std::atomic<bool> isRunning_;
-  std::shared_ptr<CircularAudioArray> circularBuffer_;
+  std::atomic<bool> isConnected_{false};
+  std::atomic<bool> fileOutputEnabled_{false};
+  std::atomic<bool> callbackOutputEnabled_{false};
 
-  mutable std::mutex adapterNodeLock_;
+  std::mutex callbackMutex_;
+  std::mutex fileWriterMutex_;
+  std::mutex errorCallbackMutex_;
+  mutable std::mutex adapterNodeMutex_;
+
+  std::atomic<uint64_t> errorCallbackId_{0};
+
+  std::string filePath_{""};
+  std::shared_ptr<AudioFileWriter> fileWriter_ = nullptr;
   std::shared_ptr<RecorderAdapterNode> adapterNode_ = nullptr;
-
+  std::shared_ptr<AudioRecorderCallback> dataCallback_ = nullptr;
   std::shared_ptr<AudioEventHandlerRegistry> audioEventHandlerRegistry_;
-  uint64_t onAudioReadyCallbackId_ = 0;
-
-  void writeToBuffers(const float *data, int numFrames);
 };
 
 } // namespace audioapi

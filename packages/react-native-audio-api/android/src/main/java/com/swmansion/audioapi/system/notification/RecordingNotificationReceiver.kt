@@ -30,10 +30,12 @@ class RecordingNotificationReceiver : BroadcastReceiver() {
         Log.d(TAG, "Recording notification dismissed by user")
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationDismissed", mapOf())
       }
+
       RecordingNotification.ACTION_START -> {
         Log.d(TAG, "Start recording action received")
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStart", mapOf())
       }
+
       RecordingNotification.ACTION_STOP -> {
         Log.d(TAG, "Stop recording action received")
         audioAPIModule?.invokeHandlerWithEventNameAndEventBody("recordingNotificationStop", mapOf())
