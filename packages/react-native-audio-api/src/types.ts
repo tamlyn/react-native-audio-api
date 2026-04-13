@@ -90,6 +90,7 @@ export interface FilePresetType {
 export interface AudioRecorderFileOptions {
   channelCount?: number;
   batchDurationSeconds?: number;
+  rotateIntervalBytes?: number;
 
   format?: FileFormat;
   preset?: FilePresetType;
@@ -101,7 +102,7 @@ export interface AudioRecorderFileOptions {
 }
 
 export interface FileInfo {
-  path: string;
+  paths: string[];
   /** The size of the recorded file (in MB). */
   size: number;
   /** The duration of the recording (in seconds). */
