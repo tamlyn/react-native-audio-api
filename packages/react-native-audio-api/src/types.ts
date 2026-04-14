@@ -255,3 +255,28 @@ export type DecodeDataInput = number | string | ArrayBuffer;
 export interface AudioRecorderStartOptions {
   fileNameOverride?: string;
 }
+
+export enum AutomationEventType {
+  LINEAR_RAMP,
+  EXPONENTIAL_RAMP,
+  SET_VALUE,
+  SET_TARGET,
+  SET_VALUE_CURVE,
+}
+
+export type AutomationEventData =
+  | { type: AutomationEventType.SET_VALUE; automationTime: number }
+  | { type: AutomationEventType.LINEAR_RAMP; automationTime: number }
+  | {
+      type: AutomationEventType.EXPONENTIAL_RAMP;
+      automationTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_TARGET;
+      automationTime: number;
+    }
+  | {
+      type: AutomationEventType.SET_VALUE_CURVE;
+      automationTime: number;
+      duration: number;
+    };

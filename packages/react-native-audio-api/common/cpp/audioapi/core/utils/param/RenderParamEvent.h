@@ -1,89 +1,77 @@
 #pragma once
 
-#include <audioapi/core/types/ParamChangeEventType.h>
+#include <audioapi/core/utils/param/ParamEvent.h>
 
+#include <audioapi/core/types/ParamEventType.h>
 #include <functional>
 #include <utility>
 
 namespace audioapi {
 
-class ParamChangeEvent {
+/// @brief A RenderParamEvent extends ParamEvent with additional properties and a value calculation
+/// function that can compute the parameter value at any time during the event's active period
+/// based on its type and the current state of the queue.
+class RenderParamEvent : public ParamEvent {
  public:
-  ParamChangeEvent() = default;
-  explicit ParamChangeEvent(
+  RenderParamEvent() = default;
+  ~RenderParamEvent() = default;
+
+  explicit RenderParamEvent(
       double startTime,
       double endTime,
       float startValue,
       float endValue,
       std::function<float(double, double, float, float, double)> &&calculateValue,
-      ParamChangeEventType type)
-      : startTime_(startTime),
-        endTime_(endTime),
+      ParamEventType type)
+      : ParamEvent(type, startTime, endTime),
         calculateValue_(std::move(calculateValue)),
         startValue_(startValue),
-        endValue_(endValue),
-        type_(type) {}
+        endValue_(endValue) {}
 
-  ParamChangeEvent(const ParamChangeEvent &other) = delete;
-  ParamChangeEvent &operator=(const ParamChangeEvent &other) = delete;
+  RenderParamEvent(const RenderParamEvent &) = delete;
+  RenderParamEvent &operator=(const RenderParamEvent &) = delete;
 
-  ParamChangeEvent(ParamChangeEvent &&other) noexcept
-      : startTime_(other.startTime_),
-        endTime_(other.endTime_),
+  RenderParamEvent(RenderParamEvent &&other) noexcept
+      : ParamEvent(std::move(other)),
         calculateValue_(std::move(other.calculateValue_)),
         startValue_(other.startValue_),
-        endValue_(other.endValue_),
-        type_(other.type_) {}
+        endValue_(other.endValue_) {}
 
-  ParamChangeEvent &operator=(ParamChangeEvent &&other) noexcept {
+  RenderParamEvent &operator=(RenderParamEvent &&other) noexcept {
     if (this != &other) {
-      startTime_ = other.startTime_;
-      endTime_ = other.endTime_;
+      ParamEvent::operator=(std::move(other));
       calculateValue_ = std::move(other.calculateValue_);
       startValue_ = other.startValue_;
       endValue_ = other.endValue_;
-      type_ = other.type_;
     }
     return *this;
   }
 
-  [[nodiscard]] double getEndTime() const noexcept {
-    return endTime_;
-  }
-  [[nodiscard]] double getStartTime() const noexcept {
-    return startTime_;
-  }
   [[nodiscard]] float getEndValue() const noexcept {
     return endValue_;
   }
+
   [[nodiscard]] float getStartValue() const noexcept {
     return startValue_;
   }
+
   [[nodiscard]] const std::function<float(double, double, float, float, double)> &
   getCalculateValue() const noexcept {
     return calculateValue_;
   }
-  [[nodiscard]] ParamChangeEventType getType() const noexcept {
-    return type_;
-  }
 
-  void setEndTime(double endTime) noexcept {
-    endTime_ = endTime;
-  }
   void setStartValue(float startValue) noexcept {
     startValue_ = startValue;
   }
+
   void setEndValue(float endValue) noexcept {
     endValue_ = endValue;
   }
 
  private:
-  double startTime_ = 0.0;
-  double endTime_ = 0.0;
   std::function<float(double, double, float, float, double)> calculateValue_;
   float startValue_ = 0.0f;
   float endValue_ = 0.0f;
-  ParamChangeEventType type_ = ParamChangeEventType::SET_VALUE;
 };
 
 } // namespace audioapi
