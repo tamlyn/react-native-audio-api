@@ -344,18 +344,18 @@ static AudioSessionManager *_sharedInstance = nil;
 {
   AVAudioSessionCategory category = 0;
 
-  if ([categorySTR isEqualToString:@"record"]) {
-    category = AVAudioSessionCategoryRecord;
-  } else if ([categorySTR isEqualToString:@"ambient"]) {
+  if ([categorySTR isEqualToString:@"ambient"]) {
     category = AVAudioSessionCategoryAmbient;
-  } else if ([categorySTR isEqualToString:@"playback"]) {
-    category = AVAudioSessionCategoryPlayback;
   } else if ([categorySTR isEqualToString:@"multiRoute"]) {
     category = AVAudioSessionCategoryMultiRoute;
-  } else if ([categorySTR isEqualToString:@"soloAmbient"]) {
-    category = AVAudioSessionCategorySoloAmbient;
   } else if ([categorySTR isEqualToString:@"playAndRecord"]) {
     category = AVAudioSessionCategoryPlayAndRecord;
+  } else if ([categorySTR isEqualToString:@"playback"]) {
+    category = AVAudioSessionCategoryPlayback;
+  } else if ([categorySTR isEqualToString:@"record"]) {
+    category = AVAudioSessionCategoryRecord;
+  } else if ([categorySTR isEqualToString:@"soloAmbient"]) {
+    category = AVAudioSessionCategorySoloAmbient;
   }
 
   return category;
@@ -367,22 +367,34 @@ static AudioSessionManager *_sharedInstance = nil;
 
   if ([modeSTR isEqualToString:@"default"]) {
     mode = AVAudioSessionModeDefault;
+  } else if ([modeSTR isEqualToString:@"dualRoute"]) {
+    if (@available(iOS 26.2, *)) {
+      mode = AVAudioSessionModeDualRoute;
+    } else {
+      mode = AVAudioSessionModeDefault;
+    }
   } else if ([modeSTR isEqualToString:@"gameChat"]) {
     mode = AVAudioSessionModeGameChat;
-  } else if ([modeSTR isEqualToString:@"videoChat"]) {
-    mode = AVAudioSessionModeVideoChat;
-  } else if ([modeSTR isEqualToString:@"voiceChat"]) {
-    mode = AVAudioSessionModeVoiceChat;
   } else if ([modeSTR isEqualToString:@"measurement"]) {
     mode = AVAudioSessionModeMeasurement;
-  } else if ([modeSTR isEqualToString:@"voicePrompt"]) {
-    mode = AVAudioSessionModeVoicePrompt;
-  } else if ([modeSTR isEqualToString:@"spokenAudio"]) {
-    mode = AVAudioSessionModeSpokenAudio;
   } else if ([modeSTR isEqualToString:@"moviePlayback"]) {
     mode = AVAudioSessionModeMoviePlayback;
+  } else if ([modeSTR isEqualToString:@"shortFormVideo"]) {
+    if (@available(iOS 26, *)) {
+      mode = AVAudioSessionModeShortFormVideo;
+    } else {
+      mode = AVAudioSessionModeDefault;
+    }
+  } else if ([modeSTR isEqualToString:@"spokenAudio"]) {
+    mode = AVAudioSessionModeSpokenAudio;
+  } else if ([modeSTR isEqualToString:@"videoChat"]) {
+    mode = AVAudioSessionModeVideoChat;
   } else if ([modeSTR isEqualToString:@"videoRecording"]) {
     mode = AVAudioSessionModeVideoRecording;
+  } else if ([modeSTR isEqualToString:@"voiceChat"]) {
+    mode = AVAudioSessionModeVoiceChat;
+  } else if ([modeSTR isEqualToString:@"voicePrompt"]) {
+    mode = AVAudioSessionModeVoicePrompt;
   }
 
   return mode;
@@ -393,41 +405,58 @@ static AudioSessionManager *_sharedInstance = nil;
   AVAudioSessionCategoryOptions options = 0;
 
   for (NSString *option in optionsArray) {
-    if ([option isEqualToString:@"duckOthers"]) {
-      options |= AVAudioSessionCategoryOptionDuckOthers;
-    }
-
     if ([option isEqualToString:@"allowAirPlay"]) {
       options |= AVAudioSessionCategoryOptionAllowAirPlay;
-    }
-
-    if ([option isEqualToString:@"mixWithOthers"]) {
-      options |= AVAudioSessionCategoryOptionMixWithOthers;
-    }
-
-    if ([option isEqualToString:@"allowBluetoothHFP"]) {
-      // XCode 26.x (default support SDK >= 26.x) uses AVAudioSessionCategoryOptionAllowBluetoothHFP as new standard for every platfrom (down to iOS 1.0)
-      // Older Xcode (default support SDKs) versions doesn't define it at all.
-      // Both (AVAudioSessionCategoryOptionAllowBluetooth in SDK < 26.x) and (AVAudioSessionCategoryOptionAllowBluetoothHFP in SDK >= 26.x) resolve to this value
-      // We use it here directly as there is no reliable way to switch between them (no @available for this).
-      // TODO: replace with AVAudioSessionCategoryOptionAllowBluetoothHFP once XCode 16.x will dig its grave
-      options |= 0x4;
-    }
-
-    if ([option isEqualToString:@"defaultToSpeaker"]) {
-      options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+      continue;
     }
 
     if ([option isEqualToString:@"allowBluetoothA2DP"]) {
       options |= AVAudioSessionCategoryOptionAllowBluetoothA2DP;
+      continue;
     }
 
-    if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
-      options |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
+    if ([option isEqualToString:@"allowBluetoothHFP"]) {
+      options |= AVAudioSessionCategoryOptionAllowBluetoothHFP;
+      continue;
+    }
+
+    if ([option isEqualToString:@"bluetoothHighQualityRecording"]) {
+      if (@available(iOS 26, *)) {
+        options |= AVAudioSessionCategoryOptionBluetoothHighQualityRecording;
+      }
+      continue;
+    }
+
+    if ([option isEqualToString:@"defaultToSpeaker"]) {
+      options |= AVAudioSessionCategoryOptionDefaultToSpeaker;
+      continue;
+    }
+
+    if ([option isEqualToString:@"duckOthers"]) {
+      options |= AVAudioSessionCategoryOptionDuckOthers;
+      continue;
+    }
+
+    if ([option isEqualToString:@"farFieldInput"]) {
+      if (@available(iOS 26.2, *)) {
+        options |= AVAudioSessionCategoryOptionFarFieldInput;
+        continue;
+      }
     }
 
     if ([option isEqualToString:@"interruptSpokenAudioAndMixWithOthers"]) {
       options |= AVAudioSessionCategoryOptionInterruptSpokenAudioAndMixWithOthers;
+      continue;
+    }
+
+    if ([option isEqualToString:@"mixWithOthers"]) {
+      options |= AVAudioSessionCategoryOptionMixWithOthers;
+      continue;
+    }
+
+    if ([option isEqualToString:@"overrideMutedMicrophoneInterruption"]) {
+      options |= AVAudioSessionCategoryOptionOverrideMutedMicrophoneInterruption;
+      continue;
     }
   }
 
