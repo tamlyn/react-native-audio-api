@@ -5,6 +5,7 @@
 #include <audioapi/types/NodeOptions.h>
 #include <audioapi/utils/AudioArray.hpp>
 
+#include <algorithm>
 #include <memory>
 
 namespace audioapi {
@@ -162,9 +163,6 @@ std::shared_ptr<DSPAudioBuffer> AudioNode::processInputs(
     const std::shared_ptr<DSPAudioBuffer> &outputBuffer,
     int framesToProcess,
     bool checkIsAlreadyProcessed) { // NOLINT(readability-convert-member-functions-to-static)
-  auto processingBuffer = audioBuffer_;
-  processingBuffer->zero();
-
   size_t maxNumberOfChannels = 0;
   for (auto *inputNode : inputNodes_) {
     assert(inputNode != nullptr);
@@ -179,11 +177,34 @@ std::shared_ptr<DSPAudioBuffer> AudioNode::processInputs(
 
     if (maxNumberOfChannels < inputBuffer->getNumberOfChannels()) {
       maxNumberOfChannels = inputBuffer->getNumberOfChannels();
-      processingBuffer = inputBuffer;
     }
   }
 
-  return processingBuffer;
+  // Always accumulate into our own audioBuffer_ — never an input's buffer.
+  // processNode() implementations (e.g., GainNode) mutate processingBuffer in
+  // place. Returning an input's buffer here would let those in-place writes
+  // corrupt that input's data, which breaks branching signal paths where
+  // multiple downstream nodes share an upstream node (issue #933).
+  //
+  // For MAX / CLAMPED_MAX modes the output channel count tracks the widest
+  // input, so audioBuffer_ may need to grow. The reallocation only happens
+  // when the input topology widens beyond the current buffer, which is rare.
+  if (channelCountMode_ != ChannelCountMode::EXPLICIT &&
+      maxNumberOfChannels > audioBuffer_->getNumberOfChannels()) {
+    auto targetChannels = maxNumberOfChannels;
+    if (channelCountMode_ == ChannelCountMode::CLAMPED_MAX) {
+      targetChannels = std::min<size_t>(targetChannels, static_cast<size_t>(channelCount_));
+    }
+    if (targetChannels > audioBuffer_->getNumberOfChannels()) {
+      audioBuffer_ = std::make_shared<DSPAudioBuffer>(
+          audioBuffer_->getSize(),
+          static_cast<int>(targetChannels),
+          audioBuffer_->getSampleRate());
+    }
+  }
+
+  audioBuffer_->zero();
+  return audioBuffer_;
 }
 
 std::shared_ptr<DSPAudioBuffer> AudioNode::applyChannelCountMode(
